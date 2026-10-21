@@ -61,3 +61,18 @@ oder auf das neue Monatskontingent warten. Details: `team/STATUS.md`.
 - `tests/` – Unit-Tests (u. a. End-to-End mit lokalem Nachahmer von GitHub Models)
 
 Für echte Preisvergleiche (eBay usw.) sind eigene, erlaubte Datenquellen nötig – noch nicht angebunden.
+
+## App-Kern (`app/schnapper`)
+Die eigentliche Schnäppchen-Logik, unabhängig vom KI-Team. Nur Python-Standardbibliothek, kein Internetzugriff, keine Kosten.
+
+- **Angebote prüfen:** Preis > 0, nur EUR, nur `https://`, gültiger Zustand, keine Zukunftszeitpunkte. Preise in deutschem und englischem Format (`1.299,99 €`).
+- **Warnungen:** veralteter Preis (älter als 24 Std.), Betrugsverdacht (Neuware ≥ 80 % unter Referenzpreis), fehlender Referenzpreis (dann wird keine Ersparnis behauptet).
+- **Dubletten:** gleiche URL ohne Tracking-Parameter oder gleiche Quelle + fast gleicher Titel + Preis ±2 %. Der neueste Eintrag bleibt. Gleiches Produkt bei anderer Quelle bleibt als Vergleich erhalten.
+- **Suche/Filter:** Suchwörter (Umlaute egal: „Kopfhoerer“ findet „Kopfhörer“), Höchstpreis inkl. Versand, Mindestrabatt, Zustand, Quelle, Kategorie; Sortierung nach Rabatt, Preis oder neueste.
+- **Import:** `.json` oder `.csv` (Trennzeichen `;` oder `,`). Fehlerhafte Zeilen werden gemeldet, der Rest wird verarbeitet.
+
+```
+PYTHONPATH=app python -m schnapper app/beispiele/angebote.csv --suche kopfhoerer --max-preis 60
+```
+
+`app/beispiele/angebote.csv` enthält **ausgedachte Beispieldaten** (`.example`-Adressen), keine echten Angebote. Echte Angebote brauchen eine Datenquelle mit geklärten Nutzungsrechten (z. B. offizieller Partner-Feed). Gescrapt wird nichts.
