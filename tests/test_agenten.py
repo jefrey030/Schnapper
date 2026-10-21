@@ -16,6 +16,7 @@ from unittest import mock
 sys.path.insert(0, str(pathlib.Path(__file__).resolve().parents[1] / "team"))
 import agent  # noqa: E402
 import ki  # noqa: E402
+import runner as agent_runner  # noqa: E402
 
 ROOT = pathlib.Path(__file__).resolve().parents[1]
 
@@ -110,8 +111,21 @@ class TestAgenten(unittest.TestCase):
         self.lauf = self.team / "work" / "20261021T190000Z"
         self.p = mock.patch.object(agent, "TEAM", self.team)
         self.p.start()
+        # Eigene Aufgaben-Fixture, damit der Test nicht vom echten Aufgabenstatus abhängt.
+        self.team.mkdir(parents=True, exist_ok=True)
+        aufgaben = self.team / "tasks.json"
+        aufgaben.write_text(json.dumps({"tasks": [
+            {"id": "S-000", "priority": 0, "status": "open", "title": "Testaufgabe",
+             "acceptance": ["k1"]}]}), encoding="utf-8")
+        self.p_aufgaben = mock.patch.object(agent, "load_tasks", lambda: agent_runner.load_tasks(aufgaben))
+        self.p_vorige = mock.patch.object(agent, "previous_task_id",
+                                          lambda: agent_runner.previous_task_id(self.team / "runs"))
+        self.p_aufgaben.start()
+        self.p_vorige.start()
 
     def tearDown(self):
+        self.p_vorige.stop()
+        self.p_aufgaben.stop()
         self.p.stop()
         self.tmp.cleanup()
 
