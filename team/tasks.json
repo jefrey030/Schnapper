@@ -44,6 +44,43 @@
         "Jeder der vier Agenten schreibt einen Bericht",
         "Fehlende API-Anbindung korrekt als Blocker markieren"
       ]
+    },
+    {
+      "id": "S-004",
+      "priority": 4,
+      "status": "proposed",
+      "title": "MF1 Quellen-Register: nur freigegebene Quellen (eigene Daten, Mock) zulassen",
+      "voraussetzung": "PR #5 (App-Kern app/schnapper) ist von Jefrey gemergt",
+      "acceptance": [
+        "Register mit Kennung und Entscheidung je Quelle (erlaubt/ausgeschlossen/später) aus team/konzept/S-002-datenquellen-plan.md",
+        "T1: Angebot aus Quelle 'kleinanzeigen' wird abgewiesen, Hinweis 'Quelle ausgeschlossen'",
+        "T2: Angebot aus unbekannter Quelle wird abgewiesen, Hinweis 'Quelle nicht freigegeben'",
+        "Kein Netzwerkzugriff, alle Tests grün"
+      ]
+    },
+    {
+      "id": "S-005",
+      "priority": 5,
+      "status": "proposed",
+      "title": "MF2 Adapter-Schnittstelle suche(anfrage) mit Mock-Adapter; eBay-Adapter nur als gesperrte Hülle",
+      "voraussetzung": "S-004 erledigt",
+      "acceptance": [
+        "T3: Mock-Adapter liefert erkennbare Testdaten (TEST-…), Treffer tragen quelle = 'mock'",
+        "T4: eBay-Adapter ohne Freigabeschalter und Zugangsdaten aus der Umgebung wird nicht aktiviert, kein Netzwerkaufruf (per Test belegt)",
+        "T5: gesamte Test-Suite läuft ohne Netz grün",
+        "Keine Zugangsdaten, Schlüssel oder echten Preise im Repo"
+      ]
+    },
+    {
+      "id": "S-006",
+      "priority": 6,
+      "status": "proposed",
+      "title": "Entscheidungsvorlage: überlappende Draft-PRs #2, #6, #7 und PR #5 ordnen",
+      "acceptance": [
+        "Je PR: Zweck, geänderte Dateien, Überschneidungen und Konflikte mit main belegt (git diff --stat)",
+        "Empfehlung je PR (übernehmen/zusammenführen/schließen) mit Begründung – Entscheidung bleibt bei Jefrey",
+        "Kein Merge, kein Schließen von PRs durch Agenten"
+      ]
     }
   ]
 }
