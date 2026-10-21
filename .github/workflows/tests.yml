@@ -8,6 +8,8 @@ permissions:
   contents: read
 jobs:
   python-tests:
+    # Kostenschutz: nur in öffentlichem Repository (kostenlose Standard-Runner)
+    if: github.event.repository.private == false
     runs-on: ubuntu-latest
     timeout-minutes: 5
     steps:

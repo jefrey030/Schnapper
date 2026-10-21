@@ -32,6 +32,12 @@ protokolliert. Es gibt **keinen Regelmodus**, der sich als KI ausgibt.
 ohne Tablet und ohne offene Claude-Sitzung. Ein Lauf = ein Job (~1–2 Minuten), Zeitlimit 10 Min.
 **Not-Aus:** Repo-Variable `SCHNAPPER_PAUSE` = `true`.
 
+## Kostenschutz im Code
+Beide Workflows laufen **nur, wenn das Repository öffentlich ist** (dort sind GitHub-Standard-Runner
+kostenlos). Solange es privat ist, werden die Jobs übersprungen und verbrauchen **keine Minuten** –
+auch dann nicht, wenn im Konto ein Budget freigeschaltet wird. Für den Stundenplan zusätzlich die
+Variable `SCHNAPPER_OEFFENTLICH` = `true` setzen, erst **nachdem** das Repo öffentlich ist.
+
 ## Kosten – was du in den GitHub-Einstellungen sicherstellen musst
 1. **Actions:** Bei privaten Repos zählen die Minuten gegen die 2.000 Freiminuten/Monat des
    Kontos (alle Repos zusammen). Öffentliche Repos sind für Standard-Runner kostenlos.

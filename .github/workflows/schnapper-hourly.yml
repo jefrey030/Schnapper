@@ -4,6 +4,12 @@ name: SCHNAPPER Stundenlauf
 # Kostenbremsen: ein Job pro Stunde, Zeitlimit 10 Min., max. 6 KI-Aufrufe pro
 # Lauf, kein Geheimnis/API-Schlüssel nötig, Not-Aus über Repo-Variable
 # SCHNAPPER_PAUSE=true (Settings > Secrets and variables > Actions > Variables).
+# KOSTENSCHUTZ: Der Job startet nur, wenn das Repository ÖFFENTLICH ist
+# (dort sind Standard-Runner kostenlos). Bei einem privaten Repo wird er
+# übersprungen und verbraucht keine Minuten – auch wenn ein Budget existiert.
+# Zeitgesteuerte Läufe brauchen zusätzlich die Variable SCHNAPPER_OEFFENTLICH=true,
+# weil GitHub bei Zeitplänen die Sichtbarkeit nicht mitliefert; der erste Schritt
+# prüft die Sichtbarkeit trotzdem noch einmal und bricht bei privat sofort ab.
 on:
   schedule:
     - cron: '17 * * * *'
@@ -19,7 +25,10 @@ concurrency:
 
 jobs:
   ki-team:
-    if: github.repository == 'jefrey030/schnapper' && vars.SCHNAPPER_PAUSE != 'true'
+    if: >-
+      github.repository == 'jefrey030/schnapper' && vars.SCHNAPPER_PAUSE != 'true' &&
+      (github.event.repository.private == false ||
+       (github.event_name == 'schedule' && vars.SCHNAPPER_OEFFENTLICH == 'true'))
     runs-on: ubuntu-latest
     timeout-minutes: 10
     env:
@@ -27,6 +36,10 @@ jobs:
       SCHNAPPER_MODELL: ${{ vars.SCHNAPPER_MODELL }}
       SCHNAPPER_MAX_AUFRUFE: '6'
     steps:
+      - name: Kostenschutz – nur öffentliches Repository
+        run: |
+          privat=$(curl -fsS -H "Authorization: Bearer $GITHUB_TOKEN" "https://api.github.com/repos/${GITHUB_REPOSITORY}" | python3 -c 'import json,sys; print(json.load(sys.stdin)["private"])')
+          if [ "$privat" != "False" ]; then echo "Repository ist privat – Abbruch, damit keine Kosten entstehen." >&2; exit 1; fi
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
         with:

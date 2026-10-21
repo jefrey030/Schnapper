@@ -76,6 +76,14 @@ class TestKostenbremsen(unittest.TestCase):
         for rolle in ("LEAD", "BRAIN", "CHECK", "COMMAND"):
             self.assertIn(f"team/agent.py {rolle}", wf)
 
+    def test_kostenschutz_nur_oeffentlich(self):
+        wf = (ROOT / ".github/workflows/schnapper-hourly.yml").read_text(encoding="utf-8")
+        self.assertIn("github.event.repository.private == false", wf)
+        self.assertIn("vars.SCHNAPPER_OEFFENTLICH == 'true'", wf)
+        self.assertIn("Repository ist privat", wf)
+        tests_wf = (ROOT / ".github/workflows/tests.yml").read_text(encoding="utf-8")
+        self.assertIn("github.event.repository.private == false", tests_wf)
+
     def test_aufrufbudget(self):
         with tempfile.TemporaryDirectory() as d:
             k = ki.KI(pathlib.Path(d) / "z.txt")
