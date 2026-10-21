@@ -1,0 +1,36 @@
+{
+  "project": "SCHNAPPER",
+  "version": 1,
+  "tasks": [
+    {
+      "id": "S-001",
+      "priority": 1,
+      "status": "open",
+      "title": "SCHNAPPER-Bestandsaufnahme: vorhandene App-Bausteine und fehlende Schnittstellen dokumentieren",
+      "acceptance": [
+        "Vorhandene Dateien und Funktionen belegbar auflisten",
+        "Fehlende Abhängigkeiten dokumentieren"
+      ]
+    },
+    {
+      "id": "S-002",
+      "priority": 2,
+      "status": "open",
+      "title": "Sicheren technischen Plan für Preisvergleich und Schnäppchen-Suche erstellen",
+      "acceptance": [
+        "Datenquellen und Nutzungsrechte klären",
+        "Mindestfunktionen und Testfälle entwerfen"
+      ]
+    },
+    {
+      "id": "S-003",
+      "priority": 3,
+      "status": "open",
+      "title": "Stundenlauf, Agentenrollen und Prüfprotokolle validieren",
+      "acceptance": [
+        "Jeder der vier Agenten schreibt einen Bericht",
+        "Fehlende API-Anbindung korrekt als Blocker markieren"
+      ]
+    }
+  ]
+}
