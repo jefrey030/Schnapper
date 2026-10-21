@@ -38,7 +38,7 @@
     {
       "id": "S-003",
       "priority": 3,
-      "status": "open",
+      "status": "review",
       "title": "Stundenlauf, Agentenrollen und Prüfprotokolle validieren",
       "acceptance": [
         "Jeder der vier Agenten schreibt einen Bericht",
