@@ -23,6 +23,11 @@ class TestSchnapper(unittest.TestCase):
     def test_closed_task_ignored(self):
         self.assertIsNone(choose_task([{"id": "a", "priority": 1, "status": "done"}]))
 
+    def test_no_paid_api_in_runner(self):
+        runner = (pathlib.Path(__file__).resolve().parents[1] / "team" / "runner.py").read_text(encoding="utf-8")
+        self.assertNotIn("api.anthropic.com", runner)
+        self.assertNotIn("ANTHROPIC_API_KEY", runner)
+
     def test_rotation_across_open_tasks(self):
         items = [{"id": "b", "priority": 2, "status": "open"},
                  {"id": "a", "priority": 1, "status": "open"},
