@@ -18,10 +18,6 @@ jobs:
         with:
           python-version: '3.11'
       - name: LEAD BRAIN CHECK COMMAND ausführen
-        env:
-          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
-          SCHNAPPER_AI_ENABLED: ${{ vars.SCHNAPPER_AI_ENABLED }}
-          ANTHROPIC_MODEL: ${{ vars.ANTHROPIC_MODEL }}
         run: python team/runner.py
       - name: Berichte dauerhaft ablegen
         if: always()
