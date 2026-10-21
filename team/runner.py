@@ -87,7 +87,8 @@ def run():
     key = os.getenv("ANTHROPIC_API_KEY", "")
     enabled = os.getenv("SCHNAPPER_AI_ENABLED", "").lower() == "true"
     model = os.getenv("ANTHROPIC_MODEL", "claude-haiku-4-5")
-    ai_live = bool(key and enabled)
+    # NO-PAID-SERVICES POLICY: externe KI-API-Aufrufe sind ausnahmslos deaktiviert.
+    ai_live = False
     checks = test_result()
     data = {"timestamp_utc": timestamp.isoformat(), "project": "SCHNAPPER",
             "selected_task": selected, "ai_enabled": ai_live, "tests": checks, "agents": {}}
