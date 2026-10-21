@@ -16,13 +16,7 @@ import uuid
 from ki import KINichtVerfuegbar, MAX_AUFRUFE
 
 LOKAL = "http://127.0.0.1:11434"
-MODELL_DEFAULT = "qwen2.5:3b"
-_HTTP = urllib.request.build_opener(
-    urllib.request.ProxyHandler({}),
-    urllib.request.HTTPRedirectHandler(),
-)
-
-
+MODELL_DEFAULT = "qwen2.5:1.5b"
 class KeineWeiterleitungen(urllib.request.HTTPRedirectHandler):
     def redirect_request(self, req, fp, code, msg, headers, newurl):
         raise KINichtVerfuegbar("Ollama darf keine HTTP-Weiterleitungen verwenden.")
@@ -68,6 +62,8 @@ class KI:
 
     def _pruefe_modell(self):
         tags = _request("/api/tags")
+        if not isinstance(tags, dict) or not isinstance(tags.get("models"), list):
+            raise KINichtVerfuegbar("Ungültige lokale Modellliste.")
         modelle = {
             v.get("name") for v in tags.get("models", [])
             if isinstance(v, dict)
