@@ -43,9 +43,27 @@ def load_tasks(path=TEAM / "tasks.json"):
     return tasks
 
 
-def choose_task(tasks):
-    active = [t for t in tasks if t.get("status") == "open"]
-    return min(active, key=lambda t: (t["priority"], t["id"])) if active else None
+def choose_task(tasks, previous_id=None):
+    """Choose open tasks in priority order, cycling between hourly runs."""
+    active = sorted((t for t in tasks if t.get("status") == "open"),
+                    key=lambda t: (t["priority"], t["id"]))
+    if not active:
+        return None
+    last_index = next((i for i, task in enumerate(active) if task["id"] == previous_id), None)
+    return active[(last_index + 1) % len(active)] if last_index is not None else active[0]
+
+
+def previous_task_id(runs_dir=TEAM / "runs"):
+    """Read the most recent persisted report, without altering task status."""
+    reports = sorted(runs_dir.glob("*.json"))
+    if not reports:
+        return None
+    try:
+        data = json.loads(reports[-1].read_text(encoding="utf-8"))
+        selected = data.get("selected_task")
+        return selected.get("id") if isinstance(selected, dict) else None
+    except (OSError, ValueError, AttributeError):
+        return None
 
 
 def call_ai(role, prompt, api_key, model):
@@ -83,7 +101,7 @@ def run():
     timestamp = dt.datetime.now(dt.timezone.utc)
     stamp = timestamp.strftime("%Y%m%dT%H%M%SZ")
     tasks = load_tasks()
-    selected = choose_task(tasks)
+    selected = choose_task(tasks, previous_task_id())
     key = os.getenv("ANTHROPIC_API_KEY", "")
     enabled = os.getenv("SCHNAPPER_AI_ENABLED", "").lower() == "true"
     model = os.getenv("ANTHROPIC_MODEL", "claude-haiku-4-5")
