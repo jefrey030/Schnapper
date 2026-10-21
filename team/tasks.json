@@ -18,7 +18,7 @@
     {
       "id": "S-001",
       "priority": 1,
-      "status": "open",
+      "status": "review",
       "title": "SCHNAPPER-Bestandsaufnahme: vorhandene App-Bausteine und fehlende Schnittstellen dokumentieren",
       "acceptance": [
         "Vorhandene Dateien und Funktionen belegbar auflisten",
