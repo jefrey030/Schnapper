@@ -12,9 +12,11 @@
 
 Dieser Status wird nach jedem tatsächlich gelaufenen Stundenlauf automatisch überschrieben.
 
-## SCHNAPPER MASTER – letzter Lauf (21.10.2026, 21:29 UTC)
+## SCHNAPPER MASTER – letzter Lauf (21.10.2026, 21:31 UTC)
 | Aufgabe | Zustand | Beleg |
 | --- | --- | --- |
 | S-000 MVP-Konzept | **review** (wartet auf Freigabe durch Jefrey) | `team/konzept/S-000-mvp-konzept.md`, `tests/test_konzept_s000.py` |
-| Tests | 24/24 bestanden | `python3 -m unittest discover -s tests` |
-| Nächster Schritt | MVP-Funktion 1 + Inserat-Schema mit Mock-Adapter und Tests F1–F4 | Bericht `team/runs/20261021-2129-master.md` |
+| S-001 Bestandsaufnahme | **review** | `team/konzept/S-001-bestandsaufnahme.md`, `tests/test_bestandsaufnahme_s001.py` |
+| Tests | 28/28 bestanden | `python3 -m unittest discover -s tests` |
+| Blocker | Actions starten nicht (Billing), Marktplatz-Nutzungsrechte offen | Bericht `team/runs/20261021-2131-master.md` |
+| Nächster Schritt | M1 Inserat-Datenmodell als Python-Modul mit Tests | – |
