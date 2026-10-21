@@ -3,6 +3,19 @@
   "version": 1,
   "tasks": [
     {
+      "id": "S-000",
+      "priority": 0,
+      "status": "open",
+      "title": "Vier-Agenten-Probelauf: prüfbares Konzept für die erste SCHNAPPER-Suche nach günstigen Gebrauchtartikeln erstellen",
+      "acceptance": [
+        "LEAD: exakt 3 priorisierte MVP-Funktionen nennen, inklusive klarer Auswahlbegründung",
+        "BRAIN: einen konkreten Eingabe-Ausgabe-Ablauf und ein minimales Datenfeld-Schema für ein Inserat beschreiben; keine existierende Integration behaupten",
+        "CHECK: mindestens 3 konkrete Fehlerszenarien nennen, darunter veralteter Preis, doppeltes Inserat und fehlende Nutzungsrechte; jeweils mit passendem Test",
+        "COMMAND: kompaktes Ergebnis mit Fertig/nicht-fertig, Belegen aus den anderen Agentenantworten und genau einem nächsten Schritt dokumentieren",
+        "Kein Code ändern, nichts veröffentlichen, keine kostenpflichtigen API-Aufrufe ohne vorhandene Konfiguration"
+      ]
+    },
+    {
       "id": "S-001",
       "priority": 1,
       "status": "open",
