@@ -10,22 +10,23 @@ concurrency:
   cancel-in-progress: false
 jobs:
   four-agent-run:
-    runs-on: ubuntu-latest
-    timeout-minutes: 7
+    # Keine GitHub-Cloud-Minuten: eigener Rechner mit Ollama und Runner erforderlich.
+    runs-on: [self-hosted, schnapper]
+    timeout-minutes: 45
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
         with:
           python-version: '3.11'
-      - name: LEAD BRAIN CHECK COMMAND ausführen
+      - name: Vier lokale Modellrollen und Python-Tests
         run: python team/runner.py
-      - name: Berichte dauerhaft ablegen
+      - name: Berichte speichern, auch wenn das Modell fehlt
         if: always()
         run: |
           git config user.name 'github-actions[bot]'
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
           git add team/STATUS.md team/runs/
           if ! git diff --cached --quiet; then
-            git commit -m 'chore: SCHNAPPER Stundenbericht'
+            git commit -m 'chore: SCHNAPPER lokaler KI-Stundenbericht'
             git push
           fi
