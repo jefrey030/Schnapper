@@ -5,7 +5,7 @@
     {
       "id": "S-000",
       "priority": 0,
-      "status": "open",
+      "status": "review",
       "title": "Vier-Agenten-Probelauf: prüfbares Konzept für die erste SCHNAPPER-Suche nach günstigen Gebrauchtartikeln erstellen",
       "acceptance": [
         "LEAD: exakt 3 priorisierte MVP-Funktionen nennen, inklusive klarer Auswahlbegründung",

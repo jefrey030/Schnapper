@@ -11,3 +11,10 @@
 | Externe Schnäppchen-Daten | nicht verbunden | – |
 
 Dieser Status wird nach jedem tatsächlich gelaufenen Stundenlauf automatisch überschrieben.
+
+## SCHNAPPER MASTER – letzter Lauf (21.10.2026, 21:29 UTC)
+| Aufgabe | Zustand | Beleg |
+| --- | --- | --- |
+| S-000 MVP-Konzept | **review** (wartet auf Freigabe durch Jefrey) | `team/konzept/S-000-mvp-konzept.md`, `tests/test_konzept_s000.py` |
+| Tests | 24/24 bestanden | `python3 -m unittest discover -s tests` |
+| Nächster Schritt | MVP-Funktion 1 + Inserat-Schema mit Mock-Adapter und Tests F1–F4 | Bericht `team/runs/20261021-2129-master.md` |
