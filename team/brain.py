@@ -14,16 +14,21 @@ SYSTEM = (
     "oder Veröffentlichungen. Antworte ausschließlich in einem gültigen JSON-Objekt."
 )
 SCHEMA = {
-    "LEAD": '{"features":[{"name":"...","reason":"..."} genau drei Objekte],"acceptance":["..."]}',
-    "BRAIN": '{"input":["..."],"output":["..."],"listing_schema":{"id":"Text","title":"Text","price":"Zahl","currency":"Text","url":"Text","source":"Text","observed_at":"Zeit"},"steps":["...mindestens 3 Schritte..."]}',
+    "LEAD": '{"features":[{"name":"Suche","reason":"Nutzen"},{"name":"Prüfung","reason":"Nutzen"},{"name":"Anzeige","reason":"Nutzen"}],"acceptance":["..."]}',
+    "BRAIN": '{"input":["..."],"output":["..."],"listing_schema":{"id":"Text","title":"Text","price":"Zahl","currency":"Text","url":"Text","source":"Text","observed_at":"Zeit"},"steps":["Eingabe prüfen","Anzeigen zuordnen","Ergebnis ausgeben"]}',
     "CHECK": '{"cases":[{"kind":"stale_price","risk":"...","test":"..."},{"kind":"duplicate_listing","risk":"...","test":"..."},{"kind":"usage_rights","risk":"...","test":"..."}]}',
-    "COMMAND": '{"status":"plan_ready" oder "blocked","evidence":["LEAD: ...","BRAIN: ...","CHECK: ..."],"next_step":"..."}',
+    "COMMAND": '{"status":"blocked","evidence":["LEAD: ...","BRAIN: ...","CHECK: ..."],"next_step":"..."}. Status nur auf plan_ready setzen, wenn alle drei Entwürfe tatsächlich vollständig sind',
 }
 GENERIC = '{"summary":"...","steps":["..."],"risks":["..."],"next_step":"..."}'
 
 
 class LocalBrainError(RuntimeError):
     pass
+
+
+class _NoRedirect(urllib.request.HTTPRedirectHandler):
+    def redirect_request(self, req, fp, code, msg, headers, newurl):
+        return None
 
 
 def _request(path, data=None, timeout=120):
@@ -35,7 +40,8 @@ def _request(path, data=None, timeout=120):
         method="GET" if data is None else "POST",
     )
     try:
-        with urllib.request.urlopen(req, timeout=timeout) as response:
+        opener = urllib.request.build_opener(urllib.request.ProxyHandler({}), _NoRedirect)
+        with opener.open(req, timeout=timeout) as response:
             return json.loads(response.read().decode("utf-8"))
     except (OSError, ValueError, TimeoutError) as exc:
         raise LocalBrainError("Ollama lokal nicht verfügbar: " + type(exc).__name__) from exc
