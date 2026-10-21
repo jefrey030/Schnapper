@@ -46,6 +46,7 @@ Keine `requirements.txt`, keine Fremdpakete.
 | M8 | Erfolgreicher Aufruf von GitHub Models | Betrieb | echte KI-Agenten | hängt an M7 |
 
 ## Ergebnis
-- Es gibt **keinen** App-Code für Schnäppchen-Suche oder Preisvergleich; vorhanden ist nur die Agenten-Infrastruktur.
+- Auf `main` gibt es **keinen** App-Code für Schnäppchen-Suche oder Preisvergleich; vorhanden ist nur die Agenten-Infrastruktur.
+- Nachtrag 21:36 UTC: **PR #5** (`app/schnapper`, offen, nicht gemergt) deckt M1–M4 weitgehend ab.
 - M1–M4 sind ohne Zugangsdaten und ohne Kosten umsetzbar.
 - M5 und M7 sind externe Blocker und werden nicht durch Code gelöst.

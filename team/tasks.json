@@ -28,7 +28,7 @@
     {
       "id": "S-002",
       "priority": 2,
-      "status": "open",
+      "status": "review",
       "title": "Sicheren technischen Plan für Preisvergleich und Schnäppchen-Suche erstellen",
       "acceptance": [
         "Datenquellen und Nutzungsrechte klären",
