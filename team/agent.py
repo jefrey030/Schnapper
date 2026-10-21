@@ -218,6 +218,20 @@ def command(ordner, ki):
     return erg
 
 
+def blocker_ermitteln(alle):
+    """Deterministisch: Agenten ohne echte KI-Antwort als Blocker 'KI-Anbindung fehlt' gruppieren.
+
+    Nur Rollen mit Status NICHT EINSATZBEREIT und Fehlertext zählen; übersprungene
+    Folgerollen sind Konsequenz, kein eigener Blocker."""
+    gruppen = {}
+    for r in ROLES:
+        a = alle.get(r) or {}
+        if a.get("status") == "NICHT EINSATZBEREIT" and a.get("fehler"):
+            gruppen.setdefault(a["fehler"], []).append(r)
+    return [{"art": "KI-Anbindung fehlt", "detail": detail, "rollen": rollen}
+            for detail, rollen in gruppen.items()]
+
+
 def bericht(ordner):
     """Deterministisch (Werkzeug, keine KI): Stundenbericht, STATUS.md und Zustand speichern."""
     alle = {r: lies(ordner, r) or {"status": "FEHLT", "ki_echt": False} for r in ROLES}
@@ -228,12 +242,14 @@ def bericht(ordner):
     tests = (alle["CHECK"].get("werkzeug") or {}).get("tests") or {}
     modelle = sorted({(alle[r].get("ki") or {}).get("modell") for r in echt} - {None})
     proto = alle["COMMAND"].get("protokoll") or {}
+    blocker = blocker_ermitteln(alle)
     zusammen = {"lauf": ordner.name, "ende_utc": jetzt(), "team_einsatzbereit": einsatzbereit,
                 "agenten_mit_echter_ki": echt, "modelle": modelle,
                 "aufgabe": lead_plan.get("aufgabe_id"), "check_urteil": urteil,
                 "tests_ok": tests.get("ok"), "tests_anzahl": tests.get("anzahl"),
                 "ki_aufrufe": int((ordner / "ki_aufrufe.txt").read_text()) if (ordner / "ki_aufrufe.txt").exists() else 0,
-                "naechster_schritt": proto.get("naechster_schritt"), "agenten": alle}
+                "naechster_schritt": proto.get("naechster_schritt"), "blocker": blocker,
+                "agenten": alle}
     runs = TEAM / "runs"
     runs.mkdir(parents=True, exist_ok=True)
     (runs / f"{ordner.name}.json").write_text(json.dumps(
@@ -251,6 +267,9 @@ def bericht(ordner):
         a = alle[r]
         zeilen.append(f"| {r} | {a.get('status')} | {'ja' if a.get('ki_echt') else 'nein'} | "
                       f"{(a.get('ki') or {}).get('antwort_id') or '–'} | {(a.get('fehler') or '').replace('|', '/')[:160]} |")
+    zeilen += ["", "## Blocker", ""]
+    zeilen += [f"- **{b['art']}** ({', '.join(b['rollen'])}): {b['detail'].replace('|', '/')[:200]}"
+               for b in blocker] or ["- keine"]
     if proto:
         zeilen += ["", "## COMMAND-Protokoll (KI)", "", proto.get("zusammenfassung", ""), "",
                    f"**Nächster Schritt:** {proto.get('naechster_schritt', '–')}"]
@@ -261,7 +280,8 @@ def bericht(ordner):
     (runs / f"{ordner.name}.md").write_text(text, encoding="utf-8")
     (TEAM / "STATUS.md").write_text(text, encoding="utf-8")
     print(json.dumps({k: zusammen[k] for k in ("lauf", "team_einsatzbereit", "agenten_mit_echter_ki",
-                                                 "modelle", "aufgabe", "check_urteil", "tests_ok", "ki_aufrufe")},
+                                                 "modelle", "aufgabe", "check_urteil", "tests_ok", "ki_aufrufe",
+                                                 "blocker")},
                      ensure_ascii=False))
     return 0
 

@@ -145,6 +145,23 @@ class TestAgenten(unittest.TestCase):
             self.assertIsNone(bericht["agenten"][rolle]["ki"])
         self.assertIn("NICHT EINSATZBEREIT", (self.team / "STATUS.md").read_text())
 
+    def test_s003_jeder_agent_berichtet_und_fehlende_ki_ist_blocker(self):
+        with mock.patch.dict(os.environ, {"GITHUB_TOKEN": ""}), \
+             mock.patch.object(agent, "tests_ausfuehren", return_value={"ok": True, "anzahl": 1, "ausgabe_ende": ""}):
+            bericht = self.alle()
+        for rolle in ("LEAD", "BRAIN", "CHECK", "COMMAND"):
+            daten = json.loads((self.lauf / f"{rolle}.json").read_text(encoding="utf-8"))
+            self.assertEqual(daten["rolle"], rolle)
+            self.assertTrue(daten["status"])
+        self.assertEqual(len(bericht["blocker"]), 1)
+        b = bericht["blocker"][0]
+        self.assertEqual(b["art"], "KI-Anbindung fehlt")
+        self.assertIn("GITHUB_TOKEN", b["detail"])
+        self.assertEqual(b["rollen"], ["LEAD", "COMMAND"])
+        md = (self.team / "runs" / f"{self.lauf.name}.md").read_text(encoding="utf-8")
+        self.assertIn("## Blocker", md)
+        self.assertIn("KI-Anbindung fehlt", md)
+
     def test_vier_getrennte_ki_aufrufe_mit_nachahmer(self):
         Nachahmer.aufrufe = []
         server = http.server.HTTPServer(("127.0.0.1", 0), Nachahmer)
@@ -166,6 +183,7 @@ class TestAgenten(unittest.TestCase):
         self.assertEqual(bericht["aufgabe"], "S-000")
         self.assertEqual(bericht["check_urteil"], "bestanden")
         self.assertEqual(bericht["ki_aufrufe"], 4)
+        self.assertEqual(bericht["blocker"], [])
         ids = {bericht["agenten"][r]["ki"]["antwort_id"] for r in ("LEAD", "BRAIN", "CHECK", "COMMAND")}
         self.assertEqual(len(ids), 4)
         self.assertTrue(list((self.team / "proposals").glob("*S-000.md")))
