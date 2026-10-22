@@ -411,9 +411,13 @@ def main(argv):
     if erg.get("ki"):
         # Sicherheitsregel: Kein ungefilterter KI-Rohtext in den Workflow-Logs.
         print(f"[{rolle}] KI-Antwort verarbeitet; Rohtext und Metadaten im Konsolenlog unterdrückt.")
-    # Bei einem gefundenen Geheimnis nachfolgende Rollen nicht mehr starten.
+    # Schon ki_teil verwirft verdächtige Antworten vor der Ablage. Auch in
+    # diesem Fall müssen Folgerollen stoppen (nicht nur bei schreibseitigem Fund).
     # Ein gewöhnlicher Rollenfehler wird weiterhin im Gesamtbericht protokolliert.
-    return 1 if erg.get("geheimnis_redigiert") else 0
+    sicherheitsfehler = bool(erg.get("geheimnis_redigiert")) or str(erg.get("fehler") or "").startswith(
+        "Geheimnisindikator in KI-Antwort"
+    )
+    return 1 if sicherheitsfehler else 0
 
 
 if __name__ == "__main__":
