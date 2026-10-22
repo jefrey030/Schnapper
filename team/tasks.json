@@ -75,7 +75,7 @@
       "id": "S-006",
       "priority": 6,
       "status": "proposed",
-      "title": "Entscheidungsvorlage: überlappende Draft-PRs #2, #6, #7 und PR #5 ordnen",
+      "title": "Entscheidungsvorlage: überlappende Draft-PRs #2, #6, #7, #8, #9 und PR #5 ordnen",
       "acceptance": [
         "Je PR: Zweck, geänderte Dateien, Überschneidungen und Konflikte mit main belegt (git diff --stat)",
         "Empfehlung je PR (übernehmen/zusammenführen/schließen) mit Begründung – Entscheidung bleibt bei Jefrey",
