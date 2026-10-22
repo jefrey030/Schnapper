@@ -70,8 +70,8 @@ def filter_aus_query(q: dict) -> tuple[Filter, str]:
     try:
         max_preis = geld(eins("max_preis")) if eins("max_preis") else None
         min_rabatt = Decimal(eins("min_rabatt").replace(",", ".")) if eins("min_rabatt") else None
-        if min_rabatt is not None and not min_rabatt.is_finite():
-            raise ValueError("Mindestrabatt muss eine endliche Zahl sein")
+        if min_rabatt is not None and (not min_rabatt.is_finite() or not 0 <= min_rabatt <= 100):
+            raise ValueError("Mindestrabatt muss zwischen 0 und 100 Prozent liegen")
     except (AngebotFehler, InvalidOperation) as exc:
         raise ValueError("Höchstpreis oder Mindestrabatt ist keine Zahl") from exc
     zustand = eins("zustand")
