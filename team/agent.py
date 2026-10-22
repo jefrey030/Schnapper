@@ -292,6 +292,13 @@ def bericht(ordner):
     check_werkzeug = alle["CHECK"].get("werkzeug") or {}
     geheimnis_funde = check_werkzeug.get("geheimnis_funde")
     command_freigabe = (alle["COMMAND"].get("protokoll") or {}).get("freigabe")
+    # Der CHECK-Lauf kennt seine eigene und die spätere COMMAND-Antwort noch nicht.
+    # Vor einer positiven Gesamtbewertung daher alle vier KI-Antworten prüfen.
+    # Nur Rollennamen als Fund protokollieren, niemals den gefundenen Geheimtext.
+    ki_geheimnis_rollen = [
+        r for r in ROLES
+        if GEHEIMNIS_MUSTER.search(str((alle[r].get("ki") or {}).get("text") or ""))
+    ]
     einsatzbereit = (
         len(echt) == 4
         and all(alle[r].get("status") == "OK" for r in ROLES)
@@ -299,6 +306,7 @@ def bericht(ordner):
         and urteil == "bestanden"
         and command_freigabe == "ja"
         and geheimnis_funde == []
+        and not ki_geheimnis_rollen
         and tests.get("ok") is True
         and tests.get("anzahl", 0) > 0
         and vier_eindeutige_antworten
@@ -312,6 +320,7 @@ def bericht(ordner):
                 "tests_ok": tests.get("ok"), "tests_anzahl": tests.get("anzahl"),
                 "ki_aufrufe": ki_aufrufe,
                 "antwort_ids_eindeutig": vier_eindeutige_antworten,
+                "ki_geheimnis_rollen": ki_geheimnis_rollen,
                 "naechster_schritt": proto.get("naechster_schritt"), "blocker": blocker,
                 "agenten": alle}
     runs = TEAM / "runs"
@@ -368,7 +377,8 @@ def main(argv):
           f"modell={(erg.get('ki') or {}).get('modell')} antwort_id={(erg.get('ki') or {}).get('antwort_id')} "
           f"fehler={erg.get('fehler')}")
     if erg.get("ki"):
-        print(f"[{rolle}] KI-Antwort (Anfang): {erg['ki']['text'][:600]}")
+        # Sicherheitsregel: Kein ungefilterter KI-Rohtext in den Workflow-Logs.
+        print(f"[{rolle}] KI-Antwort gespeichert; Rohtext im Konsolenlog unterdrückt.")
     # Nicht abbrechen: COMMAND/BERICHT sollen auch Fehlschläge dokumentieren.
     return 0
 
