@@ -7,9 +7,10 @@ name: SCHNAPPER Stundenlauf
 # KOSTENSCHUTZ: Der Job startet nur, wenn das Repository ÖFFENTLICH ist
 # (dort sind Standard-Runner kostenlos). Bei einem privaten Repo wird er
 # übersprungen und verbraucht keine Minuten – auch wenn ein Budget existiert.
-# Zeitgesteuerte Läufe brauchen zusätzlich die Variable SCHNAPPER_OEFFENTLICH=true,
-# weil GitHub bei Zeitplänen die Sichtbarkeit nicht mitliefert; der erste Schritt
-# prüft die Sichtbarkeit trotzdem noch einmal und bricht bei privat sofort ab.
+# Fail-Closed: Kein Job bei privat oder fehlender Repository-Sichtbarkeitsangabe.
+# Zusätzlich ist die ausdrückliche Freischaltung SCHNAPPER_OEFFENTLICH=true
+# nötig. Ein gesetztes Flag allein darf die Privat-Repo-Sperre nie umgehen.
+# Der erste Runner-Schritt prüft die Sichtbarkeit noch einmal unabhängig.
 on:
   schedule:
     - cron: '17 * * * *'
@@ -27,8 +28,8 @@ jobs:
   ki-team:
     if: >-
       github.repository == 'jefrey030/schnapper' && vars.SCHNAPPER_PAUSE != 'true' &&
-      (github.event.repository.private == false ||
-       (github.event_name == 'schedule' && vars.SCHNAPPER_OEFFENTLICH == 'true'))
+      vars.SCHNAPPER_OEFFENTLICH == 'true' &&
+      github.event.repository.private == false
     runs-on: ubuntu-latest
     timeout-minutes: 10
     env:
