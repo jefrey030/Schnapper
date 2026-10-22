@@ -85,7 +85,7 @@ def zeilen_aus_antwort(antwort: dict, ean: str, jetzt: dt.datetime | None = None
         if item.get("currency") != "EUR":
             hinweise.append(f"{kennung}: Währung {item.get('currency')} – übersprungen")
             continue
-        if item.get("price_per"):
+        if item.get("price_per") not in (None, "UNIT"):
             hinweise.append(f"{kennung}: Preis pro {item.get('price_per')} statt Stückpreis – übersprungen")
             continue
         if item.get("duplicate_of"):
