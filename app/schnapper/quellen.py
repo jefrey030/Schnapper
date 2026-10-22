@@ -38,7 +38,7 @@ STANDARD = (
     Quelle("mock", "Testdaten (erfunden)", ERLAUBT, "Nur für Tests und Vorführung, keine echten Preise"),
     Quelle("eigene", "Eigene Daten (CSV/JSON)", ERLAUBT, "Selbst erfasste oder rechtmäßig besessene Daten"),
     Quelle("openprices", "Open Prices (Open Food Facts)", SPAETER,
-           "Echte Ladenpreise, Lizenz ODbL: Quelle nennen, nur anzeigen, nicht mit fremden Daten zu einer Datenbank verbinden; freigegeben erst mit SCHNAPPER_OPENPRICES_FREIGABE=ja (Entscheidung von Jefrey)"),
+           "Echte Ladenpreise, Lizenz ODbL: Quelle nennen; keine eigene abgeleitete Preisdatenbank bilden ohne Lizenzprüfung; Freigabe erst mit SCHNAPPER_OPENPRICES_FREIGABE=ja (Entscheidung von Jefrey)"),
     Quelle("ebay", "eBay Browse API", SPAETER, "Produktivnutzung erst nach Genehmigung durch eBay und Freigabe durch Jefrey"),
     Quelle("kleinanzeigen", "Kleinanzeigen", AUSGESCHLOSSEN, "Nutzungsbedingungen verbieten Scraper/Crawler ohne schriftliche Zustimmung"),
 )
