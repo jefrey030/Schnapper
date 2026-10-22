@@ -286,11 +286,19 @@ def bericht(ordner):
         and len(set(antwort_ids)) == 4
         and ki_aufrufe >= 4
     )
+    # Keine positive Einsatzbereitschaft bei ablehnendem CHECK, fehlendem
+    # Geheimnis-Scan oder verweigerter COMMAND-Freigabe. Ein durchlaufener
+    # Agentenprozess allein ist keine erfolgreiche Sicherheitsprüfung.
+    check_werkzeug = alle["CHECK"].get("werkzeug") or {}
+    geheimnis_funde = check_werkzeug.get("geheimnis_funde")
+    command_freigabe = (alle["COMMAND"].get("protokoll") or {}).get("freigabe")
     einsatzbereit = (
         len(echt) == 4
         and all(alle[r].get("status") == "OK" for r in ROLES)
         and bool(lead_plan.get("aufgabe_id"))
-        and urteil in ("bestanden", "nachbessern", "abgelehnt")
+        and urteil == "bestanden"
+        and command_freigabe == "ja"
+        and geheimnis_funde == []
         and tests.get("ok") is True
         and tests.get("anzahl", 0) > 0
         and vier_eindeutige_antworten
