@@ -81,7 +81,7 @@ class MockAdapter:
                for zeile in daten):
             raise QuelleGesperrt("MockAdapter darf ausschließlich Testangebote der Quelle 'mock' verarbeiten")
         from .einlesen import lies_text
-        return lies_text(json.dumps(daten, ensure_ascii=False), "json", self.register)
+        return lies_text(json.dumps(daten, ensure_ascii=False), "json", self.register, jetzt=self.jetzt)
 
 
 class EbayAdapter:

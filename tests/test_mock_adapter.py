@@ -65,3 +65,19 @@ class MockAdapterTests(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class PruefzeitpunktTests(unittest.TestCase):
+    """Regression: die Zukunftsprüfung nutzt den übergebenen Prüfzeitpunkt statt der Uhr."""
+
+    def test_fester_pruefzeitpunkt_unabhaengig_von_der_uhr(self):
+        from schnapper.angebot import Angebot, AngebotFehler
+        zeile = {"id": "Z", "titel": "TEST Zeitprobe", "preis": "10", "url": "https://example.invalid/z",
+                 "quelle": "mock", "erfasst_am": "2030-01-01T12:00:00+00:00", "zustand": "neu"}
+        spaeter = dt.datetime(2030, 1, 1, 12, 3, tzinfo=dt.timezone.utc)
+        self.assertEqual(Angebot.aus_dict(zeile, spaeter).id, "Z")
+        frueher = dt.datetime(2030, 1, 1, 11, 0, tzinfo=dt.timezone.utc)
+        with self.assertRaisesRegex(AngebotFehler, "Zukunft"):
+            Angebot.aus_dict(zeile, frueher)
+        with self.assertRaisesRegex(AngebotFehler, "Zukunft"):
+            Angebot.aus_dict(zeile)  # ohne Zeitpunkt: echte Uhr, 2030 liegt in der Zukunft

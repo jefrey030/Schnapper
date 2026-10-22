@@ -42,7 +42,7 @@ def _zeilen_csv(text: str) -> list:
     return list(csv.DictReader(io.StringIO(text), dialect=dialekt))
 
 
-def lies_text(text: str, format: str, register: Register | None = None) -> Importergebnis:
+def lies_text(text: str, format: str, register: Register | None = None, jetzt=None) -> Importergebnis:
     """Nur Angebote aus freigegebenen Quellen werden übernommen (Plan S-002, MF1)."""
     register = Register() if register is None else register
     ergebnis = Importergebnis()
@@ -54,7 +54,7 @@ def lies_text(text: str, format: str, register: Register | None = None) -> Impor
     gesehen: set[str] = set()
     for nr, zeile in enumerate(zeilen, start=1):
         try:
-            angebot = Angebot.aus_dict(zeile)
+            angebot = Angebot.aus_dict(zeile, jetzt)
         except AngebotFehler as exc:
             ergebnis.fehler.append(f"Eintrag {nr}: {exc}")
             continue
