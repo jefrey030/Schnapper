@@ -146,6 +146,10 @@ class TestFailClosedAgentReports(unittest.TestCase):
                    if rolle == "COMMAND" else {}),
             )
             (self.lauf / "ki_aufrufe.txt").write_text("4", encoding="utf-8")
+            gespeichert = (self.lauf / (rolle + ".json")).read_text(encoding="utf-8")
+            self.assertNotIn("ghp_" + "A" * 25, gespeichert)
+            self.assertTrue(json.loads(gespeichert)["geheimnis_redigiert"])
+            self.assertEqual(json.loads(gespeichert)["status"], "FEHLER")
             bericht = self._bereit()
             self.assertFalse(bericht["team_einsatzbereit"], rolle)
             self.assertIn(rolle, bericht["ki_geheimnis_rollen"])
