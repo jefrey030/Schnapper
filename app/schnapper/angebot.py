@@ -44,7 +44,10 @@ def geld(wert) -> Decimal:
         raise AngebotFehler(f"Preis nicht lesbar: {wert!r}")
     if not betrag.is_finite():
         raise AngebotFehler("Preis ist keine endliche Zahl")
-    return betrag.quantize(CENT, rounding=ROUND_HALF_UP)
+    try:
+        return betrag.quantize(CENT, rounding=ROUND_HALF_UP)
+    except InvalidOperation as exc:
+        raise AngebotFehler("Preis außerhalb des darstellbaren Bereichs") from exc
 
 
 def zeitpunkt(wert) -> dt.datetime:
