@@ -50,6 +50,22 @@ class WunschEinlesen(unittest.TestCase):
             with self.subTest(daten=daten), self.assertRaisesRegex(WunschFehler, text):
                 Wunsch.aus_dict(daten)
 
+    def test_nicht_endlicher_rabatt_wird_als_wunschfehler_gemeldet(self):
+        # Ohne is_finite() loest NaN bei Decimal-Vergleichen InvalidOperation aus.
+        for wert in ("NaN", "sNaN", "Infinity", "-Infinity"):
+            with self.subTest(rabatt=wert), self.assertRaisesRegex(WunschFehler, "zwischen 0 und 100"):
+                Wunsch.aus_dict({"suche": "fahrrad", "min_rabatt": wert})
+
+        # Ein fehlerhafter Wunsch darf die restliche Wunschliste nicht blockieren.
+        liste = lies_wuensche(json.dumps({"wuensche": [
+            {"suche": "fahrrad", "min_rabatt": "NaN"},
+            {"suche": "helm", "max_preis": "20"},
+        ]}))
+        self.assertEqual(len(liste.wuensche), 1)
+        self.assertEqual(liste.wuensche[0].suche, "helm")
+        self.assertEqual(len(liste.fehler), 1)
+        self.assertIn("Wunsch 1", liste.fehler[0])
+
     def test_liste_meldet_fehler_und_behaelt_rest(self):
         liste = lies_wuensche(json.dumps({"wuensche": [{"suche": "a", "max_preis": "5"}, {"suche": "b"}]}))
         self.assertEqual(len(liste.wuensche), 1)
