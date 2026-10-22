@@ -122,16 +122,31 @@ def tests_ausfuehren():
 
 
 def geheimnis_scan(zusatztexte=()):
+    """Repository- und Antwortscan: Git-Fehler oder Lesefehler nie als PASS werten."""
     funde = []
-    for name in subprocess.run(["git", "ls-files"], cwd=ROOT, capture_output=True, text=True).stdout.split():
+    try:
+        # NUL-Trennung bewahrt Dateinamen mit Leerzeichen/Zeilenumbrüchen.
+        result = subprocess.run(
+            ["git", "ls-files", "-z"], cwd=ROOT, capture_output=True,
+            text=True, timeout=15,
+        )
+    except (OSError, subprocess.TimeoutExpired):
+        return ["git_scan_nicht_verfuegbar"]
+    if result.returncode != 0:
+        return ["git_scan_fehlgeschlagen"]
+    for name in result.stdout.split("\0"):
+        if not name:
+            continue
         p = ROOT / name
         try:
-            if p.is_file() and GEHEIMNIS_MUSTER.search(p.read_text(encoding="utf-8", errors="ignore")):
+            if not p.is_file():
+                funde.append(f"datei_fehlt:{name}")
+            elif GEHEIMNIS_MUSTER.search(p.read_text(encoding="utf-8", errors="ignore")):
                 funde.append(name)
         except OSError:
-            continue
+            funde.append(f"datei_nicht_lesbar:{name}")
     for i, text in enumerate(zusatztexte):
-        if text and GEHEIMNIS_MUSTER.search(text):
+        if text and GEHEIMNIS_MUSTER.search(str(text)):
             funde.append(f"agentenausgabe[{i}]")
     return funde
 
@@ -139,9 +154,14 @@ def geheimnis_scan(zusatztexte=()):
 def ki_teil(ki, rolle, nutzertext):
     """Echter KI-Aufruf. Gibt (ergebnis, fehler) zurück – nie beides."""
     try:
-        return ki.frage(GRUNDREGELN + "\n" + ROLLENAUFTRAG[rolle], nutzertext), None
+        antwort = ki.frage(GRUNDREGELN + "\n" + ROLLENAUFTRAG[rolle], nutzertext)
     except KINichtVerfuegbar as exc:
         return None, str(exc)
+    # Vor Weitergabe an die nächste Rolle sperren, nicht erst vor Git-Speicherung.
+    # Keine gefundenen Tokenbestandteile in Logs oder Fehlermeldungen nennen.
+    if GEHEIMNIS_MUSTER.search(json.dumps(antwort, ensure_ascii=False, default=str)):
+        return None, "Geheimnisindikator in KI-Antwort – Lauf gesperrt, Inhalt verworfen."
+    return antwort, None
 
 
 def basis(rolle):
@@ -383,12 +403,14 @@ def main(argv):
     erg = AGENTEN[rolle](ordner, ki)
     erg["ende_utc"] = jetzt()
     schreibe(ordner, rolle, erg)
+    # Auch Modellbezeichnung und Antwort-ID sind fremde Modell-/Providerdaten.
+    # Niemals ungefiltert in öffentlich sichtbare Action-Logs übernehmen.
     print(f"[{rolle}] status={erg['status']} ki_echt={erg['ki_echt']} "
-          f"modell={(erg.get('ki') or {}).get('modell')} antwort_id={(erg.get('ki') or {}).get('antwort_id')} "
+          f"geheimnis_redigiert={erg.get('geheimnis_redigiert') is True} "
           f"fehler={GEHEIMNIS_MUSTER.sub('[REDACTED]', str(erg.get('fehler') or ''))}")
     if erg.get("ki"):
         # Sicherheitsregel: Kein ungefilterter KI-Rohtext in den Workflow-Logs.
-        print(f"[{rolle}] KI-Antwort gespeichert; Rohtext im Konsolenlog unterdrückt.")
+        print(f"[{rolle}] KI-Antwort verarbeitet; Rohtext und Metadaten im Konsolenlog unterdrückt.")
     # Bei einem gefundenen Geheimnis nachfolgende Rollen nicht mehr starten.
     # Ein gewöhnlicher Rollenfehler wird weiterhin im Gesamtbericht protokolliert.
     return 1 if erg.get("geheimnis_redigiert") else 0
