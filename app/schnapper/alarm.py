@@ -61,11 +61,13 @@ class Wunsch:
             min_rabatt = None if roh in (None, "") else Decimal(str(roh).replace(",", "."))
         except InvalidOperation as exc:
             raise WunschFehler(f"Mindestrabatt nicht lesbar: {daten.get('min_rabatt')!r}") from exc
-        if min_rabatt is not None and not (0 <= min_rabatt <= 100):
+        if min_rabatt is not None and (not min_rabatt.is_finite() or not 0 <= min_rabatt <= 100):
             raise WunschFehler("Mindestrabatt muss zwischen 0 und 100 liegen")
         zustaende = daten.get("zustaende") or []
         if isinstance(zustaende, str):
             zustaende = [zustaende]
+        if not isinstance(zustaende, (list, tuple, set, frozenset)):
+            raise WunschFehler("Zustand muss eine Liste oder Text sein")
         zustaende = frozenset(str(z).strip().lower() for z in zustaende if str(z).strip())
         unbekannt = zustaende - set(ZUSTAENDE)
         if unbekannt:
