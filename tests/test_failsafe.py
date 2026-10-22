@@ -154,6 +154,48 @@ class TestFailClosedAgentReports(unittest.TestCase):
             self.assertFalse(bericht["team_einsatzbereit"], rolle)
             self.assertIn(rolle, bericht["ki_geheimnis_rollen"])
 
+    def test_git_scan_ausfall_muss_blockieren(self):
+        from types import SimpleNamespace
+        with mock.patch.object(agent.subprocess, "run",
+                               return_value=SimpleNamespace(stdout="", returncode=1)):
+            self.assertEqual(agent.geheimnis_scan(), ["git_scan_fehlgeschlagen"])
+        with mock.patch.object(agent.subprocess, "run", side_effect=FileNotFoundError()):
+            self.assertEqual(agent.geheimnis_scan(), ["git_scan_nicht_verfuegbar"])
+
+    def test_git_scan_erfasst_dateinamen_mit_leerzeichen(self):
+        with tempfile.TemporaryDirectory() as d:
+            root = pathlib.Path(d)
+            filename = "datei mit leerzeichen.txt"
+            (root / filename).write_text("ghp_" + "A" * 25, encoding="utf-8")
+            from types import SimpleNamespace
+            with mock.patch.object(agent, "ROOT", root), mock.patch.object(
+                agent.subprocess, "run",
+                return_value=SimpleNamespace(stdout=filename + "\\0", returncode=0),
+            ):
+                self.assertEqual(agent.geheimnis_scan(), [filename])
+
+    def test_ki_antwort_mit_token_wird_vor_weitergabe_verworfen(self):
+        fake = mock.Mock()
+        fake.frage.return_value = {
+            "text": '{"aufgabe_id":"S-000"}',
+            "modell": "ghp_" + "A" * 25,
+            "antwort_id": "test-id",
+        }
+        antwort, fehler = agent.ki_teil(fake, "LEAD", "Testauftrag")
+        self.assertIsNone(antwort)
+        self.assertIn("Geheimnisindikator", fehler)
+        self.assertNotIn("ghp_" + "A" * 25, fehler)
+
+    def test_git_scan_lesefehler_verhindert_positive_abnahme(self):
+        from types import SimpleNamespace
+        with tempfile.TemporaryDirectory() as d:
+            root = pathlib.Path(d)
+            with mock.patch.object(agent, "ROOT", root), mock.patch.object(
+                agent.subprocess, "run",
+                return_value=SimpleNamespace(stdout="fehlt.txt\\0", returncode=0),
+            ):
+                self.assertEqual(agent.geheimnis_scan(), ["datei_fehlt:fehlt.txt"])
+
     def test_command_denial_blocks_readiness(self):
         self._gueltige_antworten()
         self._schreibe("COMMAND", ki={"antwort_id": "command-4"},
