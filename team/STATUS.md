@@ -12,15 +12,14 @@
 
 Dieser Status wird nach jedem tatsächlich gelaufenen Stundenlauf automatisch überschrieben.
 
-## SCHNAPPER MASTER – letzter Lauf (22.10.2026, 02:30 UTC)
+## SCHNAPPER MASTER – letzter Lauf (22.10.2026, 05:30 UTC)
 | Aufgabe | Zustand | Beleg |
 | --- | --- | --- |
-| S-000 MVP-Konzept | **review** (wartet auf Freigabe durch Jefrey) | `team/konzept/S-000-mvp-konzept.md`, `tests/test_konzept_s000.py` |
-| S-001 Bestandsaufnahme | **review** | `team/konzept/S-001-bestandsaufnahme.md`, `tests/test_bestandsaufnahme_s001.py` |
-| S-002 Datenquellen-Plan | **review** | `team/konzept/S-002-datenquellen-plan.md`, `tests/test_plan_s002.py` |
-| S-003 Stundenlauf validieren | **review** – Bericht nennt fehlende KI-Anbindung jetzt als Blocker (Commit 0888b9a) | `team/agent.py` `blocker_ermitteln`, `tests/test_agenten.py` `test_s003_…` |
-| App-Kern | in **PR #5** (nicht gemergt) | `app/schnapper` auf `feature/schnapper-angebotskern-20261021` |
-| Vorschläge S-004–S-006 | **proposed** – warten auf Freigabe durch Jefrey (Quellen-Register, Adapter-Schnittstelle, PR-Entscheidungsvorlage; S-006 jetzt inkl. PRs #8, #9, #10; S-004/S-005 mit Hinweis: PR #10 deckt sie inhaltlich weitgehend ab) | `team/tasks.json`, `tests/test_vorschlaege.py` |
-| Tests | 40/40 bestanden | `python3 -m unittest discover -s tests` |
-| Blocker | Actions starten nicht (Billing) → kein echter Stundenlauf belegbar; S-004/S-005 brauchen Merge von PR #5; 7 offene überlappende PRs (#2, #5–#10); eBay-Produktivfreigabe fehlt; Kleinanzeigen ausgeschlossen | Bericht `team/runs/20261022-0230-master.md` |
-| Nächster Schritt | Jefrey gibt S-004–S-006 frei (`proposed` → `open`) bzw. prüft S-000–S-003 und PR #5 | – |
+| S-000 bis S-003 | **review** (warten auf Freigabe durch Jefrey) | `team/konzept/`, Tests `tests/test_konzept_s000.py`, `test_bestandsaufnahme_s001.py`, `test_plan_s002.py`, `test_agenten.py` |
+| App-Kern + Quellen/Web | **auf main** (5343009, 7a0b83e aus PR #5/#10) | `app/schnapper/` |
+| S-004 Quellen-Register | **proposed** – T1/T2 auf main bereits erfüllt, Vorschlag: auf `done` setzen | `tests/test_abgleich_s004_s005.py` |
+| S-005 Adapter | **proposed** – T4/T5 erfüllt, **offen nur T3** (Mock-Adapter mit TEST-Daten) | `tests/test_abgleich_s004_s005.py` |
+| S-006 PR-Ordnung | **proposed** – offen: #2, #6, #7, #8, #9 | `team/tasks.json` |
+| Tests | 80/80 bestanden | `python3 -m unittest discover -s tests` |
+| Blocker | Actions starten nicht (Billing) → kein echter Stundenlauf belegbar; 5 offene überlappende Draft-PRs; eBay-Produktivfreigabe fehlt; Kleinanzeigen ausgeschlossen | Bericht `team/runs/20261022-0530-master.md` |
+| Nächster Schritt | Jefrey setzt S-005 auf `open` (nur T3 umsetzen) bzw. S-004 auf `done` | – |
