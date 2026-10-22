@@ -109,6 +109,20 @@
         "Löschen nur durch Jefrey, Agenten löschen keine Branches"
       ],
       "hinweis": "Abgleich 22.10.2026 16:29 UTC: 14 Remote-Branches haben einen Baum aus der main-Historie bzw. 0 Commits vor main; Liste im Bericht team/runs/20261022-1629-master.md."
+    },
+    {
+      "id": "S-010",
+      "priority": 10,
+      "status": "review",
+      "title": "F3 Merkliste und Preisalarme als JSON sichern und wiederherstellen",
+      "acceptance": [
+        "Export erzeugt eine JSON-Datei mit Merkliste und Preisalarmen inkl. Formatversion",
+        "Import stellt denselben Stand wieder her (Rundreise-Test: Export → Import → gleicher Inhalt)",
+        "Import prüft die Struktur jedes Eintrags; ungültige Einträge werden gemeldet statt übernommen. Defekte, zu große oder falsch versionierte JSON-Dateien werden mit Hinweis abgewiesen, bestehende Daten bleiben unverändert",
+        "Import beachtet die Obergrenzen MAX_MERK (200) und MAX_ALARME (50) aus app/schnapper/web/app.js; Überschreitung wird mit Hinweis abgewiesen, Test belegt",
+        "Keine Daten verlassen das Gerät, alle Tests grün"
+      ],
+      "hinweis": "Freigegeben von Jefrey am 22.10.2026 als F3 (Lauf 20261022-2029 eingetragen). | Lauf 20261022-2228: umgesetzt in Draft-PR #40 (Branch agent/master/20261022-22 @ 3ab36fa), CHECK bestanden, 196/196 Tests OK, Cloudflare 10/10. Wartet auf Jefrey; Eintrag stammt aus PR #36 (dort 'open')."
     }
   ]
 }

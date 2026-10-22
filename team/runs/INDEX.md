@@ -2,3 +2,4 @@
 |---|---|---|---|---|---|
 | 20261022-2029 | F1 Aufräumen (tasks.json S-004–S-006 done, S-009–S-013 open; Masterplan Abschnitt B) | bestanden (Runde 2 nach 1× nachbessern) | Python 190/190, Cloudflare 10/10 | #36 (Draft) | ja |
 | 20261022-2128 | F2 = S-009 Angebot direkt in der App erfassen | bestanden (Runde 1) | Python 202/202, Cloudflare 10/10 | #39 (Draft) | ja |
+| 20261022-2228 | F3 = S-010 Merkliste/Preisalarme als JSON sichern und wiederherstellen | bestanden (Runde 1) | Python 196/196, Cloudflare 10/10 | #40 (Draft) | ja |
