@@ -9,7 +9,10 @@ import unittest
 
 ROOT = pathlib.Path(__file__).resolve().parents[1]
 
-# Branch -> Commit, dessen Baum identisch sein muss (None = vollständig Vorfahre von main)
+# Branch -> Commit, dessen Baum identisch sein muss (None = vollständig Vorfahre von main).
+# "origin/main" heißt: Der Inhalt des Branches war irgendwann exakt ein Stand von main
+# (Baum-Gleichheit mit einem Commit aus der main-Historie). Ein fester Vergleich mit dem
+# jeweils neuesten main schlug fehl, sobald main weiterentwickelt wurde.
 KANDIDATEN = {
     "fix/schnapper-web-main-20261022": "origin/main",
     "feature/schnapper-web-quellen-20261022": "origin/main",
@@ -20,6 +23,11 @@ KANDIDATEN = {
 
 def _git(*args):
     return subprocess.run(["git", *args], cwd=ROOT, capture_output=True, text=True)
+
+
+def _baeume_von_main():
+    r = _git("log", "--format=%T", "origin/main")
+    return set(r.stdout.split()) if r.returncode == 0 else set()
 
 
 def _ref_da(ref):
@@ -39,6 +47,10 @@ class TestBranchesS006(unittest.TestCase):
                 if vergleich is None:
                     r = _git("merge-base", "--is-ancestor", ref, "origin/main")
                     self.assertEqual(r.returncode, 0, f"{branch} hat Commits, die nicht in main sind")
+                elif vergleich == "origin/main":
+                    baum = _git("rev-parse", ref + "^{tree}").stdout.strip()
+                    self.assertIn(baum, _baeume_von_main(),
+                                  f"{branch}: Inhalt entspricht keinem Stand der main-Historie")
                 else:
                     r = _git("diff", "--quiet", vergleich, ref)
                     self.assertEqual(r.returncode, 0, f"{branch} unterscheidet sich von {vergleich}")
