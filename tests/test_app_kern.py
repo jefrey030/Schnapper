@@ -44,6 +44,17 @@ class Preise(unittest.TestCase):
             with self.subTest(wert=wert), self.assertRaises(AngebotFehler):
                 geld(wert)
 
+    def test_einzelner_trenner_mit_drei_ziffern_wird_nicht_falsch_bepreist(self):
+        # Ohne diese Sperre wurde "1,299" als 1,30 Euro statt ggf. 1299 Euro importiert.
+        for wert in ("1,299", "1.299", "12,345", "12.345", "1234,567", "1234.567"):
+            with self.subTest(wert=wert), self.assertRaisesRegex(AngebotFehler, "nicht eindeutig"):
+                geld(wert)
+        self.assertEqual(geld("1299"), Decimal("1299.00"))
+        self.assertEqual(geld("1.299,00"), Decimal("1299.00"))
+        self.assertEqual(geld("1,299.00"), Decimal("1299.00"))
+        self.assertEqual(geld("12,34"), Decimal("12.34"))
+        self.assertEqual(geld("12.34"), Decimal("12.34"))
+
     def test_unlesbar_und_bool(self):
         for wert in ("abc", None, True, "NaN", "inf"):
             with self.assertRaises(AngebotFehler):
