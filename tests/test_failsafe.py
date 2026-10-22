@@ -186,6 +186,30 @@ class TestFailClosedAgentReports(unittest.TestCase):
         self.assertIn("Geheimnisindikator", fehler)
         self.assertNotIn("ghp_" + "A" * 25, fehler)
 
+    def test_ki_geheimnis_fund_macht_rollenprozess_rot(self):
+        # Der API-Adapter wirft die verdächtige Antwort vor schreibe() weg.
+        # Auch dann muss der Prozess non-zero zurückgeben.
+        fake = mock.Mock()
+        fake.frage.return_value = {
+            "text": '{"aufgabe_id":"S-000"}',
+            "modell": "ghp_" + "A" * 25,
+            "antwort_id": "test-id",
+        }
+        class FakeKI:
+            def __init__(self, _zaehler):
+                self.frage = fake.frage
+
+        with mock.patch.object(agent, "KI", FakeKI), mock.patch.object(
+            agent, "load_tasks",
+            return_value=[{"id": "S-000", "status": "open"}]
+        ), mock.patch.object(agent, "choose_task", return_value={"id":"S-000"}), mock.patch.object(
+            agent, "previous_task_id", return_value=None
+        ):
+            self.assertEqual(agent.main(["agent.py", "LEAD", str(self.lauf)]), 1)
+        gespeichert = json.loads((self.lauf / "LEAD.json").read_text(encoding="utf-8"))
+        self.assertEqual(gespeichert["status"], "NICHT EINSATZBEREIT")
+        self.assertNotIn("ghp_" + "A" * 25, json.dumps(gespeichert))
+
     def test_git_scan_lesefehler_verhindert_positive_abnahme(self):
         from types import SimpleNamespace
         with tempfile.TemporaryDirectory() as d:
