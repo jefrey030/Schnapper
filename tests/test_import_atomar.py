@@ -4,6 +4,7 @@ Kein Netzwerk, keine Cloud und keine kostenpflichtigen Dienste.
 """
 import pathlib
 import sys
+import threading
 import unittest
 from unittest import mock
 
@@ -66,6 +67,56 @@ class ImportZustand(unittest.TestCase):
     def test_ohne_verlauf_bleibt_import_moeglich(self):
         self.zustand.ersetzen(self.neu, "neu.csv")
         self.assertIs(self.zustand.lesen()[0], self.neu)
+
+
+    def test_parallele_importe_werden_serialisiert(self):
+        """Langsames Speichern darf einen späteren Import nicht überholen."""
+        zweiter = Importergebnis()
+        im_ersten_speichern = threading.Event()
+        erster_darf_weiter = threading.Event()
+        zweiter_gestartet = threading.Event()
+        zweiter_speichert = threading.Event()
+        fehler = []
+
+        def speichern(geladen):
+            if geladen is self.neu:
+                im_ersten_speichern.set()
+                if not erster_darf_weiter.wait(timeout=3):
+                    raise TimeoutError("Erster Import blieb blockiert")
+            if geladen is zweiter:
+                zweiter_speichert.set()
+
+        def lauf(geladen, name):
+            try:
+                self.zustand.ersetzen(geladen, name)
+            except Exception as exc:
+                fehler.append(exc)
+
+        def spaeter():
+            zweiter_gestartet.set()
+            lauf(zweiter, "zweiter.csv")
+
+        with mock.patch.object(self.zustand, "preise_merken", side_effect=speichern):
+            a = threading.Thread(target=lauf, args=(self.neu, "erster.csv"))
+            b = threading.Thread(target=spaeter)
+            a.start()
+            try:
+                self.assertTrue(im_ersten_speichern.wait(2), "Erster Import wurde nicht gestartet")
+                b.start()
+                self.assertTrue(zweiter_gestartet.wait(2))
+                b.join(timeout=0.1)
+                self.assertFalse(zweiter_speichert.is_set(), "Zweiter Import hat ersten überholt")
+                self.assertEqual(self.zustand.lesen()[1], "vorher.csv")
+            finally:
+                erster_darf_weiter.set()
+                a.join(timeout=3)
+                if b.ident is not None:
+                    b.join(timeout=3)
+        self.assertFalse(a.is_alive())
+        self.assertFalse(b.is_alive())
+        self.assertFalse(fehler, str(fehler))
+        self.assertTrue(zweiter_speichert.is_set())
+        self.assertEqual(self.zustand.lesen()[1], "zweiter.csv")
 
 
 if __name__ == "__main__":
