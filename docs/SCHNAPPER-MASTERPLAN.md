@@ -89,7 +89,7 @@ Hinweis: #25, #26, #27 (Preisformate) und #28, #29, #30 (Preisalarm) überschnei
 
 1. **GitHub-Abrechnung prüfen** (*Settings → Billing and plans*): Warum ist das Konto gesperrt? Nichts Kostenpflichtiges freischalten.
 2. **Laufzeit fürs KI-Team** wählen (C2: a, b oder c).
-3. **PRs prüfen und mergen** in der Reihenfolge aus Abschnitt B.
+3. **PRs prüfen und mergen**: offene PRs siehe Abschnitt B (keine feste Reihenfolge mehr; überschneidende PRs zu Preisformaten und Preisalarm zuerst gegeneinander abwägen).
 4. **eBay-Zugang** beantragen – ja oder nein (A8).
 4b. **Open Prices** einschalten – ja oder nein (A8b). Achtung ODbL: Preise nur anzeigen, keine eigene Preisdatenbank daraus.
 5. **App öffentlich ins Internet** – ja oder nein (A7).

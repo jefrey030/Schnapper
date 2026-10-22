@@ -96,6 +96,7 @@
         "POST-Endpunkt nimmt Angebote nur mit Header X-Schnapper an; ohne Header Ablehnung (403), Test belegt",
         "Größenlimit für den Request-Body; zu große Anfrage wird abgewiesen (413), Test belegt",
         "Eingaben laufen durch die bestehende Prüfung (Preis, URL, Quellen-Register); ungültige Angebote werden abgewiesen",
+        "Erfasste Angebote werden in der Oberfläche nur per textContent angezeigt (kein innerHTML); Test/Prüfung belegt",
         "Erfasste Angebote als CSV im Format von app/vorlagen/meine-angebote.csv herunterladbar",
         "Kein Netzwerkzugriff nach außen, alle Tests grün"
       ],
@@ -109,7 +110,8 @@
       "acceptance": [
         "Export erzeugt eine JSON-Datei mit Merkliste und Preisalarmen inkl. Formatversion",
         "Import stellt denselben Stand wieder her (Rundreise-Test: Export → Import → gleicher Inhalt)",
-        "Defekte, zu große oder falsch versionierte JSON-Dateien werden mit Hinweis abgewiesen, bestehende Daten bleiben unverändert",
+        "Import prüft die Struktur jedes Eintrags; ungültige Einträge werden gemeldet statt übernommen. Defekte, zu große oder falsch versionierte JSON-Dateien werden mit Hinweis abgewiesen, bestehende Daten bleiben unverändert",
+        "Import beachtet die Obergrenzen MAX_MERK (200) und MAX_ALARME (50) aus app/schnapper/web/app.js; Überschreitung wird mit Hinweis abgewiesen, Test belegt",
         "Keine Daten verlassen das Gerät, alle Tests grün"
       ],
       "hinweis": "Freigegeben von Jefrey am 22.10.2026 als F3 (Lauf 20261022-2029 eingetragen)."
@@ -136,7 +138,7 @@
         "start-schnapper.sh startet die App mit einem Befehl unter Termux (prüft python3, startet Server nur auf 127.0.0.1, nennt die URL)",
         "docs/HANDY-START.md beschreibt den Ein-Befehl-Start Schritt für Schritt",
         "Skript lädt nichts aus dem Internet nach und braucht keine Zugangsdaten; Test prüft Skript auf diese Regeln",
-        "Kennzeichnung, ob auf echtem Gerät getestet oder nicht; alle Tests grün"
+        "Solange nicht auf echtem Android/Termux-Gerät geprüft, steht in start-schnapper.sh und docs/HANDY-START.md deutlich der Hinweis „auf echtem Gerät ungetestet“; alle Tests grün"
       ],
       "hinweis": "Freigegeben von Jefrey am 22.10.2026 als F5 (Lauf 20261022-2029 eingetragen)."
     },
@@ -146,9 +148,9 @@
       "status": "open",
       "title": "F6 eBay vorbereiten (app/schnapper/ebay.py, Sandbox standard, Quelle gesperrt, docs/EBAY.md)",
       "acceptance": [
-        "app/schnapper/ebay.py nutzt standardmäßig die eBay-Sandbox; Produktivbetrieb nur mit ausdrücklichem Schalter",
-        "Zugangsdaten nur aus Umgebungsvariablen, nie im Repo; Test belegt, dass ohne Env keine Verbindung aufgebaut wird",
-        "Quelle eBay bleibt im Quellen-Register gesperrt; Tests machen keinen Netzwerkaufruf",
+        "app/schnapper/ebay.py nutzt standardmäßig die eBay-Sandbox; Produktivbetrieb nur mit zusätzlichem Schalter (Name wird in S-013 festgelegt)",
+        "Zugangsdaten nur aus den Umgebungsvariablen SCHNAPPER_EBAY_CLIENT_ID und SCHNAPPER_EBAY_CLIENT_SECRET, nie im Repo; Test belegt, dass ohne diese Variablen keine Verbindung aufgebaut wird",
+        "Quelle „ebay“ bleibt im Quellen-Register gesperrt, bis der Freigabe-Schalter (bestehend: SCHNAPPER_EBAY_FREIGABE in app/schnapper/adapter.py) gesetzt ist und die Zugangsdaten vorhanden sind; Tests machen keinen Netzwerkaufruf",
         "docs/EBAY.md erklärt Entwicklerkonto, Sandbox, Produktivfreigabe und Env-Variablen",
         "Alle Tests grün"
       ],
