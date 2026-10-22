@@ -40,15 +40,21 @@ def choose_task(tasks, previous_id=None):
 
 def previous_task_id(runs_dir=TEAM / "runs"):
     """Read the most recent persisted report, without altering task status."""
-    reports = sorted(runs_dir.glob("*.json"))
-    if not reports:
-        return None
-    try:
-        data = json.loads(reports[-1].read_text(encoding="utf-8"))
+    # Fehlgeschlagene oder unvollständige Stundenberichte dürfen die
+    # Aufgabenrotation nicht auf die erste Aufgabe zurücksetzen.
+    # Suche deshalb rückwärts den letzten Bericht mit gültiger Aufgaben-ID.
+    for bericht in reversed(sorted(runs_dir.glob("*.json"))):
+        try:
+            data = json.loads(bericht.read_text(encoding="utf-8"))
+        except (OSError, ValueError):
+            continue
+        if not isinstance(data, dict):
+            continue
         selected = data.get("selected_task")
-        return selected.get("id") if isinstance(selected, dict) else None
-    except (OSError, ValueError, AttributeError):
-        return None
+        aufgabe = selected.get("id") if isinstance(selected, dict) else None
+        if isinstance(aufgabe, str) and aufgabe.strip():
+            return aufgabe
+    return None
 
 
 if __name__ == "__main__":
