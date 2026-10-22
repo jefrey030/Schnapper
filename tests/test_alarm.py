@@ -66,6 +66,18 @@ class WunschEinlesen(unittest.TestCase):
         self.assertEqual(len(liste.fehler), 1)
         self.assertIn("Wunsch 1", liste.fehler[0])
 
+    def test_ungueltiger_zustandstyp_blockiert_liste_nicht(self):
+        for wert in (42, True, {"gebraucht": True}):
+            with self.subTest(zustaende=wert), self.assertRaisesRegex(WunschFehler, "Liste oder Text"):
+                Wunsch.aus_dict({"suche": "fahrrad", "max_preis": "50", "zustaende": wert})
+        liste = lies_wuensche(json.dumps({"wuensche": [
+            {"suche": "fahrrad", "max_preis": "50", "zustaende": 42},
+            {"suche": "helm", "max_preis": "20", "zustaende": ["gebraucht"]},
+        ]}))
+        self.assertEqual(len(liste.wuensche), 1)
+        self.assertEqual(liste.wuensche[0].suche, "helm")
+        self.assertEqual(len(liste.fehler), 1)
+
     def test_liste_meldet_fehler_und_behaelt_rest(self):
         liste = lies_wuensche(json.dumps({"wuensche": [{"suche": "a", "max_preis": "5"}, {"suche": "b"}]}))
         self.assertEqual(len(liste.wuensche), 1)
