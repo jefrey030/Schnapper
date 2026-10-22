@@ -29,11 +29,14 @@ def roh(**kw):
 class Preise(unittest.TestCase):
     def test_deutsches_und_englisches_format(self):
         self.assertEqual(geld("1.299,99 €"), Decimal("1299.99"))
+        self.assertEqual(geld("1,299.99"), Decimal("1299.99"))
+        self.assertEqual(geld("1.234.567,89"), Decimal("1234567.89"))
+        self.assertEqual(geld("1,234,567.89"), Decimal("1234567.89"))
         self.assertEqual(geld("12.5"), Decimal("12.50"))
         self.assertEqual(geld(0.1 + 0.2), Decimal("0.30"))
 
     def test_unlesbar_und_bool(self):
-        for wert in ("abc", None, True, "NaN", "inf"):
+        for wert in ("abc", None, True, "NaN", "inf", "12,34.56", "12.34,56", "1,23,456.78"):
             with self.assertRaises(AngebotFehler):
                 geld(wert)
 
