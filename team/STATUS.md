@@ -23,3 +23,12 @@ Dieser Status wird nach jedem tatsächlich gelaufenen Stundenlauf automatisch ü
 | Tests | 82/82 bestanden | `python3 -m unittest discover -s tests` |
 | Blocker | Actions starten nicht (Billing) → kein echter Stundenlauf belegbar; 5 offene überlappende Draft-PRs; eBay-Produktivfreigabe fehlt; Kleinanzeigen ausgeschlossen | Bericht `team/runs/20261022-0728-master.md` |
 | Nächster Schritt | Jefrey setzt S-005 auf `open` (nur T3 umsetzen) bzw. S-004 auf `done` | – |
+
+## Nachtrag 22.10.2026 – Stand nach PR #15 (kein Stundenlauf)
+- GitHub-Branch `integration/schnapper-gesamtstand-20261022` bündelt die Vorschläge.
+- Preisadapter und lokale Barcode-Websuche erweitert. Tests im Branch angelegt,
+  **nach den neuen Änderungen noch nicht ausgeführt**.
+- **Nicht** verwechseln: Die PR-/Cloudflare-Simulationsläufe sind keine laufenden Agenten.
+- Stundenautomatik: **weiterhin nicht einsatzbereit**, es liegen keine bestätigten
+  echten Stundenberichte von LEAD/BRAIN/CHECK/COMMAND vor.
+- Der PR darf bis zur Sichtung nicht gemergt werden. Kein Kostenrisiko eingehen.
