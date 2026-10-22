@@ -51,6 +51,7 @@ class Zustand:
     def __init__(self, register: Register, geladen: Importergebnis, name: str, beispiel: bool):
         self.register = register
         self._lock = threading.Lock()
+        self._openprices_lock = threading.Lock()  # höchstens ein externer API-Abruf gleichzeitig
         self._daten = (geladen, name, beispiel)
 
     def lesen(self):
@@ -69,6 +70,8 @@ def filter_aus_query(q: dict) -> tuple[Filter, str]:
     try:
         max_preis = geld(eins("max_preis")) if eins("max_preis") else None
         min_rabatt = Decimal(eins("min_rabatt").replace(",", ".")) if eins("min_rabatt") else None
+        if min_rabatt is not None and not min_rabatt.is_finite():
+            raise ValueError("Mindestrabatt muss eine endliche Zahl sein")
     except (AngebotFehler, InvalidOperation) as exc:
         raise ValueError("Höchstpreis oder Mindestrabatt ist keine Zahl") from exc
     zustand = eins("zustand")
@@ -165,13 +168,22 @@ def baue_handler(zustand: Zustand):
                     return self._json(HTTPStatus.BAD_REQUEST, {"fehler": "Barcode fehlt"})
                 try:
                     adapter = OpenPricesAdapter(eingabe["ean"], register=zustand.register)
-                    geladen = adapter.lade()
                 except ValueError as exc:
                     return self._json(HTTPStatus.BAD_REQUEST, {"fehler": str(exc)})
+                grund = adapter.sperrgrund()
+                if grund:
+                    return self._json(HTTPStatus.FORBIDDEN, {"fehler": grund})
+                if not zustand._openprices_lock.acquire(blocking=False):
+                    return self._json(HTTPStatus.TOO_MANY_REQUESTS,
+                                      {"fehler": "Es läuft bereits eine Barcode-Abfrage. Bitte danach erneut versuchen."})
+                try:
+                    geladen = adapter.lade()
                 except OpenPricesGesperrt as exc:
                     return self._json(HTTPStatus.FORBIDDEN, {"fehler": str(exc)})
                 except OpenPricesFehler as exc:
                     return self._json(HTTPStatus.SERVICE_UNAVAILABLE, {"fehler": str(exc)})
+                finally:
+                    zustand._openprices_lock.release()
                 daten = als_json(finde_in(geladen, Filter(), "preis"), "Open Prices", False)
                 daten["lizenz"] = LIZENZ
                 daten["hinweise"] = adapter.hinweise[:50]
