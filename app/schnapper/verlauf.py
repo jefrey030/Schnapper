@@ -63,7 +63,7 @@ def _zeit(text: str) -> dt.datetime:
 class Verlauf:
     def __init__(self, pfad: pathlib.Path | str | None = None):
         self.pfad = None if pfad is None else pathlib.Path(pfad)
-        self._lock = threading.Lock()
+        self._lock = threading.RLock()  # Import + Persistenz atomar unter einer Sperre
         self._daten: dict[str, list[tuple[dt.datetime, Decimal]]] = {}
 
     # ---------- Laden und Speichern ----------
@@ -107,6 +107,24 @@ class Verlauf:
         except BaseException:
             pathlib.Path(tmp).unlink(missing_ok=True)
             raise
+
+    def importiere(self, angebote: list[Angebot]) -> int:
+        """Preise erst nach erfolgreicher Speicherung übernehmen (Rollback bei Fehler).
+
+        RLock hält gleichzeitige Leser fern, während ein Import vorbereitet,
+        atomar gespeichert und im Fehlerfall zurückgesetzt wird.
+        """
+        with self._lock:
+            vor_import = {url: list(punkte) for url, punkte in self._daten.items()}
+            try:
+                neu = self.aufzeichnen(angebote)
+                # Auch bei 0 neuen Punkten schreiben: ein vorheriger
+                # Schreibfehler darf einen erneuten Versuch nicht unterdrücken.
+                self.speichern()
+            except BaseException:
+                self._daten = vor_import
+                raise
+            return neu
 
     # ---------- Aufzeichnen ----------
     def aufzeichnen(self, angebote: list[Angebot]) -> int:
