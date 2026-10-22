@@ -46,6 +46,23 @@ class ImportZustand(unittest.TestCase):
         self.assertEqual(name, "neu.csv")
         self.assertFalse(beispiel)
 
+    def test_erneuter_import_speichert_nach_frueherem_fehler_auch_ohne_neue_punkte(self):
+        verlauf = mock.Mock()
+        verlauf.aufzeichnen.side_effect = [1, 0]
+        verlauf.speichern.side_effect = [OSError("Festplatte voll"), None]
+        self.zustand.verlauf = verlauf
+
+        with self.assertRaises(OSError):
+            self.zustand.ersetzen(self.neu, "neu.csv")
+        self.assertIs(self.zustand.lesen()[0], self.alt)
+
+        # Dieselben Beobachtungen sind im Verlaufsspeicher bereits vorhanden,
+        # aber erst der zweite Schreibversuch ist erfolgreich.
+        self.zustand.ersetzen(self.neu, "neu.csv")
+        self.assertEqual(verlauf.speichern.call_count, 2)
+        self.assertEqual(verlauf.aufzeichnen.call_count, 2)
+        self.assertIs(self.zustand.lesen()[0], self.neu)
+
     def test_ohne_verlauf_bleibt_import_moeglich(self):
         self.zustand.ersetzen(self.neu, "neu.csv")
         self.assertIs(self.zustand.lesen()[0], self.neu)
