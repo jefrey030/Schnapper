@@ -132,6 +132,24 @@ class TestFailClosedAgentReports(unittest.TestCase):
             bericht = self._bereit()
             self.assertFalse(bericht["team_einsatzbereit"], verdict)
 
+    def test_secret_in_command_or_lead_reply_blocks_readiness(self):
+        for rolle in ("LEAD", "COMMAND", "CHECK"):
+            self._gueltige_antworten()
+            self._schreibe(
+                rolle,
+                ki={"antwort_id": rolle.lower() + "-response", "text": "ghp_" + "A" * 25},
+                **({"plan": {"aufgabe_id": "S-000"}} if rolle == "LEAD" else {}),
+                **({"urteil": {"urteil": "bestanden"},
+                    "werkzeug": {"tests": {"ok": True, "anzahl": 2},
+                                 "geheimnis_funde": []}} if rolle == "CHECK" else {}),
+                **({"protokoll": {"freigabe": "ja", "naechster_schritt": "Prüfen"}}
+                   if rolle == "COMMAND" else {}),
+            )
+            (self.lauf / "ki_aufrufe.txt").write_text("4", encoding="utf-8")
+            bericht = self._bereit()
+            self.assertFalse(bericht["team_einsatzbereit"], rolle)
+            self.assertIn(rolle, bericht["ki_geheimnis_rollen"])
+
     def test_command_denial_blocks_readiness(self):
         self._gueltige_antworten()
         self._schreibe("COMMAND", ki={"antwort_id": "command-4"},
