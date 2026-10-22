@@ -186,6 +186,15 @@ class TestFailClosedAgentReports(unittest.TestCase):
         self.assertIn("Geheimnisindikator", fehler)
         self.assertNotIn("ghp_" + "A" * 25, fehler)
 
+    def test_ki_eingabe_mit_token_wird_niemals_an_modell_gesendet(self):
+        fake = mock.Mock()
+        secret = "ghp_" + "A" * 25
+        antwort, fehler = agent.ki_teil(fake, "LEAD", "Auftrag: " + secret)
+        self.assertIsNone(antwort)
+        self.assertIn("KI-Eingabe", fehler)
+        self.assertNotIn(secret, fehler)
+        fake.frage.assert_not_called()
+
     def test_ki_geheimnis_fund_macht_rollenprozess_rot(self):
         # Der API-Adapter wirft die verdächtige Antwort vor schreibe() weg.
         # Auch dann muss der Prozess non-zero zurückgeben.
