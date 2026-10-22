@@ -37,6 +37,8 @@ class Quelle:
 STANDARD = (
     Quelle("mock", "Testdaten (erfunden)", ERLAUBT, "Nur für Tests und Vorführung, keine echten Preise"),
     Quelle("eigene", "Eigene Daten (CSV/JSON)", ERLAUBT, "Selbst erfasste oder rechtmäßig besessene Daten"),
+    Quelle("openprices", "Open Prices (Open Food Facts)", SPAETER,
+           "Echte Ladenpreise, Lizenz ODbL: Quelle nennen; keine eigene abgeleitete Preisdatenbank bilden ohne Lizenzprüfung; Freigabe erst mit SCHNAPPER_OPENPRICES_FREIGABE=ja (Entscheidung von Jefrey)"),
     Quelle("ebay", "eBay Browse API", SPAETER, "Produktivnutzung erst nach Genehmigung durch eBay und Freigabe durch Jefrey"),
     Quelle("kleinanzeigen", "Kleinanzeigen", AUSGESCHLOSSEN, "Nutzungsbedingungen verbieten Scraper/Crawler ohne schriftliche Zustimmung"),
 )

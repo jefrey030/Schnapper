@@ -30,11 +30,15 @@ from .suche import SORTIERUNGEN, Filter
 STATISCH = pathlib.Path(__file__).resolve().parent / "web"
 DATEIEN = {"/": ("index.html", "text/html; charset=utf-8"),
            "/app.js": ("app.js", "text/javascript; charset=utf-8"),
-           "/app.css": ("app.css", "text/css; charset=utf-8")}
+           "/app.css": ("app.css", "text/css; charset=utf-8"),
+           "/manifest.webmanifest": ("manifest.webmanifest", "application/manifest+json; charset=utf-8"),
+           "/icon-192.png": ("icon-192.png", "image/png"),
+           "/icon-512.png": ("icon-512.png", "image/png"),
+           "/icon-maskable-512.png": ("icon-maskable-512.png", "image/png")}
 MAX_UPLOAD = 5 * 1024 * 1024
 SICHERHEIT = {
     "Content-Security-Policy": "default-src 'none'; script-src 'self'; style-src 'self'; connect-src 'self'; "
-                               "img-src 'self' data:; base-uri 'none'; form-action 'none'; frame-ancestors 'none'",
+                               "img-src 'self' data:; manifest-src 'self'; base-uri 'none'; form-action 'none'; frame-ancestors 'none'",
     "X-Content-Type-Options": "nosniff",
     "Referrer-Policy": "no-referrer",
     "Cache-Control": "no-store",
@@ -47,6 +51,7 @@ class Zustand:
     def __init__(self, register: Register, geladen: Importergebnis, name: str, beispiel: bool):
         self.register = register
         self._lock = threading.Lock()
+        self._openprices_lock = threading.Lock()  # höchstens ein externer API-Abruf gleichzeitig
         self._daten = (geladen, name, beispiel)
 
     def lesen(self):
@@ -65,6 +70,8 @@ def filter_aus_query(q: dict) -> tuple[Filter, str]:
     try:
         max_preis = geld(eins("max_preis")) if eins("max_preis") else None
         min_rabatt = Decimal(eins("min_rabatt").replace(",", ".")) if eins("min_rabatt") else None
+        if min_rabatt is not None and (not min_rabatt.is_finite() or not 0 <= min_rabatt <= 100):
+            raise ValueError("Mindestrabatt muss zwischen 0 und 100 Prozent liegen")
     except (AngebotFehler, InvalidOperation) as exc:
         raise ValueError("Höchstpreis oder Mindestrabatt ist keine Zahl") from exc
     zustand = eins("zustand")
@@ -81,7 +88,9 @@ def filter_aus_query(q: dict) -> tuple[Filter, str]:
 
 def als_json(ergebnis, name: str, beispiel: bool) -> dict:
     return {
-        "liste": name, "beispieldaten": beispiel, "eingelesen": ergebnis.eingelesen,
+        "liste": name, "beispieldaten": beispiel,
+        "enthaelt_testdaten": any(t.angebot.quelle == "mock" for t in ergebnis.treffer),
+        "eingelesen": ergebnis.eingelesen,
         "ungueltig": ergebnis.fehler,
         "dubletten": [{"entfernt": a.id, "behalten": b.id, "titel": a.titel} for a, b in ergebnis.dubletten],
         "treffer": [{
@@ -138,11 +147,50 @@ def baue_handler(zustand: Zustand):
             return self._json(HTTPStatus.NOT_FOUND, {"fehler": "Nicht gefunden"})
 
         def do_POST(self):
-            if urlsplit(self.path).path != "/api/import":
+            ziel = urlsplit(self.path).path
+            if ziel not in ("/api/import", "/api/openprices"):
                 return self._json(HTTPStatus.NOT_FOUND, {"fehler": "Nicht gefunden"})
             # Schutz gegen fremde Webseiten, die im Hintergrund Daten hochladen wollen
             if self.headers.get("X-Schnapper") != "1":
                 return self._json(HTTPStatus.FORBIDDEN, {"fehler": "Anfrage nicht erlaubt"})
+            if ziel == "/api/openprices":
+                from .openprices import (LIZENZ, OpenPricesAdapter,
+                                         OpenPricesFehler, OpenPricesGesperrt)
+                try:
+                    laenge = int(self.headers.get("Content-Length", ""))
+                except ValueError:
+                    return self._json(HTTPStatus.LENGTH_REQUIRED, {"fehler": "Länge fehlt"})
+                if not 1 <= laenge <= 256:
+                    return self._json(HTTPStatus.REQUEST_ENTITY_TOO_LARGE, {"fehler": "Barcode-Anfrage zu groß oder leer"})
+                try:
+                    eingabe = json.loads(self.rfile.read(laenge))
+                except (json.JSONDecodeError, UnicodeDecodeError):
+                    return self._json(HTTPStatus.BAD_REQUEST, {"fehler": "Ungültiges JSON"})
+                if not isinstance(eingabe, dict) or not isinstance(eingabe.get("ean"), str):
+                    return self._json(HTTPStatus.BAD_REQUEST, {"fehler": "Barcode fehlt"})
+                try:
+                    adapter = OpenPricesAdapter(eingabe["ean"], register=zustand.register)
+                except ValueError as exc:
+                    return self._json(HTTPStatus.BAD_REQUEST, {"fehler": str(exc)})
+                grund = adapter.sperrgrund()
+                if grund:
+                    return self._json(HTTPStatus.FORBIDDEN, {"fehler": grund})
+                if not zustand._openprices_lock.acquire(blocking=False):
+                    return self._json(HTTPStatus.TOO_MANY_REQUESTS,
+                                      {"fehler": "Es läuft bereits eine Barcode-Abfrage. Bitte danach erneut versuchen."})
+                try:
+                    geladen = adapter.lade()
+                except OpenPricesGesperrt as exc:
+                    return self._json(HTTPStatus.FORBIDDEN, {"fehler": str(exc)})
+                except OpenPricesFehler as exc:
+                    return self._json(HTTPStatus.SERVICE_UNAVAILABLE, {"fehler": str(exc)})
+                finally:
+                    zustand._openprices_lock.release()
+                daten = als_json(finde_in(geladen, Filter(), "preis"), "Open Prices", False)
+                daten["lizenz"] = LIZENZ
+                daten["hinweise"] = adapter.hinweise[:50]
+                daten["begrenzung"] = "Nur die bis zu 50 neuesten gemeldeten Preise; keine Vollständigkeitsgarantie."
+                return self._json(HTTPStatus.OK, daten)
             try:
                 laenge = int(self.headers.get("Content-Length", ""))
             except ValueError:

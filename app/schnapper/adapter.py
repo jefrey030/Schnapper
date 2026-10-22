@@ -33,6 +33,57 @@ class DateiAdapter:
         return lies_datei(self.pfad, self.register)
 
 
+
+
+class MockAdapter:
+    """Reine Offline-Testquelle (S-005/T3), niemals echte Marktpreise.
+
+    Ohne Konfiguration liefert der Adapter genau zwei als TEST markierte
+    Beispielangebote mit .invalid-URLs. Es finden keine Netzwerkanfragen,
+    kein Scraping und keine Dateischreibvorgänge statt.
+    """
+
+    kennung = "mock"
+
+    def __init__(self, daten=None, register: Register | None = None, jetzt=None):
+        import datetime as dt
+
+        self.register = register if register is not None else Register()
+        self.jetzt = jetzt or dt.datetime.now(dt.timezone.utc)
+        if self.jetzt.tzinfo is None:
+            raise ValueError("Mock-Zeitpunkt muss eine Zeitzone enthalten")
+        if daten is not None and not isinstance(daten, list):
+            raise ValueError("Mock-Daten müssen eine Liste sein")
+        self.daten = daten
+
+    def lade(self) -> Importergebnis:
+        import datetime as dt
+        import json
+
+        grund = self.register.pruefe(self.kennung)
+        if grund:
+            raise QuelleGesperrt(grund)
+        daten = self.daten
+        if daten is None:
+            aktuell = self.jetzt.astimezone(dt.timezone.utc).isoformat()
+            alt = (self.jetzt - dt.timedelta(hours=27)).astimezone(dt.timezone.utc).isoformat()
+            daten = [
+                {"id": "TEST-1", "titel": "TEST Fahrrad gebraucht",
+                 "preis": "45.00", "referenzpreis": "80.00", "versand": "0",
+                 "url": "https://example.invalid/schnapper/test-1",
+                 "quelle": "mock", "erfasst_am": aktuell, "zustand": "gebraucht"},
+                {"id": "TEST-2", "titel": "TEST Kopfhörer gebraucht",
+                 "preis": "25.00", "referenzpreis": "55.00", "versand": "4.90",
+                 "url": "https://example.invalid/schnapper/test-2",
+                 "quelle": "mock", "erfasst_am": alt, "zustand": "gebraucht"},
+            ]
+        if any(not isinstance(zeile, dict) or str(zeile.get("quelle", "")).lower() != "mock"
+               for zeile in daten):
+            raise QuelleGesperrt("MockAdapter darf ausschließlich Testangebote der Quelle 'mock' verarbeiten")
+        from .einlesen import lies_text
+        return lies_text(json.dumps(daten, ensure_ascii=False), "json", self.register, jetzt=self.jetzt)
+
+
 class EbayAdapter:
     """Platzhalter für die eBay Browse API (Q1).
 

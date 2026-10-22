@@ -16,6 +16,7 @@ from unittest import mock
 sys.path.insert(0, str(pathlib.Path(__file__).resolve().parents[1] / "team"))
 import agent  # noqa: E402
 import ki  # noqa: E402
+import runner as agent_runner  # noqa: E402
 
 ROOT = pathlib.Path(__file__).resolve().parents[1]
 
@@ -110,8 +111,21 @@ class TestAgenten(unittest.TestCase):
         self.lauf = self.team / "work" / "20261021T190000Z"
         self.p = mock.patch.object(agent, "TEAM", self.team)
         self.p.start()
+        # Eigene Aufgaben-Fixture, damit der Test nicht vom echten Aufgabenstatus abhängt.
+        self.team.mkdir(parents=True, exist_ok=True)
+        aufgaben = self.team / "tasks.json"
+        aufgaben.write_text(json.dumps({"tasks": [
+            {"id": "S-000", "priority": 0, "status": "open", "title": "Testaufgabe",
+             "acceptance": ["k1"]}]}), encoding="utf-8")
+        self.p_aufgaben = mock.patch.object(agent, "load_tasks", lambda: agent_runner.load_tasks(aufgaben))
+        self.p_vorige = mock.patch.object(agent, "previous_task_id",
+                                          lambda: agent_runner.previous_task_id(self.team / "runs"))
+        self.p_aufgaben.start()
+        self.p_vorige.start()
 
     def tearDown(self):
+        self.p_vorige.stop()
+        self.p_aufgaben.stop()
         self.p.stop()
         self.tmp.cleanup()
 
@@ -131,6 +145,23 @@ class TestAgenten(unittest.TestCase):
             self.assertIsNone(bericht["agenten"][rolle]["ki"])
         self.assertIn("NICHT EINSATZBEREIT", (self.team / "STATUS.md").read_text())
 
+    def test_s003_jeder_agent_berichtet_und_fehlende_ki_ist_blocker(self):
+        with mock.patch.dict(os.environ, {"GITHUB_TOKEN": ""}), \
+             mock.patch.object(agent, "tests_ausfuehren", return_value={"ok": True, "anzahl": 1, "ausgabe_ende": ""}):
+            bericht = self.alle()
+        for rolle in ("LEAD", "BRAIN", "CHECK", "COMMAND"):
+            daten = json.loads((self.lauf / f"{rolle}.json").read_text(encoding="utf-8"))
+            self.assertEqual(daten["rolle"], rolle)
+            self.assertTrue(daten["status"])
+        self.assertEqual(len(bericht["blocker"]), 1)
+        b = bericht["blocker"][0]
+        self.assertEqual(b["art"], "KI-Anbindung fehlt")
+        self.assertIn("GITHUB_TOKEN", b["detail"])
+        self.assertEqual(b["rollen"], ["LEAD", "COMMAND"])
+        md = (self.team / "runs" / f"{self.lauf.name}.md").read_text(encoding="utf-8")
+        self.assertIn("## Blocker", md)
+        self.assertIn("KI-Anbindung fehlt", md)
+
     def test_vier_getrennte_ki_aufrufe_mit_nachahmer(self):
         Nachahmer.aufrufe = []
         server = http.server.HTTPServer(("127.0.0.1", 0), Nachahmer)
@@ -146,12 +177,14 @@ class TestAgenten(unittest.TestCase):
                 bericht = self.alle()
         finally:
             server.shutdown()
+            server.server_close()
         self.assertEqual(len(Nachahmer.aufrufe), 4)
         self.assertEqual(set(Nachahmer.aufrufe), {"meta/Llama-3.3-70B-Instruct"})
         self.assertTrue(bericht["team_einsatzbereit"])
         self.assertEqual(bericht["aufgabe"], "S-000")
         self.assertEqual(bericht["check_urteil"], "bestanden")
         self.assertEqual(bericht["ki_aufrufe"], 4)
+        self.assertEqual(bericht["blocker"], [])
         ids = {bericht["agenten"][r]["ki"]["antwort_id"] for r in ("LEAD", "BRAIN", "CHECK", "COMMAND")}
         self.assertEqual(len(ids), 4)
         self.assertTrue(list((self.team / "proposals").glob("*S-000.md")))
