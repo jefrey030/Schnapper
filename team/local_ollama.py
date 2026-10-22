@@ -59,6 +59,10 @@ class KI:
         self.modell = os.environ.get("SCHNAPPER_OLLAMA_MODELL", MODELL_DEFAULT).strip()
         if not re.fullmatch(r"[a-zA-Z0-9][a-zA-Z0-9_.:/-]{0,79}", self.modell):
             raise KINichtVerfuegbar("Ungültiger lokaler Modellname.")
+        # Ollama kann auch Cloud-Modelle vermitteln. Das ist hier strikt verboten.
+        # Auch bei einem lokalen API-Endpunkt wäre :cloud eine externe KI.
+        if self.modell.lower().endswith(":cloud"):
+            raise KINichtVerfuegbar("Cloud-Modelle sind in SCHNAPPER ausdrücklich gesperrt.")
 
     def _pruefe_modell(self):
         tags = _request("/api/tags")
