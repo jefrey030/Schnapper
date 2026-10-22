@@ -31,6 +31,21 @@ Git und ein lokal installiertes Ollama. Installation über
 kostenfrei nutzbar; **Strom und Internet** sind davon nicht umfasst.
 Für ältere Rechner zunächst ein kleines Modell wählen.
 
+**Achtung für das MacBook Pro Mid 2012:** Das aktuelle Ollama für macOS
+benötigt macOS 14 (Sonoma) oder höher. Apple unterstützt Sonoma für diesen
+Mac nicht regulär. Auf älterem macOS funktioniert die aktuelle Ollama-App
+nicht einfach per Installation. Ein bereits vorhandener Linux-PC oder
+eine bewusst vorbereitete Linux-Installation wäre eine Alternative,
+aber dafür keinesfalls die vorhandene macOS-Installation überschreiben.
+Vor jeder Änderung des Betriebssystems Daten sichern.
+Ollama auf Intel-Macs kann zudem nur die CPU nutzen.
+
+Quelle: https://github.com/ollama/ollama/blob/main/docs/macos.mdx
+
+**Keine Cloud-Modelle:** Selbst wenn Ollama auf `localhost` läuft, dürfen
+Modelle mit dem Suffix `:cloud` nicht verwendet werden. Der Adapter
+blockiert sie. Nur bereits installierte lokale Modelle sind erlaubt.
+
 ## Schritt 1: Auf dem eigenen Rechner
 
 ```sh
@@ -62,9 +77,13 @@ export SCHNAPPER_OLLAMA_MODELL=qwen2.5:1.5b
 python3 team/local_service.py --once
 ```
 
-Nur `"status": "ERFOLGREICHER PILOT"` mit
+Nur `"status": "TECHNISCHER PILOT ERFOLGREICH"` mit
 `"vier_echte_ki_antworten": true`, `"tests_bestanden": true`
-und `"prozesse_ok": true` bestätigt einen gelungenen Probelauf.
+und `"prozesse_ok": true` bestätigt einen gelungenen technischen Probelauf.
+Zusätzlich werden echte Rollenprotokolle, Modellname, lokale Laufzeit,
+vier verschiedene Antwort-IDs und vier Modellaufrufe geprüft. Das Ergebnis
+ist **keine** Freigabe, automatische Reparaturen oder Deployments auszuführen.
+Eine SHA-256-Belegliste steht unter `team/work/<lauf>/nachweise.json`.
 
 Der ausführliche Bericht steht in `team/runs/<lauf>.json` sowie
 `team/runs/<lauf>.md`, die Rohlogs in `team/work/<lauf>/prozesse.json`.
