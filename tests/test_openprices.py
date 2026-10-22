@@ -84,6 +84,23 @@ class UmwandlungTests(unittest.TestCase):
         zeilen, _ = op.zeilen_aus_antwort(antwort(item(1, 1.0, datum="2026-10-22")), EAN, jetzt=kurz_nach_mitternacht)
         self.assertEqual(zeilen[0]["erfasst_am"], kurz_nach_mitternacht.isoformat())
 
+    def test_unbrauchbare_preiswerte_und_ids_werden_sicher_uebersprungen(self):
+        zeilen, hinweise = op.zeilen_aus_antwort(antwort(
+            item(1, "NaN"), item(2, "Infinity"), item(3, "1E+999999"),
+            item(4, True), item(True, 1.0), item(6, 1000001),
+            item(7, 0.001), item(8, 1.19)), EAN)
+        self.assertEqual([z["id"] for z in zeilen], ["openprices-8"])
+        self.assertEqual(len(hinweise), 7)
+
+    def test_defekte_optionale_metadaten_brechen_suche_nicht_ab(self):
+        zeilen, hinweise = op.zeilen_aus_antwort(antwort(
+            item(9, 1.29, product="falsch", location=["falsch"], product_name=100),
+            item(10, 1.19, product=None, location={"osm_name": 123, "osm_address_city": " Berlin "},
+                 product_name="  Keks  ")), EAN)
+        self.assertEqual(hinweise, [])
+        self.assertEqual(zeilen[0]["titel"], f"Produkt {EAN}")
+        self.assertEqual(zeilen[1]["titel"], "Keks – Berlin")
+
     def test_rabatt_nur_wenn_wirklich_teurer(self):
         zeilen, _ = op.zeilen_aus_antwort(antwort(
             item(1, 2.0, price_is_discounted=True, price_without_discount=1.5)), EAN)
