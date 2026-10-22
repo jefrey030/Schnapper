@@ -63,9 +63,11 @@ class Zustand:
             return self._daten
 
     def ersetzen(self, geladen: Importergebnis, name: str):
+        # Bei einem Fehler beim Speichern des Preisverlaufs bleibt die bisherige
+        # Liste aktiv. Der HTTP-Import meldet dann korrekt einen Fehler.
+        self.preise_merken(geladen)
         with self._lock:
             self._daten = (geladen, name, False)
-        self.preise_merken(geladen)
 
     def preise_merken(self, geladen: Importergebnis):
         if self.verlauf is not None and self.verlauf.aufzeichnen(geladen.angebote):
