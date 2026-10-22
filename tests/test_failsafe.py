@@ -121,5 +121,37 @@ class TestFailClosedAgentReports(unittest.TestCase):
         self.assertFalse(bericht["team_einsatzbereit"])
 
 
+    def test_rejected_or_revision_check_is_not_ready(self):
+        for verdict in ("abgelehnt", "nachbessern"):
+            self._gueltige_antworten()
+            self._schreibe("CHECK", ki={"antwort_id": "check-3"},
+                           urteil={"urteil": verdict},
+                           werkzeug={"tests": {"ok": True, "anzahl": 2},
+                                      "geheimnis_funde": []})
+            (self.lauf / "ki_aufrufe.txt").write_text("4", encoding="utf-8")
+            bericht = self._bereit()
+            self.assertFalse(bericht["team_einsatzbereit"], verdict)
+
+    def test_command_denial_blocks_readiness(self):
+        self._gueltige_antworten()
+        self._schreibe("COMMAND", ki={"antwort_id": "command-4"},
+                       protokoll={"freigabe": "nein", "naechster_schritt": "Prüfen"})
+        (self.lauf / "ki_aufrufe.txt").write_text("4", encoding="utf-8")
+        self.assertFalse(self._bereit()["team_einsatzbereit"])
+
+    def test_missing_or_positive_secret_scan_blocks_readiness(self):
+        self._gueltige_antworten()
+        (self.lauf / "ki_aufrufe.txt").write_text("4", encoding="utf-8")
+        self._schreibe("CHECK", ki={"antwort_id": "check-3"},
+                       urteil={"urteil": "bestanden"},
+                       werkzeug={"tests": {"ok": True, "anzahl": 2}})
+        self.assertFalse(self._bereit()["team_einsatzbereit"])
+        self._schreibe("CHECK", ki={"antwort_id": "check-3"},
+                       urteil={"urteil": "bestanden"},
+                       werkzeug={"tests": {"ok": True, "anzahl": 2},
+                                  "geheimnis_funde": ["agentenausgabe[0]"]})
+        self.assertFalse(self._bereit()["team_einsatzbereit"])
+
+
 if __name__ == "__main__":
     unittest.main()
