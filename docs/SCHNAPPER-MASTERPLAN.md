@@ -17,12 +17,12 @@ Stand: 22.10.2026, 10:50 (Berlin) · Basis: `main` @ 4bc37e7 · Erstellt nach ec
 | A6 | Start am Android-Handy ohne PC (Termux) | 🔨 | `docs/HANDY-START.md` – **auf echtem Gerät noch ungetestet** |
 | A7 | App im Internet, ohne eigenes Gerät | ⏳ | Wäre eine Veröffentlichung → braucht Freigabe. Kostenlos möglich, aber Python-Server müsste dafür umgebaut werden. |
 | A8 | Echte Angebote automatisch (eBay Browse API) | ⏳ | Jefrey: eBay-Entwicklerkonto + Produktivfreigabe bei eBay beantragen. Bis dahin nur eigene Listen (A4). |
-| A8b | **Echte Ladenpreise ohne Konto (Open Prices, ODbL)** | 🔨 | `app/schnapper/openprices.py`, `docs/OPEN-PRICES.md`; offline getestet, **live noch nie abgerufen**; aktiv erst mit `SCHNAPPER_OPENPRICES_FREIGABE=ja` |
+| A8b | **Echte Ladenpreise ohne Konto (Open Prices, ODbL)** | 🔨 | API-Adapter + getrennte Barcode-Suche in der lokalen Web-App im PR #15; nach neuen Fixes noch nicht erneut ausführbar getestet; **Live-Abruf fehlt**; nur mit `SCHNAPPER_OPENPRICES_FREIGABE=ja` |
 | A9 | Preisverlauf, Benachrichtigungen, Konto | 💤 | Bewusst nicht im MVP (Konzept S-000) |
 
 ## B. Offene Pull Requests
 
-> **Nachtrag 22.10. (Gesamtstand-PR):** #6 (Konflikt gelöst), #12, #7, #8, #13, #14 sind in **einem** Branch `integration/schnapper-gesamtstand-20261022` zusammengeführt, dazu die Reparatur der uhrzeitabhängigen #13-Tests und A8b. 137/137 Python-Tests (1 übersprungen) + 10/10 Cloudflare-Tests grün. #2 bleibt draußen (durch #7 überholt).
+> **Nachtrag 22.10. (Gesamtstand-PR):** #6 (Konflikt gelöst), #12, #7, #8, #13, #14 sind in **einem** Branch `integration/schnapper-gesamtstand-20261022` zusammengeführt, dazu die Reparatur der uhrzeitabhängigen #13-Tests und A8b. historischer Stand vor den nachfolgenden Änderungen: 137 Python-Tests (1 übersprungen) + 10/10 Cloudflare-Mock-Tests laut Entwicklerbericht; **neuere Commits ungetestet**. #2 bleibt draußen (durch #7 überholt).
 
 | PR | Inhalt | Status | Nachweis / Empfehlung |
 | --- | --- | --- | --- |
@@ -56,3 +56,16 @@ Stand: 22.10.2026, 10:50 (Berlin) · Basis: `main` @ 4bc37e7 · Erstellt nach ec
 
 ## E. Kosten
 Bisher entstanden: **0 €**. Kein Punkt in diesem Plan erfordert Geld; A7, A8 und C2(c) nutzen nur kostenlose Stufen und brauchen trotzdem vorher deine Freigabe.
+
+## Nachtrag: PR #15 – Barcodeoberfläche und Robustheit (22.10.2026)
+- Echte Open-Prices-Stückpreise mit `price_per=UNIT` werden akzeptiert.
+- Unendliche/ungültige Preiswerte und kaputte optionale Metadaten werden abgefangen.
+- `POST /api/openprices` zeigt die bis zu 50 jüngsten gemeldeten Ladenpreise separat
+  von lokalen Listen an; Browserpanel und vier lokale HTTP-Regressionstests hinzugefügt.
+- **Sicherheitslage unverändert:** API-Ausgang ohne expliziten Freigabeschalter gesperrt,
+  kein Worker/Cron gestartet, kein öffentlicher Server deployed, kein kostenpflichtiger Job.
+- **Abnahme fehlt:** Nachträgliche Python-Tests und echte Android-Browserprobe nicht erneut
+  ausgeführt; GitHub-Action ist wegen privatem Repository ausdrücklich `skipped`.
+- **Nächste Schritte:** vollständige Offline-Tests mit Python ausführen, Barcode live mit
+  einer freigegebenen kostenfreien API-Abfrage prüfen, Android-Lauf ohne PC bestätigen,
+  Cloudflare-Free-Plan nachweisen; PR erst danach und nach Sichtung mergen.
