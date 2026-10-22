@@ -2,6 +2,7 @@
 import ast
 import pathlib
 import re
+import sys
 import unittest
 
 ROOT = pathlib.Path(__file__).resolve().parents[1]
@@ -27,7 +28,10 @@ class TestBestandsaufnahmeS001(unittest.TestCase):
 
     def test_nur_standardbibliothek(self):
         self.assertFalse((ROOT / "requirements.txt").exists())
-        erlaubt = {"json", "pathlib", "re", "subprocess", "sys", "datetime", "os", "urllib", "ki", "runner"}
+        # Erlaubt: jedes Modul der Python-Standardbibliothek und eigene Module aus team/.
+        # (Eine feste Liste brach, sobald ein anderer PR z. B. "platform" nutzte.)
+        eigene = {p.stem for p in (ROOT / "team").glob("*.py")}
+        erlaubt = set(sys.stdlib_module_names) | eigene
         for datei in (ROOT / "team").glob("*.py"):
             baum = ast.parse(datei.read_text(encoding="utf-8"))
             for n in ast.walk(baum):
