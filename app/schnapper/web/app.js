@@ -97,7 +97,45 @@ async function hochladen(ev) {
   } catch { $("status").textContent = "Hochladen fehlgeschlagen."; }
 }
 
+async function barcodeSuchen(ev) {
+  ev.preventDefault();
+  const ean = $("barcode").value.trim();
+  const status = $("barcode-status");
+  const knopf = $("barcode-knopf");
+  $("barcode-treffer").replaceChildren();
+  $("barcode-lizenz").textContent = "";
+  if (!/^[0-9]{8,14}$/.test(ean)) {
+    status.textContent = "Bitte einen Barcode mit 8 bis 14 Ziffern eingeben.";
+    return;
+  }
+  knopf.disabled = true;
+  status.textContent = "Frage Ladenpreise ab …";
+  try {
+    const antwort = await fetch("/api/openprices", {
+      method: "POST",
+      headers: { "X-Schnapper": "1", "Content-Type": "application/json" },
+      body: JSON.stringify({ ean }),
+    });
+    const daten = await antwort.json();
+    if (!antwort.ok) {
+      status.textContent = daten.fehler || "Ladenpreise konnten nicht abgerufen werden.";
+      return;
+    }
+    $("barcode-treffer").replaceChildren(...daten.treffer.map(karte));
+    $("barcode-lizenz").textContent = daten.lizenz || "";
+    status.textContent = daten.treffer.length === 0
+      ? "Keine passenden gemeldeten Preise gefunden."
+      : `${daten.treffer.length} Preise gefunden · ${daten.begrenzung}`;
+    if (daten.hinweise.length) status.textContent += ` · ${daten.hinweise.length} Einträge übersprungen`;
+  } catch {
+    status.textContent = "Server oder Preisquelle nicht erreichbar.";
+  } finally {
+    knopf.disabled = false;
+  }
+}
+
 document.addEventListener("DOMContentLoaded", () => {
+  $("barcode-form").addEventListener("submit", barcodeSuchen);
   $("filter").addEventListener("input", spaeter);
   $("filter").addEventListener("submit", (e) => { e.preventDefault(); suchen(); });
   $("datei").addEventListener("change", hochladen);
