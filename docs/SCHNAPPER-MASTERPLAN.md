@@ -20,21 +20,61 @@ Stand: 22.10.2026, 10:50 (Berlin) · Basis: `main` @ 4bc37e7 · Erstellt nach ec
 | A8b | **Echte Ladenpreise ohne Konto (Open Prices, ODbL)** | 🔨 | API-Adapter + getrennte Barcode-Suche in der lokalen Web-App im PR #15; nach neuen Fixes noch nicht erneut ausführbar getestet; **Live-Abruf fehlt**; nur mit `SCHNAPPER_OPENPRICES_FREIGABE=ja` |
 | A9 | Preisverlauf, Benachrichtigungen, Konto | 💤 | Bewusst nicht im MVP (Konzept S-000) |
 
-## B. Offene Pull Requests
+## B. Pull Requests (echter GitHub-Stand)
 
-> **Nachtrag 22.10. (Gesamtstand-PR):** #6 (Konflikt gelöst), #12, #7, #8, #13, #14 sind in **einem** Branch `integration/schnapper-gesamtstand-20261022` zusammengeführt, dazu die Reparatur der uhrzeitabhängigen #13-Tests und A8b. historischer Stand vor den nachfolgenden Änderungen: 137 Python-Tests (1 übersprungen) + 10/10 Cloudflare-Mock-Tests laut Entwicklerbericht; **neuere Commits ungetestet**. #2 bleibt draußen (durch #7 überholt).
+Stand: 22.10.2026, ca. 20:30 UTC · Basis `main` @ e134cd0 · ermittelt per GitHub-REST `pulls?state=all`. #4 ist ein Issue, kein PR.
+Der frühere Abschnitt (Empfehlung #6 → #12 → #7 → #8) ist überholt: Diese PRs sind gemergt bzw. geschlossen.
 
-| PR | Inhalt | Status | Nachweis / Empfehlung |
-| --- | --- | --- | --- |
-| #9 | Agentenstatus fail-closed | ✅ | gemergt 22.10. 10:35 |
-| #6 | MASTER-Konzepte S-000–S-006 | ⏳ | **Konflikt mit main seit #9** in `team/agent.py`; getestete Lösung im Kommentar an #6 |
-| #12 | Test-Fix für #6 (+ #7) | ⏳ | Nach #6 mergen; ohne ihn scheitern #6 + #7 zusammen (`platform`) |
-| #7 | KI-Team lokal mit Ollama | ⏳ | grün; läuft nur, wenn eigener PC an ist |
-| #8 | KI-Team auf Cloudflare (Live-Start gesperrt) | ⏳ | grün inkl. `node --test`; Live-Start nur mit Freigabe |
-| #2 | altes lokales KI-Gehirn | ⏳ | **durch #7 überholt, hat Konflikte → schließen** |
+### Offen (12)
 
-**Probe-Merge aller offenen PRs** (main + #9 + #6 aufgelöst + #12 + #7 + #8): **106/106 Tests OK**.
-**Empfohlene Reihenfolge:** #6 (Konflikt lösen) → #12 → #7 → #8 · #2 schließen.
+| PR | Titel | Branch | Status | Draft |
+| --- | --- | --- | --- | --- |
+| #35 | security: privaten SCHNAPPER-Stundenlauf fail-closed sperren (aktuelle main-Basis) | fix/guard-private-runner-20261022-current | offen | ja |
+| #34 | fix(SCHNAPPER): Websuche weist Null- und Negativ-Höchstpreise ab | fix/web-maxpreis-positiv-20261022 | offen | ja |
+| #33 | fix(team): offene QA-Aufgabe + fehlerresistente Stundenrotation | fix/schnapper-open-qa-task-20261022 | offen | ja |
+| #31 | security(SCHNAPPER): KI-Token nur über HTTPS und ohne Redirect übertragen | security/schnapper-ki-token-transport-20261022 | offen | ja |
+| #30 | fix(SCHNAPPER): Preisalarm-Import gegen ungültige Eingaben absichern | fix/schnapper-alarm-nonfinite-20261022 | offen | ja |
+| #29 | fix: SCHNAPPER-Preise, URLs und Preisalarm zusammen sicher korrigieren | fix/schnapper-guardrails-konsolidiert-20261022 | offen | ja |
+| #28 | fix: SCHNAPPER-Preisalarm bei defekten Wunschlisten robust machen | fix/alarm-input-validation-20261022 | offen | ja |
+| #27 | fix(preise): DE/EN-Tausenderformate korrekt und sicher einlesen | fix/preisformate-gemischt-20261022 | offen | ja |
+| #26 | fix(SCHNAPPER): Preise im deutschen UND englischen Zahlenformat korrekt erkennen | fix/preisformate-englisch-20261022 | offen | nein |
+| #25 | fix(SCHNAPPER): englische Tausenderpreise korrekt lesen statt falscher Schnäppchen | fix/english-thousands-prices-20261022 | offen | ja |
+| #23 | fix: Robuster Angebotsimport bei kaputten URLs und korrekte Port-Dubletten | fix/schnapper-url-validierung-20261022 | offen | ja |
+| #21 | Security: Fail-Closed-Abnahme, Not-Aus und getrennte Release-Gates | security/schnapper-failclosed-20261022 | offen | ja |
+
+Hinweis: #25, #26, #27 (Preisformate) und #28, #29, #30 (Preisalarm) überschneiden sich thematisch; #29 bündelt laut Titel mehrere davon. Entscheidung bleibt bei Jefrey.
+
+### Gemergt (15)
+
+| PR | Titel | Branch | Status | Draft |
+| --- | --- | --- | --- | --- |
+| #32 | QA: kostenfreie Offline-Testabnahme mit unverfälschbaren FAIL-Gates | qa/offline-abnahme-kostenfrei-20261022 | gemergt 22.10. 18:39 UTC | nein |
+| #20 | fix(openprices): „Zum Angebot“ öffnet lesbare Preisseite statt JSON + Abnahme main | fix/openprices-link-webseite-20261022 | gemergt 22.10. 18:01 UTC | nein |
+| #19 | Preisverlauf: Tiefstpreise und geschönte Statt-Preise erkennen | feature/preisverlauf-20261022 | gemergt 22.10. 18:02 UTC | nein |
+| #18 | SCHNAPPER: offene PRs zusammengeführt (#7 #8 #12–#17), Tests repariert | integration/aufraeumen-20261022 | gemergt 22.10. 16:17 UTC | nein |
+| #17 | Merkliste und Preisalarm (WARENKORB/BLITZ) | feature/merkliste-preisalarm-20261022 | gemergt 22.10. 16:17 UTC | nein |
+| #15 | SCHNAPPER Gesamtstand: offene PRs zusammengeführt + echte Ladenpreise (Open Prices) | integration/schnapper-gesamtstand-20261022 | gemergt 22.10. 16:18 UTC | nein |
+| #14 | SCHNAPPER: Masterplan, eigene echte Angebote, App für den Startbildschirm | feature/schnapper-master-handy-20261022 | gemergt 22.10. 16:17 UTC | nein |
+| #13 | SCHNAPPER S-005/T3: kostenloser Offline-Mock-Adapter mit Prüffällen | fix/schnapper-offline-mock-adapter-20261022 | gemergt 22.10. 16:17 UTC | ja |
+| #11 | SCHNAPPER: Handy-Weboberfläche + sichere Angebotsquellen ohne Merge-Konflikt | fix/schnapper-web-main-20261022 | gemergt 22.10. 03:10 UTC | nein |
+| #9 | fix: SCHNAPPER-Agentenstatus und KI-JSON fail-closed validieren | fix/agent-status-fail-closed-20261022 | gemergt 22.10. 08:35 UTC | nein |
+| #8 | SCHNAPPER Cloud-Team: vier stündliche KI-Rollen – Free-only, Live-Start gesperrt | feature/cloudflare-free-hourly-20261022 | gemergt 22.10. 16:17 UTC | ja |
+| #7 | SCHNAPPER: vier KI-Rollen lokal starten – null Bezahl-APIs, echte Stundenberichte | feature/local-free-ollama-agents-20261021 | gemergt 22.10. 16:17 UTC | ja |
+| #5 | SCHNAPPER: App-Kern – Angebote prüfen, Dubletten, Suche, Import | feature/schnapper-angebotskern-20261021 | gemergt 22.10. 03:07 UTC | nein |
+| #3 | SCHNAPPER: vier echte KI-Agenten über GitHub Models (0 €), Regelmodus entfernt | fix/ki-team-github-models-20261021 | gemergt 21.10. 20:15 UTC | nein |
+| #1 | SCHNAPPER: sichere Aufgabenrotation, Tests und Modus ohne KI-API-Kosten | fix/schnapper-hourly-rotation-20261021 | gemergt 21.10. 20:15 UTC | nein |
+
+### Geschlossen ohne Merge (7)
+
+| PR | Titel | Branch | Status | Draft |
+| --- | --- | --- | --- | --- |
+| #24 | fix(SCHNAPPER): Preisalarm vor ungültigen Rabatten und Zustandsfiltern schützen | fix/alarm-nonfinite-input-20261022 | geschlossen | ja |
+| #22 | SCHNAPPER: Stundenlauf nur bei eindeutig öffentlichem Repo aktivieren | fix/schnapper-stundenlauf-failclosed-20261022 | geschlossen | ja |
+| #16 | SCHNAPPER: Preisquellen sichern und Testangebote eindeutig markieren | fix/schnapper-price-source-integrity-20261022 | geschlossen | ja |
+| #12 | test: S-001 erlaubt echte Standardbibliothek statt fester Modulliste (Fix für #6 + #7) | fix/schnapper-stdlib-test-20261022 | geschlossen | nein |
+| #10 | SCHNAPPER: Web-Oberfläche fürs Handy + Quellen-Register und Adapter (S-002) | feature/schnapper-web-quellen-20261022 | geschlossen | nein |
+| #6 | SCHNAPPER MASTER: S-000 bis S-003, Vorschläge S-004–S-006, Abgleich gegen main | agent/master/20261021-21 | geschlossen | ja |
+| #2 | SCHNAPPER: kostenloses lokales KI-Gehirn für 4 Agentenrollen | feature/local-free-brain-20261021 | geschlossen | ja |
 
 ## C. KI-Team (LEAD, BRAIN, CHECK, COMMAND)
 
