@@ -15,6 +15,17 @@ class TestSchnapper(unittest.TestCase):
     def test_tasks_format(self):
         self.assertTrue(load_tasks())
 
+    def test_offene_aufgaben_werden_waehlbar(self):
+        # Ein abgearbeiteter Backlog darf später legal leer werden.
+        tasks = load_tasks()
+        aktive = [t for t in tasks if t.get("status") == "open"]
+        ausgewaehlt = choose_task(tasks)
+        if aktive:
+            self.assertIsNotNone(ausgewaehlt)
+            self.assertIn(ausgewaehlt["id"], {t["id"] for t in aktive})
+        else:
+            self.assertIsNone(ausgewaehlt)
+
     def test_priority(self):
         items = [{"id": "b", "priority": 2, "status": "open"},
                  {"id": "a", "priority": 1, "status": "open"}]
@@ -51,6 +62,27 @@ class TestSchnapper(unittest.TestCase):
             (folder / "20261021T130000Z.json").write_text(
                 "{", encoding="utf-8")
             self.assertIsNone(previous_task_id(folder))
+
+    def test_rotation_ignoriert_defekten_neusten_bericht(self):
+        with tempfile.TemporaryDirectory() as directory:
+            folder = pathlib.Path(directory)
+            (folder / "20261021T130000Z.json").write_text(
+                json.dumps({"selected_task": {"id": "S-005"}}), encoding="utf-8")
+            (folder / "20261021T140000Z.json").write_text("{", encoding="utf-8")
+            self.assertEqual(previous_task_id(folder), "S-005")
+
+    def test_rotation_ignoriert_berichte_ohne_ausgewaehlte_aufgabe(self):
+        with tempfile.TemporaryDirectory() as directory:
+            folder = pathlib.Path(directory)
+            (folder / "20261021T130000Z.json").write_text(
+                json.dumps({"selected_task": {"id": "S-004"}}), encoding="utf-8")
+            (folder / "20261021T140000Z.json").write_text(
+                json.dumps({"selected_task": None}), encoding="utf-8")
+            (folder / "20261021T150000Z.json").write_text(
+                json.dumps({"selected_task": {"id": 123}}), encoding="utf-8")
+            (folder / "20261021T160000Z.json").write_text(
+                json.dumps(["kein Bericht"]), encoding="utf-8")
+            self.assertEqual(previous_task_id(folder), "S-004")
 
 
 if __name__ == "__main__":
