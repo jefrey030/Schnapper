@@ -74,10 +74,9 @@ class Zustand:
 
     def preise_merken(self, geladen: Importergebnis):
         if self.verlauf is not None:
-            self.verlauf.aufzeichnen(geladen.angebote)
-            # Auch bei 0 neuen Beobachtungen speichern: Ein vorheriger
-            # Schreibfehler kann die letzten Werte noch unsicher hinterlassen.
-            self.verlauf.speichern()
+            # Atomarer Verlauf: keine ungespeicherten/verworfenen Beobachtungen
+            # im RAM belassen; das Angebot wird erst danach aktiviert.
+            self.verlauf.importiere(geladen.angebote)
 
 
 def filter_aus_query(q: dict) -> tuple[Filter, str]:
