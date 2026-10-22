@@ -81,6 +81,54 @@ class TestKostenbremsen(unittest.TestCase):
             with self.subTest(code=code), self.assertRaises(ki.KINichtVerfuegbar):
                 handler.redirect_request(None, None, code, "Moved", {}, "https://evil.example/")
 
+    def test_ki_http_folgt_keinem_redirect_und_sendet_keinen_token(self):
+        class Ziel(http.server.BaseHTTPRequestHandler):
+            empfangene_token = []
+
+            def log_message(self, *args):
+                pass
+
+            def do_GET(self):
+                Ziel.empfangene_token.append(self.headers.get("Authorization"))
+                self.send_response(200)
+                self.end_headers()
+                self.wfile.write(b"{}")
+
+        class Umleiter(http.server.BaseHTTPRequestHandler):
+            ziel = ""
+
+            def log_message(self, *args):
+                pass
+
+            def do_GET(self):
+                self.send_response(302)
+                self.send_header("Location", Umleiter.ziel)
+                self.end_headers()
+
+        Ziel.empfangene_token = []
+        ziel_server = http.server.HTTPServer(("127.0.0.1", 0), Ziel)
+        umleiter_server = http.server.HTTPServer(("127.0.0.1", 0), Umleiter)
+        Umleiter.ziel = f"http://127.0.0.1:{ziel_server.server_port}/abfangen"
+        threads = [
+            threading.Thread(target=server.serve_forever, daemon=True)
+            for server in (ziel_server, umleiter_server)
+        ]
+        try:
+            for thread in threads:
+                thread.start()
+            # Ausschließlich für diesen lokalen Netzwerktest den Produktions-
+            # URL-Validator mocken; reale Modell-URLs bleiben HTTPS-pflichtig.
+            with mock.patch.object(ki, "_pruefe_url", return_value=None):
+                with self.assertRaises(ki.KINichtVerfuegbar):
+                    ki._http(f"http://127.0.0.1:{umleiter_server.server_port}/umleitung",
+                             "nur-ein-test-token")
+            self.assertEqual(Ziel.empfangene_token, [])
+        finally:
+            umleiter_server.shutdown()
+            ziel_server.shutdown()
+            umleiter_server.server_close()
+            ziel_server.server_close()
+
     def test_kein_bezahlter_anbieter_im_code(self):
         for datei in ("team/ki.py", "team/agent.py", "team/runner.py", ".github/workflows/schnapper-hourly.yml"):
             text = (ROOT / datei).read_text(encoding="utf-8")
