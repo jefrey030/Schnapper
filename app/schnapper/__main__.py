@@ -13,6 +13,7 @@ from .angebot import geld
 from .dubletten import entferne_dubletten
 from .einlesen import lies_datei
 from .suche import SORTIERUNGEN, Filter, suche
+from .verlauf import Verlauf, VerlaufFehler, warnung
 
 
 def main(argv=None) -> int:
@@ -30,6 +31,7 @@ def main(argv=None) -> int:
     p.add_argument("--ohne-veraltet", action="store_true", help="Preise älter als 24 Std. ausblenden")
     p.add_argument("--mit-verdacht", action="store_true", help="Betrugsverdacht nicht ausblenden")
     p.add_argument("--json", action="store_true", help="Ausgabe als JSON")
+    p.add_argument("--verlauf", help="Preisverlauf-Datei: Preise festhalten und Tiefstpreise erkennen")
     a = p.parse_args(argv)
     if bool(a.datei) == bool(a.openprices):
         p.error("entweder DATEI oder --openprices EAN angeben")
@@ -46,6 +48,15 @@ def main(argv=None) -> int:
         lizenz = LIZENZ
     else:
         ergebnis = lies_datei(a.datei)
+    verlauf = None
+    if a.verlauf:
+        try:
+            verlauf = Verlauf.laden(a.verlauf)
+        except VerlaufFehler as exc:
+            print("Preisverlauf:", exc, file=sys.stderr)
+            return 1
+        if verlauf.aufzeichnen(ergebnis.angebote):
+            verlauf.speichern()
     eindeutig, dubletten = entferne_dubletten(ergebnis.angebote)
     f = Filter(text=a.suche,
                max_preis=geld(a.max_preis) if a.max_preis else None,
@@ -53,6 +64,10 @@ def main(argv=None) -> int:
                zustaende=set(a.zustand), quellen=set(a.quelle),
                ohne_verdacht=not a.mit_verdacht, ohne_veraltet=a.ohne_veraltet)
     treffer = suche(eindeutig, f, a.sortierung)
+    infos = {t.angebot.id: verlauf.info(t.angebot) if verlauf else None for t in treffer}
+
+    def alle_warnungen(t):
+        return list(t.warnungen) + [w for w in (warnung(infos[t.angebot.id]),) if w]
 
     if a.json:
         print(json.dumps({
@@ -60,7 +75,8 @@ def main(argv=None) -> int:
             "dubletten_entfernt": [{"entfernt": x.id, "behalten": y.id} for x, y in dubletten],
             "treffer": [{"id": t.angebot.id, "titel": t.angebot.titel, "gesamtpreis": str(t.angebot.gesamtpreis),
                          "rabatt_prozent": None if t.angebot.rabatt_prozent is None else str(t.angebot.rabatt_prozent),
-                         "quelle": t.angebot.quelle, "url": t.angebot.url, "warnungen": list(t.warnungen)}
+                         "quelle": t.angebot.quelle, "url": t.angebot.url, "warnungen": alle_warnungen(t),
+                         "verlauf": None if infos[t.angebot.id] is None else infos[t.angebot.id].als_dict()}
                         for t in treffer],
         }, ensure_ascii=False, indent=2))
     else:
@@ -69,7 +85,15 @@ def main(argv=None) -> int:
         for t in treffer:
             r = "  –  " if t.angebot.rabatt_prozent is None else f"{t.angebot.rabatt_prozent:>4}%"
             print(f"{r}  {t.angebot.gesamtpreis:>9} €  {t.angebot.titel}  [{t.angebot.quelle}]")
-            for w in t.warnungen:
+            info = infos[t.angebot.id]
+            if info is not None:
+                zeile = f"spanne {info.tiefst}–{info.hoechst} € in {info.seit_tagen} Tagen"
+                if info.ist_tiefstpreis:
+                    zeile = "TIEFSTPREIS · " + zeile
+                if info.vorher is not None:
+                    zeile += f" · vorher {info.vorher} €"
+                print(f"         ~ {zeile}")
+            for w in alle_warnungen(t):
                 print(f"         ! {w}")
         for fehler in ergebnis.fehler:
             print("UNGÜLTIG:", fehler, file=sys.stderr)

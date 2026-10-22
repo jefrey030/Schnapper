@@ -81,7 +81,7 @@ PYTHONPATH=app python -m schnapper app/beispiele/angebote.csv --suche kopfhoerer
 ```
 PYTHONPATH=app python -m schnapper.web app/beispiele/angebote.csv
 ```
-Dann im Browser `http://127.0.0.1:8765` öffnen. Suche, Filter, Sortierung und „Eigene Liste“ (CSV/JSON hochladen) funktionieren am Handy wie am PC. Hochgeladene Listen bleiben nur im Arbeitsspeicher.
+Dann im Browser `http://127.0.0.1:8765` öffnen. Suche, Filter, Sortierung und „Eigene Liste“ (CSV/JSON hochladen) funktionieren am Handy wie am PC. Hochgeladene Listen bleiben nur im Arbeitsspeicher (Ausnahme: Preisverlauf mit `--verlauf`, siehe unten).
 Mit `--host 0.0.0.0` ist die Seite im eigenen WLAN erreichbar (ohne Passwort, daher nur im Heimnetz).
 
 ### Merkliste und Preisalarm in der Web-Oberfläche
@@ -89,6 +89,20 @@ Mit `--host 0.0.0.0` ist die Seite im eigenen WLAN erreichbar (ohne Passwort, da
 - **⚡ Preisalarm für diese Suche:** Suchbegriff plus „Bis €“ und/oder „Ab % billiger“ eingeben, Knopf drücken. Unter **Preisalarme** steht bei jedem Öffnen, welche Wünsche gerade erfüllt sind (günstigstes Angebot zuerst). Die Zahl am Reiter zeigt, wie viele Alarme anschlagen.
 - Verdächtige (Betrugsverdacht) und veraltete Angebote lösen **keinen** Alarm aus.
 - Merkliste und Alarme werden nur **im Browser dieses Geräts** gespeichert (max. 200 gemerkte Angebote, 50 Alarme). Kein Konto, kein Server-Speicher.
+
+## Preisverlauf (`app/schnapper/verlauf.py`)
+Mit `--verlauf DATEI` hält SCHNAPPER jeden gesehenen Preis fest (bereinigte URL, Erfassungszeit, Gesamtpreis inkl. Versand – keine Personendaten, nur lokal):
+```
+PYTHONPATH=app python -m schnapper.web meine-liste.csv --verlauf verlauf.json
+PYTHONPATH=app python -m schnapper meine-liste.csv --verlauf verlauf.json
+```
+Dann zeigt jede Karte:
+- **Tiefstpreis seit N Tagen**, wenn der aktuelle Preis der niedrigste der letzten 30 Tage ist,
+- **↓/↑ vorher X €** bei einer Preisänderung seit der letzten Beobachtung,
+- die **Preisspanne** der letzten 30 Tage,
+- **„Statt“-Preis fragwürdig**, wenn der angegebene Referenzpreis mehr als 20 % über allem liegt, was in mindestens 7 Tagen und 3 Beobachtungen gesehen wurde (geschönte Rabatte).
+
+Wer dieselbe Liste mehrmals lädt, erzeugt keine doppelten Einträge. Eine beschädigte Verlaufsdatei wird nicht überschrieben; SCHNAPPER startet dann mit Fehlermeldung.
 
 ## Preisalarm auf der Kommandozeile (`app/schnapper/alarm.py`)
 Wunschliste als JSON (Beispiel: `app/beispiele/wuensche.json`):

@@ -128,7 +128,9 @@ def zeilen_aus_antwort(antwort: dict, ean: str, jetzt: dt.datetime | None = None
             "preis": str(preis),
             "referenzpreis": "" if referenz is None or referenz <= preis else str(referenz),
             "versand": "0",
-            "url": f"{API}/{pid}",
+            # Menschenlesbare Detailseite der Open-Prices-Webseite (Route /prices/:id laut
+            # openfoodfacts/open-prices-frontend, src/router.js) – nicht die JSON-API.
+            "url": f"https://{HOST}/prices/{pid}",
             "quelle": "openprices",
             # Beobachtungstag, Tagesbeginn UTC – höchstens „jetzt“, denn ein Datum aus einer Zeitzone
             # östlich von UTC kann kurz nach Mitternacht noch in der UTC-Zukunft liegen.
