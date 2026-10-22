@@ -43,6 +43,12 @@ def geld(wert) -> Decimal:
             text = (text.replace(".", "").replace(",", ".") if deutsch
                     else text.replace(",", ""))
         else:
+            # Ein einzelner Trenner vor genau drei Ziffern ist mehrdeutig:
+            # "1.299" kann 1,299 oder 1299 bedeuten. Keine Fantasie-Rabatte.
+            if re.fullmatch(r"[+-]?[0-9]+[.,][0-9]{3}", text):
+                raise AngebotFehler(
+                    f"Preis nicht eindeutig: {wert!r} – bitte z. B. 1299 oder 1.299,00 angeben"
+                )
             text = text.replace(",", ".")
         try:
             betrag = Decimal(text)
