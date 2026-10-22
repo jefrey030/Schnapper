@@ -99,7 +99,7 @@ class TestDienst(unittest.TestCase):
                             "status": "OK", "ki_echt": True,
                             "plan": {"aufgabe_id": "S-000"} if r == "LEAD" else None,
                             "vorschlag_datei": "team/proposals/fake.md" if r == "BRAIN" else None,
-                            "protokoll": {"freigabe": "nein",
+                            "protokoll": {"freigabe": "ja",
                                           "naechster_schritt": "manuell pruefen"}
                                           if r == "COMMAND" else None,
                             "ki": {"laufzeit": "Ollama lokal (keine bezahlte KI-API)",
@@ -141,6 +141,26 @@ class TestDienst(unittest.TestCase):
         fehler = dienst.pruefe_nachweise(bericht, lauf, schritte)
         self.assertTrue(any("keine bestätigte lokale Laufzeit" in e for e in fehler))
         self.assertTrue(any("nicht viermal eindeutig" in e for e in fehler))
+
+    def test_betreiber_not_aus_verhindert_neuen_lauf(self):
+        stop = self.team / "work" / "STOP"
+        stop.parent.mkdir(parents=True)
+        stop.write_text("Stopp angeordnet", encoding="utf-8")
+        with mock.patch.object(dienst.subprocess, "run") as run:
+            self.assertEqual(dienst.einmal(), 2)
+            run.assert_not_called()
+
+    def test_abgelehntes_check_und_command_nein_koennen_nicht_abnehmen(self):
+        lauf = self.team / "work" / "20261022_test"
+        lauf.mkdir(parents=True)
+        report = {"lauf": lauf.name, "team_einsatzbereit": True,
+                  "check_urteil": "abgelehnt",
+                  "agenten": {"COMMAND": {"protokoll": {"freigabe": "nein",
+                                                  "naechster_schritt": "Nachprüfen"}}}}
+        fehler = dienst.pruefe_nachweise(report, lauf, [])
+        self.assertTrue(any("CHECK hat nicht bestanden" in x for x in fehler))
+        self.assertTrue(any("kein gültiges Abschlussprotokoll" in x for x in fehler))
+
 
 if __name__ == "__main__":
     unittest.main()
