@@ -1,0 +1,7 @@
+id;titel;preis;versand;referenzpreis;zustand;quelle;kategorie;url;erfasst_am
+b1;Kopfhörer Over-Ear kabellos (BEISPIEL);49,99;4,90;129,00;gebraucht;beispielmarkt;audio;https://beispielmarkt.example/a/1?utm_source=mail;2026-10-21T18:00:00Z
+b2;Kopfhörer Over-Ear kabellos (BEISPIEL);49,99;4,90;129,00;gebraucht;beispielmarkt;audio;https://www.beispielmarkt.example/a/1/;2026-10-21T20:00:00Z
+b3;Kopfhörer Over Ear kabellos (BEISPIEL);59,00;0;129,00;wie_neu;andererladen;audio;https://andererladen.example/p/77;2026-10-21T19:30:00Z
+b4;Spielkonsole neu OVP (BEISPIEL);39,00;0;499,00;neu;beispielmarkt;spiele;https://beispielmarkt.example/a/9;2026-10-21T19:00:00Z
+b5;Kaffeevollautomat (BEISPIEL);180,00;0;;gebraucht;andererladen;kueche;https://andererladen.example/p/12;2026-10-18T09:00:00Z
+b6;Akkuschrauber Set (BEISPIEL);-5;0;89,00;neu;beispielmarkt;werkzeug;https://beispielmarkt.example/a/5;2026-10-21T19:00:00Z
