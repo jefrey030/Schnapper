@@ -81,6 +81,13 @@ def normalisiere_url(url: str) -> str:
     host = (teile.hostname or "").lower()
     if host.startswith("www."):
         host = host[4:]
+    # Die Portnummer gehört zur Adresse: :8443 ist nicht dasselbe Angebot
+    # wie der HTTPS-Standardport :443. IPv6 braucht die eckigen Klammern.
+    if ":" in host:
+        host = f"[{host}]"
+    port = teile.port
+    if port is not None and port != 443:
+        host = f"{host}:{port}"
     query = urlencode(sorted((k, v) for k, v in parse_qsl(teile.query, keep_blank_values=True)
                              if not TRACKING_PARAMETER.match(k)))
     pfad = teile.path.rstrip("/") or "/"
@@ -165,9 +172,18 @@ def pruefe(angebot: Angebot, jetzt: dt.datetime | None = None) -> None:
         raise AngebotFehler(f"Nur EUR unterstützt, nicht {angebot.waehrung}")
     if angebot.zustand not in ZUSTAENDE:
         raise AngebotFehler(f"Unbekannter Zustand: {angebot.zustand}")
-    teile = urlsplit(angebot.url)
-    if teile.scheme != "https" or not teile.hostname:
+    try:
+        teile = urlsplit(angebot.url)
+        host = teile.hostname
+        port = teile.port  # löst ValueError bei ungültigen Ports wie :abc aus
+    except ValueError as exc:
+        raise AngebotFehler("URL ist ungültig") from exc
+    if teile.scheme != "https" or not host:
         raise AngebotFehler("URL muss mit https:// beginnen")
+    if teile.username is not None or teile.password is not None:
+        raise AngebotFehler("URL darf keine Zugangsdaten enthalten")
+    if port == 0:
+        raise AngebotFehler("URL-Port 0 ist ungültig")
     if angebot.erfasst_am > (jetzt or dt.datetime.now(dt.timezone.utc)) + dt.timedelta(minutes=5):
         raise AngebotFehler("Erfassungszeit liegt in der Zukunft")
 
