@@ -132,6 +132,23 @@ class Web(unittest.TestCase):
             with self.subTest(q):
                 self.assertEqual(self.hole("/api/suche?" + q)[0], 400)
 
+    def test_merkliste_und_preisalarm_in_der_oberflaeche(self):
+        _, _, html = self.hole("/")
+        for teil in (b'id="ansicht-merkliste"', b'id="ansicht-alarme"', b'id="alarm-anlegen"', b'class="merken"'):
+            self.assertIn(teil, html)
+        js = self.hole("/app.js")[2].decode("utf-8")
+        self.assertNotIn(".innerHTML", js)  # fremde Titel nie als HTML einsetzen
+        # Jeder Zugriff auf localStorage muss abgesichert sein (privates Fenster wirft Fehler)
+        for zeile in js.splitlines():
+            if "localStorage." in zeile:
+                self.assertRegex(zeile, r"try\s*\{|^\s*const roh|^\s*catch|setItem", zeile)
+
+    def test_alarm_abfrage_der_oberflaeche(self):
+        # So fragt die Oberfläche einen Preisalarm ab: günstigstes zuerst, veraltete ausgeblendet
+        status, _, inhalt = self.hole("/api/suche?text=kopfhoerer&max_preis=55&sortierung=preis&ohne_veraltet=1")
+        self.assertEqual(status, 200)
+        self.assertTrue(all(float(t["gesamtpreis"]) <= 55 for t in json.loads(inhalt)["treffer"]))
+
     def test_unbekannter_pfad(self):
         self.assertEqual(self.hole("/../../etc/passwd")[0], 404)
         self.assertEqual(self.hole("/api/gibtsnicht")[0], 404)

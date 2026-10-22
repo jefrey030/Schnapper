@@ -72,3 +72,34 @@ main { max-width: 720px; margin: 0 auto; padding: 0 16px 48px; }
   background: var(--akzent); color: var(--akzent-text); font: inherit; font-weight: 700; cursor: pointer; }
 .barcode-zeile button:disabled { opacity: .6; cursor: wait; }
 .barcode-bereich .treffer { margin-top: 12px; }
+
+.ansichten { display: flex; gap: 6px; max-width: 720px; margin: 0 auto;
+  padding: 8px 16px; background: var(--grund); overflow-x: auto; }
+.ansichten button { font: inherit; font-size: 14px; color: var(--leise); background: transparent; border: 1px solid var(--linie);
+  border-radius: 999px; padding: 7px 14px; min-height: 36px; cursor: pointer; white-space: nowrap; }
+.ansichten button[aria-pressed="true"] { background: var(--text); color: var(--grund); border-color: var(--text); }
+.ansichten button:focus-visible, .knopf:focus-visible, .merken:focus-visible, .loeschen:focus-visible { outline: 2px solid var(--akzent); outline-offset: 2px; }
+.zahl { display: inline-block; min-width: 20px; margin-left: 4px; padding: 0 6px; border-radius: 999px;
+  background: var(--akzent); color: var(--akzent-text); font-size: 12px; font-weight: 700; line-height: 20px; text-align: center; }
+
+.knopf { font: inherit; font-weight: 600; min-height: 44px; border-radius: 10px; border: 0; cursor: pointer;
+  background: var(--akzent); color: var(--akzent-text); }
+.knopf:disabled { background: var(--linie); color: var(--leise); cursor: not-allowed; }
+.tipp { margin: -4px 0 0; font-size: 13px; color: var(--leise); }
+
+.rechts { display: flex; align-items: center; gap: 8px; }
+.merken { font-size: 22px; line-height: 1; width: 40px; height: 40px; border-radius: 10px; border: 1px solid var(--linie);
+  background: transparent; color: var(--leise); cursor: pointer; }
+.merken[aria-pressed="true"] { color: var(--akzent); border-color: var(--akzent); }
+.rabatt.hoch { background: var(--gefahr-grund); color: var(--gefahr); }
+
+.alarm .ausgeloest { font-size: 14px; font-weight: 600; color: var(--leise); }
+.alarm.an { border-color: var(--akzent); }
+.alarm.an .ausgeloest { color: var(--akzent); }
+.loeschen { font: inherit; font-size: 13px; color: var(--leise); background: transparent; border: 0; padding: 6px 4px; min-height: 32px; cursor: pointer; }
+.loeschen:hover { color: var(--gefahr); }
+.alarm-treffer { list-style: none; margin: 8px 0 0; padding: 0; display: grid; gap: 6px; font-size: 15px; }
+.alarm-treffer a { color: var(--text); font-weight: 600; text-decoration: none; overflow-wrap: anywhere; }
+.alarm-treffer a:hover { text-decoration: underline; }
+.leise { color: var(--leise); font-size: 13px; }
+[hidden] { display: none !important; }
