@@ -81,8 +81,10 @@
       "acceptance": [
         "Je PR: Zweck, geänderte Dateien, Überschneidungen und Konflikte mit main belegt (git diff --stat)",
         "Empfehlung je PR (übernehmen/zusammenführen/schließen) mit Begründung – Entscheidung bleibt bei Jefrey",
-        "Kein Merge, kein Schließen von PRs durch Agenten"
-      ]
+        "Kein Merge, kein Schließen von PRs durch Agenten",
+        "Branches ohne PR, die vollständig in main enthalten sind, werden als Löschkandidaten belegt (tests/test_branches_s006.py) – Löschen nur durch Jefrey"
+      ],
+      "hinweis": "Abgleich 22.10.2026 07:28 UTC: vier Branches ohne offenen PR sind inhaltlich vollständig in main enthalten (git diff --shortstat leer): fix/schnapper-web-main-20261022 und feature/schnapper-web-quellen-20261022 (Baum = main 7a0b83e), feature/schnapper-angebotskern-20261021 (Baum = 5343009), fix/schnapper-hourly-rotation-20261021 (0 Commits vor main). Empfehlung: Jefrey kann sie löschen – Agenten löschen keine Branches."
     }
   ]
 }
