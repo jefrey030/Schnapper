@@ -59,3 +59,13 @@ Dieser Status wird nach jedem tatsächlich gelaufenen Stundenlauf automatisch ü
 | Bericht | `team/runs/20261022-2029-master.md` |
 
 Hinweis: `team/tasks.json` wurde nicht separat geändert; die tasks.json-Änderung ist ausschließlich in PR #36 enthalten.
+
+## SCHNAPPER MASTER – letzter Lauf (22.10.2026, 21:28 UTC, Lauf 20261022-2128)
+| Aufgabe | Zustand | Beleg |
+| --- | --- | --- |
+| F1 Aufräumen (tasks.json, Masterplan B) | **Draft-PR #36** (Branch `agent/master/20261022-20` @ 4d48068), wartet auf Jefrey | `team/runs/20261022-2029-master.md` |
+| F2 = S-009 Angebot direkt in der App erfassen | **Draft-PR #39** (Branch `agent/master/20261022-21` @ 6dbeb82), CHECK bestanden, wartet auf Jefrey | https://github.com/jefrey030/Schnapper/pull/39, `tests/test_app_erfassen_s009.py` |
+| tasks.json | auf main unverändert. S-009 bis S-013 existieren nur in #36, deshalb wurde der Status von S-009 bewusst nicht in #39 gepflegt (sonst Konflikt) | – |
+| Tests (Branch F2) | 202/202 OK (davon 12 neu, inkl. Playwright-Browsertest), Cloudflare 10/10 | `team/runs/20261022-2128-master.md` |
+| Blocker | Actions starten nicht (Billing). Merge von #36/#39 liegt bei Jefrey. Mögliche Konflikte mit fremden PRs #19/#37 (`app/schnapper/web*`). eBay ohne Zugangsdaten | – |
+| Nächster Schritt | F3 = S-010 Merkliste/Preisalarme sichern & wiederherstellen | – |
