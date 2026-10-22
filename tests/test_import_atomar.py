@@ -3,6 +3,7 @@
 Kein Netzwerk, keine Cloud und keine kostenpflichtigen Dienste.
 """
 import pathlib
+import tempfile
 import sys
 import threading
 import unittest
@@ -14,6 +15,8 @@ sys.path.insert(0, str(ROOT / "app"))
 from schnapper.einlesen import Importergebnis  # noqa: E402
 from schnapper.quellen import Register  # noqa: E402
 from schnapper.web import Zustand  # noqa: E402
+from schnapper.angebot import Angebot, normalisiere_url  # noqa: E402
+from schnapper.verlauf import Verlauf  # noqa: E402
 
 
 class ImportZustand(unittest.TestCase):
@@ -115,6 +118,42 @@ class ImportZustand(unittest.TestCase):
         self.assertFalse(fehler, str(fehler))
         self.assertTrue(zweiter_speichert.is_set())
         self.assertEqual(self.zustand.lesen()[1], "zweiter.csv")
+
+
+class VerlaufTransaktion(unittest.TestCase):
+    @staticmethod
+    def angebot(tag, preis):
+        return Angebot.aus_dict({
+            "id": f"t{tag}", "titel": "Testprodukt", "preis": str(preis),
+            "url": "https://shop.example/item/7", "quelle": "mock",
+            "erfasst_am": f"2026-10-{tag:02d}T12:00:00Z",
+        })
+
+    def test_schreibfehler_rollt_preisverlauf_im_ram_zurueck(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            verlauf = Verlauf(pathlib.Path(tmp, "preise.json"))
+            erst = self.angebot(20, 39)
+            spaeter = self.angebot(21, 25)
+            self.assertEqual(verlauf.importiere([erst]), 1)
+            inhalt_davor = verlauf.pfad.read_bytes()
+            with mock.patch.object(verlauf, "speichern", side_effect=OSError("Datenträger voll")):
+                with self.assertRaises(OSError):
+                    verlauf.importiere([spaeter])
+            eintraege = verlauf._daten[normalisiere_url(erst.url)]
+            self.assertEqual(len(eintraege), 1)
+            self.assertEqual(eintraege[0][1], erst.gesamtpreis)
+            self.assertEqual(verlauf.pfad.read_bytes(), inhalt_davor)
+            self.assertEqual(verlauf.importiere([spaeter]), 1)
+            self.assertEqual(len(verlauf._daten[normalisiere_url(erst.url)]), 2)
+
+    def test_erneuter_identischer_import_speichert_trotz_null_neuer_punkte(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            verlauf = Verlauf(pathlib.Path(tmp, "preise.json"))
+            angebot = self.angebot(20, 39)
+            self.assertEqual(verlauf.importiere([angebot]), 1)
+            with mock.patch.object(verlauf, "speichern", wraps=verlauf.speichern) as speichern:
+                self.assertEqual(verlauf.importiere([angebot]), 0)
+                speichern.assert_called_once()
 
 
 if __name__ == "__main__":
