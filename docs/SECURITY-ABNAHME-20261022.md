@@ -58,3 +58,28 @@ Monitoring **noch nicht produktiv implementiert**: unabhängigen Heartbeat, Alar
 Nur `PASS`, wenn alle Prüfungen für alle vier Agenten echte, aktuelle Belege besitzen; die gesamte Produktionsumgebung kontrolliert ist; ein Not-Aus-Praxistest erfolgreich war; Kosten sicher auf 0 € begrenzt sind; GitHub-Checks `success` statt `skipped` melden; und der Betreiber ausdrücklich bestätigt.
 
 Bei `FAIL`, `SKIPPED`, unbekanntem Tarif, fehlendem Monitoring oder unklarem Zugriff bleibt der Betrieb **BLOCKIERT**. Dokumentation, Simulation, Code-Präsenz und bloße KI-Behauptungen zählen nie als erfolgreiche Live-Abnahme.
+
+## Nachtrag – Sicherheitsprüfung auf PR #21 (22.10.2026)
+
+**Nicht bestanden / kein Release.** Zusätzliche Sicherungen sind im Entwicklungsbranch
+gespeichert, aber die vollständige Test-Suite wurde für diesen neuen Commit noch nicht
+ausgeführt. In privaten Repositories sind die GitHub Actions bewusst `skipped`.
+
+- Der finale Stundenbericht prüft jetzt zusätzlich LEAD-, BRAIN-, CHECK- und
+  COMMAND-Antworten auf bekannte Geheimnismuster. Nur Rollennamen (nie den Schlüssel)
+  werden bei einem Fund im Prüffeld `ki_geheimnis_rollen` protokolliert.
+- Bereits vor dem Schreiben eines Agenten-Rohberichts werden gefundene Schlüssel
+  zu `[REDACTED]` maskiert. Ein solcher Fund setzt den gespeicherten Agentenstatus
+  auf `FEHLER` und führt zu einem nicht erfolgreichen Prozess-Exit.
+- BRAIN-Vorschläge werden ebenfalls vor persistenter Ablage maskiert. Ungefilterte
+  KI-Rohantworten erscheinen nicht mehr als Vorschau in der Konsole.
+- Die neuen Regressionstests prüfen für LEAD, CHECK und COMMAND den fehlenden
+  positiven Teamstatus **und** die Redigierung in den tatsächlich geschriebenen
+  JSON-Dateien.
+- Das Muster ist eine Defense-in-Depth-Erkennung bekannter Tokenformate, kein
+  vollständiger DLP-Ersatz. Vor einem öffentlichen Repo müssen Logs, bestehende
+  Historie/Artefakte und Secrets zusätzlich gescannt und bereinigt werden.
+
+**Abnahme noch ausstehend:** Python- und Node-Tests für diese SHA, echter
+Not-Aus-Test, unabhängiges Review, Free-Tarif-Nachweis und zwei echte
+aufeinanderfolgende Teamläufe. Weder GitHub- noch Cloudflare-Produktivjobs starten.
