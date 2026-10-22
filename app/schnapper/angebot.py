@@ -44,7 +44,10 @@ def geld(wert) -> Decimal:
         raise AngebotFehler(f"Preis nicht lesbar: {wert!r}")
     if not betrag.is_finite():
         raise AngebotFehler("Preis ist keine endliche Zahl")
-    return betrag.quantize(CENT, rounding=ROUND_HALF_UP)
+    try:
+        return betrag.quantize(CENT, rounding=ROUND_HALF_UP)
+    except InvalidOperation as exc:
+        raise AngebotFehler("Preis außerhalb des darstellbaren Bereichs") from exc
 
 
 def zeitpunkt(wert) -> dt.datetime:
@@ -112,7 +115,7 @@ class Angebot:
             Decimal("0.1"), rounding=ROUND_HALF_UP)
 
     @classmethod
-    def aus_dict(cls, daten: dict) -> "Angebot":
+    def aus_dict(cls, daten: dict, jetzt: dt.datetime | None = None) -> "Angebot":
         """Baut ein geprüftes Angebot aus Rohdaten (z. B. einer Zeile aus JSON/CSV)."""
         if not isinstance(daten, dict):
             raise AngebotFehler("Angebot muss ein Objekt sein")
@@ -139,12 +142,15 @@ class Angebot:
             kategorie=text("kategorie", False),
             extra={k: v for k, v in daten.items() if k not in cls.__dataclass_fields__},
         )
-        pruefe(angebot)
+        pruefe(angebot, jetzt)
         return angebot
 
 
-def pruefe(angebot: Angebot) -> None:
-    """Harte Regeln: Verstöße machen ein Angebot unbrauchbar."""
+def pruefe(angebot: Angebot, jetzt: dt.datetime | None = None) -> None:
+    """Harte Regeln: Verstöße machen ein Angebot unbrauchbar.
+
+    `jetzt` ist der Prüfzeitpunkt (Standard: echte Uhrzeit); Tests und Adapter mit
+    festem Zeitpunkt reichen ihn durch, damit das Ergebnis nicht von der Uhr abhängt."""
     if len(angebot.titel) > 300:
         raise AngebotFehler("Titel länger als 300 Zeichen")
     if angebot.preis <= 0:
@@ -162,7 +168,7 @@ def pruefe(angebot: Angebot) -> None:
     teile = urlsplit(angebot.url)
     if teile.scheme != "https" or not teile.hostname:
         raise AngebotFehler("URL muss mit https:// beginnen")
-    if angebot.erfasst_am > dt.datetime.now(dt.timezone.utc) + dt.timedelta(minutes=5):
+    if angebot.erfasst_am > (jetzt or dt.datetime.now(dt.timezone.utc)) + dt.timedelta(minutes=5):
         raise AngebotFehler("Erfassungszeit liegt in der Zukunft")
 
 

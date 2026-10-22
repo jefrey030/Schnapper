@@ -17,7 +17,10 @@ from .suche import SORTIERUNGEN, Filter, suche
 
 def main(argv=None) -> int:
     p = argparse.ArgumentParser(prog="schnapper", description="Schnäppchen aus einer Angebotsdatei finden")
-    p.add_argument("datei", help=".json oder .csv mit Angeboten")
+    p.add_argument("datei", nargs="?", help=".json oder .csv mit Angeboten")
+    p.add_argument("--openprices", metavar="EAN", help="Echte Ladenpreise zu diesem Barcode von Open Prices abrufen "
+                   "(nur mit SCHNAPPER_OPENPRICES_FREIGABE=ja)")
+    p.add_argument("--tage", type=int, default=90, help="Zeitraum für --openprices in Tagen")
     p.add_argument("--suche", default="", help="Suchwörter, alle müssen im Titel vorkommen")
     p.add_argument("--max-preis", help="Höchster Gesamtpreis inkl. Versand")
     p.add_argument("--min-rabatt", help="Mindestersparnis in Prozent")
@@ -28,8 +31,21 @@ def main(argv=None) -> int:
     p.add_argument("--mit-verdacht", action="store_true", help="Betrugsverdacht nicht ausblenden")
     p.add_argument("--json", action="store_true", help="Ausgabe als JSON")
     a = p.parse_args(argv)
+    if bool(a.datei) == bool(a.openprices):
+        p.error("entweder DATEI oder --openprices EAN angeben")
 
-    ergebnis = lies_datei(a.datei)
+    lizenz = None
+    if a.openprices:
+        from .openprices import LIZENZ, OpenPricesAdapter, OpenPricesFehler, OpenPricesGesperrt
+        try:
+            adapter = OpenPricesAdapter(a.openprices, a.tage)
+            ergebnis = adapter.lade()
+        except (ValueError, OpenPricesGesperrt, OpenPricesFehler) as exc:
+            print(f"Open Prices: {exc}", file=sys.stderr)
+            return 3
+        lizenz = LIZENZ
+    else:
+        ergebnis = lies_datei(a.datei)
     eindeutig, dubletten = entferne_dubletten(ergebnis.angebote)
     f = Filter(text=a.suche,
                max_preis=geld(a.max_preis) if a.max_preis else None,
@@ -40,7 +56,7 @@ def main(argv=None) -> int:
 
     if a.json:
         print(json.dumps({
-            "eingelesen": len(ergebnis.angebote), "ungueltig": ergebnis.fehler,
+            "eingelesen": len(ergebnis.angebote), "ungueltig": ergebnis.fehler, "lizenz": lizenz,
             "dubletten_entfernt": [{"entfernt": x.id, "behalten": y.id} for x, y in dubletten],
             "treffer": [{"id": t.angebot.id, "titel": t.angebot.titel, "gesamtpreis": str(t.angebot.gesamtpreis),
                          "rabatt_prozent": None if t.angebot.rabatt_prozent is None else str(t.angebot.rabatt_prozent),
@@ -57,6 +73,8 @@ def main(argv=None) -> int:
                 print(f"         ! {w}")
         for fehler in ergebnis.fehler:
             print("UNGÜLTIG:", fehler, file=sys.stderr)
+        if lizenz:
+            print(lizenz)
     return 0 if not ergebnis.fehler else 2
 
 

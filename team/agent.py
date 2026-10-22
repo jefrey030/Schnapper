@@ -16,13 +16,16 @@ sind klar als "werkzeug" gekennzeichnet und werden nie als KI ausgegeben.
 """
 import datetime as dt
 import json
+import os
 import pathlib
 import re
 import subprocess
 import sys
 
 sys.path.insert(0, str(pathlib.Path(__file__).resolve().parent))
-from ki import KI, KINichtVerfuegbar  # noqa: E402
+from ki import KI as GitHubKI, KINichtVerfuegbar  # noqa: E402
+from local_ollama import KI as LokaleKI  # noqa: E402
+KI = LokaleKI if os.environ.get("SCHNAPPER_KI_BACKEND") == "ollama" else GitHubKI
 from runner import ROLES, choose_task, load_tasks, previous_task_id  # noqa: E402
 
 ROOT = pathlib.Path(__file__).resolve().parent.parent
@@ -249,6 +252,20 @@ def command(ordner, ki):
     return erg
 
 
+def blocker_ermitteln(alle):
+    """Deterministisch: Agenten ohne echte KI-Antwort als Blocker 'KI-Anbindung fehlt' gruppieren.
+
+    Nur Rollen mit Status NICHT EINSATZBEREIT und Fehlertext zählen; übersprungene
+    Folgerollen sind Konsequenz, kein eigener Blocker."""
+    gruppen = {}
+    for r in ROLES:
+        a = alle.get(r) or {}
+        if a.get("status") == "NICHT EINSATZBEREIT" and a.get("fehler"):
+            gruppen.setdefault(a["fehler"], []).append(r)
+    return [{"art": "KI-Anbindung fehlt", "detail": detail, "rollen": rollen}
+            for detail, rollen in gruppen.items()]
+
+
 def bericht(ordner):
     """Deterministisch (Werkzeug, keine KI): Stundenbericht, STATUS.md und Zustand speichern."""
     alle = {r: lies(ordner, r) or {"status": "FEHLT", "ki_echt": False} for r in ROLES}
@@ -280,13 +297,15 @@ def bericht(ordner):
     )
     modelle = sorted({(alle[r].get("ki") or {}).get("modell") for r in echt} - {None})
     proto = alle["COMMAND"].get("protokoll") or {}
+    blocker = blocker_ermitteln(alle)
     zusammen = {"lauf": ordner.name, "ende_utc": jetzt(), "team_einsatzbereit": einsatzbereit,
                 "agenten_mit_echter_ki": echt, "modelle": modelle,
                 "aufgabe": lead_plan.get("aufgabe_id"), "check_urteil": urteil,
                 "tests_ok": tests.get("ok"), "tests_anzahl": tests.get("anzahl"),
                 "ki_aufrufe": ki_aufrufe,
                 "antwort_ids_eindeutig": vier_eindeutige_antworten,
-                "naechster_schritt": proto.get("naechster_schritt"), "agenten": alle}
+                "naechster_schritt": proto.get("naechster_schritt"), "blocker": blocker,
+                "agenten": alle}
     runs = TEAM / "runs"
     runs.mkdir(parents=True, exist_ok=True)
     (runs / f"{ordner.name}.json").write_text(json.dumps(
@@ -294,7 +313,7 @@ def bericht(ordner):
         ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
     zeilen = [f"# SCHNAPPER-KI-Team – Stundenbericht {ordner.name}", "",
               f"**Team-Status:** {'EINSATZBEREIT – alle vier Agenten mit echter KI' if einsatzbereit else 'NICHT EINSATZBEREIT'}",
-              f"**KI-Laufzeit:** GitHub Models, kostenloses Kontingent; Modell(e): {', '.join(modelle) or 'keins'}",
+              f"**KI-Laufzeit:** {', '.join(sorted({(alle[r].get('ki') or {}).get('laufzeit') for r in echt} - {None})) or 'keine (nicht gestartet)'}; Modell(e): {', '.join(modelle) or 'keins'}",
               f"**KI-Aufrufe in diesem Lauf:** {zusammen['ki_aufrufe']}",
               f"**Aufgabe:** {lead_plan.get('aufgabe_id') or '–'}",
               f"**Tests (echt ausgeführt):** {'bestanden' if tests.get('ok') else 'FEHLER/nicht ausgeführt'} ({tests.get('anzahl', 0)})",
@@ -304,6 +323,9 @@ def bericht(ordner):
         a = alle[r]
         zeilen.append(f"| {r} | {a.get('status')} | {'ja' if a.get('ki_echt') else 'nein'} | "
                       f"{(a.get('ki') or {}).get('antwort_id') or '–'} | {(a.get('fehler') or '').replace('|', '/')[:160]} |")
+    zeilen += ["", "## Blocker", ""]
+    zeilen += [f"- **{b['art']}** ({', '.join(b['rollen'])}): {b['detail'].replace('|', '/')[:200]}"
+               for b in blocker] or ["- keine"]
     if proto:
         zeilen += ["", "## COMMAND-Protokoll (KI)", "", proto.get("zusammenfassung", ""), "",
                    f"**Nächster Schritt:** {proto.get('naechster_schritt', '–')}"]
@@ -314,7 +336,8 @@ def bericht(ordner):
     (runs / f"{ordner.name}.md").write_text(text, encoding="utf-8")
     (TEAM / "STATUS.md").write_text(text, encoding="utf-8")
     print(json.dumps({k: zusammen[k] for k in ("lauf", "team_einsatzbereit", "agenten_mit_echter_ki",
-                                                 "modelle", "aufgabe", "check_urteil", "tests_ok", "ki_aufrufe")},
+                                                 "modelle", "aufgabe", "check_urteil", "tests_ok", "ki_aufrufe",
+                                                 "blocker")},
                      ensure_ascii=False))
     return 0
 
