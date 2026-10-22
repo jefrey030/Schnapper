@@ -81,6 +81,7 @@ PYTHONPATH=app python -m schnapper app/beispiele/angebote.csv --suche kopfhoerer
 ```
 PYTHONPATH=app python -m schnapper.web app/beispiele/angebote.csv
 ```
+Am Handy (Termux) geht es mit einem Befehl: `bash start-schnapper.sh` (siehe `docs/HANDY-START.md`).
 Dann im Browser `http://127.0.0.1:8765` öffnen. Suche, Filter, Sortierung und „Eigene Liste“ (CSV/JSON hochladen) funktionieren am Handy wie am PC. Hochgeladene Listen bleiben nur im Arbeitsspeicher (Ausnahme: Preisverlauf mit `--verlauf`, siehe unten).
 Mit `--host 0.0.0.0` ist die Seite im eigenen WLAN erreichbar (ohne Passwort, daher nur im Heimnetz).
 
