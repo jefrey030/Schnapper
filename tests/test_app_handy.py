@@ -1,4 +1,5 @@
 """Tests: Vorlage für eigene Angebote und Startbildschirm-Funktion (Web-App-Manifest)."""
+import datetime as dt
 import json
 import pathlib
 import struct
@@ -8,12 +9,14 @@ import threading
 import unittest
 import urllib.error
 import urllib.request
+from unittest import mock
 
 ROOT = pathlib.Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / "app"))
 
 from schnapper.einlesen import lies_datei  # noqa: E402
 from schnapper.web import erstelle_server  # noqa: E402
+from schnapper import openprices as op  # noqa: E402
 
 VORLAGE = ROOT / "app" / "vorlagen" / "meine-angebote.csv"
 WEB = ROOT / "app" / "schnapper" / "web"
@@ -80,6 +83,76 @@ class Startbildschirm(unittest.TestCase):
         finally:
             server.shutdown()
             server.server_close()
+
+
+
+class BarcodeWeb(unittest.TestCase):
+    """Echter lokaler HTTP-Server, aber niemals ein echter externer Preisabruf."""
+
+    EAN = "4008400402222"
+
+    def setUp(self):
+        self.server = erstelle_server(VORLAGE, port=0)
+        threading.Thread(target=self.server.serve_forever, daemon=True).start()
+        self.basis = f"http://127.0.0.1:{self.server.server_address[1]}"
+        self.opener = urllib.request.build_opener(urllib.request.ProxyHandler({}))
+
+    def tearDown(self):
+        self.server.shutdown()
+        self.server.server_close()
+
+    def post(self, ean, headers=None):
+        payload = json.dumps({"ean": ean}).encode("utf-8")
+        req = urllib.request.Request(
+            self.basis + "/api/openprices", data=payload,
+            headers={"X-Schnapper": "1", "Content-Type": "application/json"} if headers is None else headers,
+            method="POST",
+        )
+        try:
+            with self.opener.open(req, timeout=5) as r:
+                return r.status, json.loads(r.read())
+        except urllib.error.HTTPError as exc:
+            return exc.code, json.loads(exc.read())
+
+    def test_kein_schalter_keine_externe_preisabfrage(self):
+        with mock.patch.dict("os.environ", {}, clear=True), mock.patch.object(op, "_abruf") as abruf:
+            status, body = self.post(self.EAN)
+        self.assertEqual(status, 403)
+        self.assertIn("FREIGABE", body["fehler"])
+        abruf.assert_not_called()
+
+    def test_schutzheader_und_ungueltiger_barcode(self):
+        with mock.patch.dict("os.environ", {op.FREIGABE_VARIABLE: "ja"}, clear=True), \
+             mock.patch.object(op, "_abruf") as abruf:
+            status_ohne, _ = self.post(self.EAN, headers={"Content-Type": "application/json"})
+            status_barcode, _ = self.post("abc")
+        self.assertEqual((status_ohne, status_barcode), (403, 400))
+        abruf.assert_not_called()
+
+    def test_barcode_zeigt_preis_ohne_eigene_angebote_zu_ersetzen(self):
+        heute = dt.date.today().isoformat()
+        preis = {
+            "id": 77, "product_code": self.EAN, "product_name": "TEST Produkt",
+            "price": 1.29, "currency": "EUR", "price_per": "UNIT",
+            "date": heute, "location": {"osm_name": "Testladen", "osm_address_city": "Berlin"},
+        }
+        with mock.patch.dict("os.environ", {op.FREIGABE_VARIABLE: "ja"}, clear=True), \
+             mock.patch.object(op, "_abruf", return_value={"items": [preis], "total": 1}) as abruf:
+            status, daten = self.post(self.EAN)
+        self.assertEqual(status, 200)
+        self.assertEqual(daten["treffer"][0]["id"], "openprices-77")
+        self.assertIn("ODbL", daten["lizenz"])
+        self.assertFalse(daten["beispieldaten"])
+        abruf.assert_called_once()
+        with self.opener.open(self.basis + "/api/suche", timeout=5) as r:
+            eigene = json.loads(r.read())
+        self.assertEqual(eigene["eingelesen"], 0)
+
+    def test_browser_hat_barcode_formular(self):
+        with self.opener.open(self.basis + "/", timeout=5) as r:
+            html = r.read().decode("utf-8")
+        self.assertIn('id="barcode-form"', html)
+        self.assertIn('id="barcode-status"', html)
 
 
 if __name__ == "__main__":
