@@ -12,7 +12,10 @@ Der Code hat zwei Sperren: `RUN_ENABLED=false` und
 ```sh
 node --test cloudflare/test/worker.test.mjs
 ```
-**Lokal auf Node.js 22 ausgeführt: 10/10 Tests erfolgreich (22.10.2026).**\nDie Tests simulieren Antworten; sie beweisen **keine** echte Cloud-KI.\nDas D1-SQL-Schema wurde zusätzlich mit SQLite auf Fremdschlüssel und\neindeutige Stundenkennungen geprüft.
+**Lokal auf Node.js 22 ausgeführt: 10/10 Tests erfolgreich (22.10.2026).**
+Die Tests simulieren Antworten; sie beweisen **keine** echte Cloud-KI.
+Das D1-SQL-Schema wurde zusätzlich mit SQLite auf Fremdschlüssel und
+eindeutige Stundenkennungen geprüft.
 
 ## Späterer, ausdrücklich kontrollierter Free-Rollout
 1. Im Cloudflare-Dashboard prüfen, dass der aktuelle **Workers Free** Plan
