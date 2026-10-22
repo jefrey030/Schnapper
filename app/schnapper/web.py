@@ -13,8 +13,12 @@ die gesehenen Preise (URL, Zeitpunkt, Preis) lokal in DATEI festgehalten.
 from __future__ import annotations
 
 import argparse
+import csv
+import datetime as dt
+import io
 import json
 import pathlib
+import secrets
 import sys
 import threading
 from decimal import Decimal, InvalidOperation
@@ -23,7 +27,7 @@ from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from urllib.parse import parse_qs, urlsplit
 
 from .adapter import finde_in
-from .angebot import ZUSTAENDE, AngebotFehler, geld
+from .angebot import ZUSTAENDE, Angebot, AngebotFehler, geld
 from .einlesen import Importergebnis, lies_datei, lies_text
 from .quellen import QuellenFehler, Register
 from .suche import SORTIERUNGEN, Filter
@@ -38,6 +42,10 @@ DATEIEN = {"/": ("index.html", "text/html; charset=utf-8"),
            "/icon-512.png": ("icon-512.png", "image/png"),
            "/icon-maskable-512.png": ("icon-maskable-512.png", "image/png")}
 MAX_UPLOAD = 5 * 1024 * 1024
+MAX_ANGEBOT = 4096  # ein einzelnes, in der App erfasstes Angebot (S-009)
+CSV_SPALTEN = ("id", "titel", "preis", "versand", "referenzpreis", "zustand", "quelle", "kategorie", "url",
+               "erfasst_am")
+ERFASSEN_FELDER = ("titel", "preis", "versand", "referenzpreis", "zustand", "url", "kategorie")
 SICHERHEIT = {
     "Content-Security-Policy": "default-src 'none'; script-src 'self'; style-src 'self'; connect-src 'self'; "
                                "img-src 'self' data:; manifest-src 'self'; base-uri 'none'; form-action 'none'; frame-ancestors 'none'",
@@ -67,6 +75,21 @@ class Zustand:
             self._daten = (geladen, name, False)
         self.preise_merken(geladen)
 
+    def hinzufuegen(self, angebot: Angebot) -> int:
+        """Hängt ein selbst erfasstes Angebot an; die Beispielliste wird dabei verworfen
+        (keine ausgedachten Daten mit eigenen mischen). Gibt die neue Anzahl zurück."""
+        with self._lock:
+            alt, name, beispiel = self._daten
+            if beispiel:
+                neu = Importergebnis(angebote=[angebot], fehler=[])
+                name = "Eigene Angebote"
+            else:
+                neu = Importergebnis(angebote=[*alt.angebote, angebot], fehler=list(alt.fehler))
+            self._daten = (neu, name, False)
+            anzahl = len(neu.angebote)
+        self.preise_merken(Importergebnis([angebot]))
+        return anzahl
+
     def preise_merken(self, geladen: Importergebnis):
         if self.verlauf is not None and self.verlauf.aufzeichnen(geladen.angebote):
             self.verlauf.speichern()
@@ -93,6 +116,18 @@ def filter_aus_query(q: dict) -> tuple[Filter, str]:
                zustaende={zustand} if zustand else set(),
                ohne_veraltet=eins("ohne_veraltet") == "1", ohne_verdacht=eins("mit_verdacht") != "1")
     return f, sortierung
+
+
+def als_csv(angebote) -> str:
+    """Angebote im Format der Vorlage app/vorlagen/meine-angebote.csv (Semikolon, UTF-8)."""
+    puffer = io.StringIO()
+    w = csv.writer(puffer, delimiter=";", lineterminator="\n")
+    w.writerow(CSV_SPALTEN)
+    for a in angebote:
+        w.writerow([a.id, a.titel, str(a.preis), str(a.versand),
+                    "" if a.referenzpreis is None else str(a.referenzpreis),
+                    a.zustand, a.quelle, a.kategorie, a.url, a.erfasst_am.isoformat()])
+    return puffer.getvalue()
 
 
 def als_json(ergebnis, name: str, beispiel: bool, verlauf: Verlauf | None = None) -> dict:
@@ -154,6 +189,20 @@ def baue_handler(zustand: Zustand):
                 geladen, name, beispiel = zustand.lesen()
                 return self._json(HTTPStatus.OK, als_json(finde_in(geladen, f, sortierung), name, beispiel,
                                                          zustand.verlauf))
+            if teile.path == "/api/angebote.csv":
+                geladen, _, beispiel = zustand.lesen()
+                text = als_csv([] if beispiel else geladen.angebote)
+                self.send_response(HTTPStatus.OK)
+                inhalt = text.encode("utf-8")
+                self.send_header("Content-Type", "text/csv; charset=utf-8")
+                self.send_header("Content-Disposition", 'attachment; filename="meine-angebote.csv"')
+                self.send_header("Content-Length", str(len(inhalt)))
+                for k, v in SICHERHEIT.items():
+                    self.send_header(k, v)
+                self.end_headers()
+                if self.command != "HEAD":
+                    self.wfile.write(inhalt)
+                return None
             if teile.path == "/api/quellen":
                 return self._json(HTTPStatus.OK, {"quellen": [
                     {"kennung": q.kennung, "name": q.name, "entscheidung": q.entscheidung, "hinweis": q.hinweis}
@@ -162,11 +211,13 @@ def baue_handler(zustand: Zustand):
 
         def do_POST(self):
             ziel = urlsplit(self.path).path
-            if ziel not in ("/api/import", "/api/openprices"):
+            if ziel not in ("/api/import", "/api/openprices", "/api/angebot"):
                 return self._json(HTTPStatus.NOT_FOUND, {"fehler": "Nicht gefunden"})
             # Schutz gegen fremde Webseiten, die im Hintergrund Daten hochladen wollen
             if self.headers.get("X-Schnapper") != "1":
                 return self._json(HTTPStatus.FORBIDDEN, {"fehler": "Anfrage nicht erlaubt"})
+            if ziel == "/api/angebot":
+                return self._angebot_erfassen()
             if ziel == "/api/openprices":
                 from .openprices import (LIZENZ, OpenPricesAdapter,
                                          OpenPricesFehler, OpenPricesGesperrt)
@@ -229,6 +280,36 @@ def baue_handler(zustand: Zustand):
                 return self._json(HTTPStatus.INTERNAL_SERVER_ERROR,
                                   {"fehler": "Liste geladen, aber Preisverlauf konnte nicht gespeichert werden"})
             return self._json(HTTPStatus.OK, {"eingelesen": len(geladen.angebote), "ungueltig": geladen.fehler})
+
+        def _angebot_erfassen(self):
+            try:
+                laenge = int(self.headers.get("Content-Length", ""))
+            except ValueError:
+                return self._json(HTTPStatus.LENGTH_REQUIRED, {"fehler": "Länge fehlt"})
+            if not 1 <= laenge <= MAX_ANGEBOT:
+                return self._json(HTTPStatus.REQUEST_ENTITY_TOO_LARGE, {"fehler": "Angebot leer oder zu groß"})
+            try:
+                eingabe = json.loads(self.rfile.read(laenge))
+            except (json.JSONDecodeError, UnicodeDecodeError):
+                return self._json(HTTPStatus.BAD_REQUEST, {"fehler": "Ungültiges JSON"})
+            if not isinstance(eingabe, dict):
+                return self._json(HTTPStatus.BAD_REQUEST, {"fehler": "Angebot muss ein Objekt sein"})
+            daten = {k: eingabe[k] for k in ERFASSEN_FELDER if k in eingabe}
+            daten.update(id="e-" + secrets.token_hex(4), quelle="eigene",
+                         erfasst_am=dt.datetime.now(dt.timezone.utc).isoformat())
+            try:
+                angebot = Angebot.aus_dict(daten)
+            except AngebotFehler as exc:
+                return self._json(HTTPStatus.UNPROCESSABLE_ENTITY, {"fehler": str(exc)})
+            grund = zustand.register.pruefe(angebot.quelle)
+            if grund:
+                return self._json(HTTPStatus.FORBIDDEN, {"fehler": grund})
+            try:
+                anzahl = zustand.hinzufuegen(angebot)
+            except OSError:
+                return self._json(HTTPStatus.INTERNAL_SERVER_ERROR,
+                                  {"fehler": "Angebot gespeichert, aber Preisverlauf konnte nicht gespeichert werden"})
+            return self._json(HTTPStatus.CREATED, {"id": angebot.id, "anzahl": anzahl})
 
     return Handler
 

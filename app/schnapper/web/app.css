@@ -107,3 +107,14 @@ main { max-width: 720px; margin: 0 auto; padding: 0 16px 48px; }
 .verlauf { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 8px; margin: 6px 0 0; font-size: 13.5px;
   color: var(--leise); font-variant-numeric: tabular-nums; }
 .verlauf .tief { font-weight: 700; font-size: 12.5px; padding: 2px 8px; border-radius: 6px; background: var(--gut-grund); color: var(--gut); }
+
+/* S-009: Angebot selbst erfassen */
+.erfassen-bereich { margin: 18px 0; padding: 14px; background: var(--flaeche);
+  border: 1px solid var(--linie); border-radius: 14px; }
+.erfassen-bereich h2 { margin: 0; font-size: 18px; }
+.erfassen-bereich > p { margin: 8px 0; color: var(--leise); font-size: 14px; }
+#angebot-form { display: flex; flex-direction: column; gap: 8px; width: 100%; }
+#angebot-form label { display: flex; flex-direction: column; gap: 4px; font-size: 13px; color: var(--leise); min-width: 0; }
+#angebot-form input, #angebot-form select { width: 100%; min-width: 0; box-sizing: border-box; min-height: 44px;
+  padding: 10px 12px; border: 1px solid var(--linie); border-radius: 10px; font: inherit; background: var(--grund); color: var(--text); }
+#csv-download { display: inline-block; margin-top: 6px; color: var(--akzent); font-weight: 600; min-height: 32px; padding: 4px 0; }
