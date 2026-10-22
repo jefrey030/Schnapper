@@ -66,6 +66,15 @@ class TestLokaleKI(unittest.TestCase):
             with self.assertRaises(KINichtVerfuegbar):
                 lokal.KI(self.zaehler)
 
+
+    def test_cloud_modelle_auch_ueber_localhost_verboten(self):
+        with mock.patch.dict(os.environ, {
+            "SCHNAPPER_OLLAMA_MODELL": "gemma4:cloud"
+        }):
+            with self.assertRaisesRegex(KINichtVerfuegbar, "Cloud-Modelle"):
+                lokal.KI(self.zaehler)
+        self.assertFalse(self.zaehler.exists())
+
     def test_lokales_limit(self):
         with mock.patch.object(lokal, "MAX_AUFRUFE", 1), \
              mock.patch.object(lokal, "_request", side_effect=[
