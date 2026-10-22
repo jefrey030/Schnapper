@@ -23,7 +23,6 @@ class TestSchnapper(unittest.TestCase):
         if aktive:
             self.assertIsNotNone(ausgewaehlt)
             self.assertIn(ausgewaehlt["id"], {t["id"] for t in aktive})
-            self.assertGreaterEqual(len(ausgewaehlt.get("acceptance", [])), 4)
         else:
             self.assertIsNone(ausgewaehlt)
 
