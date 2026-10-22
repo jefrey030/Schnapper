@@ -156,8 +156,8 @@ def _abruf(url: str, timeout: float = 15.0) -> dict:
         raise OpenPricesFehler("Antwort zu groß")
     try:
         return json.loads(roh)
-    except json.JSONDecodeError as exc:
-        raise OpenPricesFehler("Antwort ist kein JSON") from exc
+    except (json.JSONDecodeError, UnicodeDecodeError) as exc:
+        raise OpenPricesFehler("Antwort ist kein gültiges JSON/UTF-8") from exc
 
 
 class OpenPricesAdapter:
