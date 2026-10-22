@@ -61,11 +61,14 @@ def anfrage_url(ean: str, tage: int = 90, heute: dt.date | None = None, seite: i
 
 
 def _preis(wert) -> Decimal | None:
+    """Keine NaN/Infinity, Bool-Werte oder Beträge außerhalb der Angebotsgrenzen."""
+    if isinstance(wert, bool):
+        return None
     try:
         d = Decimal(str(wert))
-    except (InvalidOperation, ValueError):
+    except (InvalidOperation, ValueError, TypeError):
         return None
-    return d if d > 0 else None
+    return d if d.is_finite() and Decimal("0.005") <= d <= Decimal("1000000") else None
 
 
 def zeilen_aus_antwort(antwort: dict, ean: str, jetzt: dt.datetime | None = None) -> tuple[list[dict], list[str]]:
@@ -92,7 +95,7 @@ def zeilen_aus_antwort(antwort: dict, ean: str, jetzt: dt.datetime | None = None
             hinweise.append(f"{kennung}: als Dublette markiert – übersprungen")
             continue
         preis = _preis(item.get("price"))
-        if preis is None or not isinstance(pid, int):
+        if preis is None or isinstance(pid, bool) or not isinstance(pid, int) or pid <= 0:
             hinweise.append(f"{kennung}: ohne gültigen Preis oder ID – übersprungen")
             continue
         try:
@@ -100,10 +103,14 @@ def zeilen_aus_antwort(antwort: dict, ean: str, jetzt: dt.datetime | None = None
         except ValueError:
             hinweise.append(f"{kennung}: ohne gültiges Datum – übersprungen")
             continue
-        produkt = item.get("product") or {}
-        ort = item.get("location") or {}
-        name = (item.get("product_name") or produkt.get("product_name") or f"Produkt {ean}").strip()
-        laden = " · ".join(x for x in (ort.get("osm_name"), ort.get("osm_address_city")) if x)
+        produkt = item.get("product")
+        ort = item.get("location")
+        produkt = produkt if isinstance(produkt, dict) else {}
+        ort = ort if isinstance(ort, dict) else {}
+        namen = (item.get("product_name"), produkt.get("product_name"))
+        name = next((x.strip() for x in namen if isinstance(x, str) and x.strip()), f"Produkt {ean}")
+        laden = " · ".join(x.strip() for x in (ort.get("osm_name"), ort.get("osm_address_city"))
+                           if isinstance(x, str) and x.strip())
         referenz = _preis(item.get("price_without_discount")) if item.get("price_is_discounted") else None
         zeilen.append({
             "id": f"openprices-{pid}",
