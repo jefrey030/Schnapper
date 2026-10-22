@@ -15,6 +15,16 @@ class TestSchnapper(unittest.TestCase):
     def test_tasks_format(self):
         self.assertTrue(load_tasks())
 
+    def test_stundenbetrieb_hat_mindestens_eine_offene_aufgabe(self):
+        # Ohne 'open' liefert choose_task(None): LEAD kann nicht starten.
+        tasks = load_tasks()
+        aktive = [t for t in tasks if t.get("status") == "open"]
+        self.assertTrue(aktive, "Es gibt keine offene Aufgabe für den Stundenbetrieb")
+        ausgewaehlt = choose_task(tasks)
+        self.assertIsNotNone(ausgewaehlt)
+        self.assertIn(ausgewaehlt["id"], {t["id"] for t in aktive})
+        self.assertGreaterEqual(len(ausgewaehlt.get("acceptance", [])), 4)
+
     def test_priority(self):
         items = [{"id": "b", "priority": 2, "status": "open"},
                  {"id": "a", "priority": 1, "status": "open"}]
