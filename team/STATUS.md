@@ -12,14 +12,14 @@
 
 Dieser Status wird nach jedem tatsächlich gelaufenen Stundenlauf automatisch überschrieben.
 
-## SCHNAPPER MASTER – letzter Lauf (22.10.2026, 10:30 UTC)
+## SCHNAPPER MASTER – letzter Lauf (22.10.2026, 11:30 UTC)
 | Aufgabe | Zustand | Beleg |
 | --- | --- | --- |
-| S-000 bis S-003 | **review** (warten auf Freigabe durch Jefrey) | `team/konzept/`, Tests `tests/test_konzept_s000.py`, `test_bestandsaufnahme_s001.py`, `test_plan_s002.py`, `test_agenten.py` |
+| S-000 bis S-003 | **review** (warten auf Freigabe durch Jefrey) | `team/konzept/`, zugehörige Tests |
 | S-004 Quellen-Register | **proposed** – T1/T2 auf main bereits erfüllt, Vorschlag: auf `done` setzen | `tests/test_abgleich_s004_s005.py` |
-| S-005 Adapter | **proposed** – T4/T5 erfüllt; T3 (Mock-Adapter) in #13, Zeitfehler dort in #15 (2bba103) behoben | `team/tasks.json` |
-| S-006 PR-Ordnung | **proposed** – offen: #2, #6, #7, #8, #12, #13, #14, #15, #16; #16 ist Geschwister von #15 (9 eigene Commits, 14 fehlende); 6 Branches ohne PR vollständig in main → Löschkandidaten (nur Jefrey) | `team/tasks.json`, `tests/test_branches_s006.py` |
+| S-005 Adapter | **proposed** – T4/T5 erfüllt; T3 (Mock-Adapter) in #13 | `team/tasks.json` |
+| S-006 PR-Ordnung | **proposed** – neu: belegte Tabelle aller 9 offenen PRs (Konflikte: #2, #12; #15 enthält #7, #8, #12, #13, #14) | `team/konzept/S-006-pr-uebersicht.md`, `tests/test_pr_uebersicht_s006.py` |
 | Sammel-PRs #15/#16 | **rot**: je 2 Fehlschläge im alten S-006-Test; Korrektur liegt in #6 (0b758dd) | Bericht `team/runs/20261022-1030-master.md` |
-| Tests (Arbeitsbranch) | 92/92 bestanden | `python3 -m unittest discover -s tests` |
+| Tests (Arbeitsbranch) | 94/94 bestanden (1 übersprungen) | `python3 -m unittest discover -s tests` |
 | Blocker | Actions starten nicht (Billing); 9 offene, sich überschneidende PRs; eBay-Produktivfreigabe fehlt | – |
-| Nächster Schritt | Jefrey: #16 auf #15 aufsetzen und 0b758dd übernehmen | – |
+| Nächster Schritt | Jefrey: über #15 als Sammel-PR entscheiden (#16 + 0b758dd übernehmen) | `team/runs/20261022-1130-master.md` |
