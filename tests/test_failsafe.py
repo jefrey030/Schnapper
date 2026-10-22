@@ -170,7 +170,7 @@ class TestFailClosedAgentReports(unittest.TestCase):
             from types import SimpleNamespace
             with mock.patch.object(agent, "ROOT", root), mock.patch.object(
                 agent.subprocess, "run",
-                return_value=SimpleNamespace(stdout=filename + "\\0", returncode=0),
+                return_value=SimpleNamespace(stdout=filename + "\0", returncode=0),
             ):
                 self.assertEqual(agent.geheimnis_scan(), [filename])
 
@@ -192,7 +192,7 @@ class TestFailClosedAgentReports(unittest.TestCase):
             root = pathlib.Path(d)
             with mock.patch.object(agent, "ROOT", root), mock.patch.object(
                 agent.subprocess, "run",
-                return_value=SimpleNamespace(stdout="fehlt.txt\\0", returncode=0),
+                return_value=SimpleNamespace(stdout="fehlt.txt\0", returncode=0),
             ):
                 self.assertEqual(agent.geheimnis_scan(), ["datei_fehlt:fehlt.txt"])
 
