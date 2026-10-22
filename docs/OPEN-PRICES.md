@@ -25,9 +25,9 @@ Gut für **Lebensmittel und Drogerie** – nicht für Gebrauchtware oder Elektro
 
 ## Ausprobieren (auf deinem Rechner/Handy mit Internet)
 ```sh
-SCHNAPPER_OPENPRICES_FREIGABE=ja PYTHONPATH=app python -m schnapper --openprices 4008400402222 --tage 90 --sortierung preis
+SCHNAPPER_OPENPRICES_FREIGABE=ja PYTHONPATH=app python -m schnapper --openprices <BARCODE-VOM-PRODUKT> --tage 90 --sortierung preis
 ```
 Ohne Schalter: Meldung „Freigabeschalter … fehlt“, kein Netzwerkaufruf.
 
-Tests: `tests/test_openprices.py` (21 Fälle, ohne Netz, Antwortstruktur laut
+Tests: `tests/test_openprices.py` (20 Fälle, ohne Netz, Antwortstruktur laut
 [API-Dokumentation](https://openfoodfacts.github.io/documentation/docs/Open-prices/prices/prices_list/)).
