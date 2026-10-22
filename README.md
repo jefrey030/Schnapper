@@ -86,3 +86,27 @@ Mit `--host 0.0.0.0` ist die Seite im eigenen WLAN erreichbar (ohne Passwort, da
 
 ## Quellen-Register (`app/schnapper/quellen.py`)
 Angezeigt werden nur Angebote aus freigegebenen Quellen (Plan S-002): `mock` und `eigene` sind erlaubt, `ebay` bleibt gesperrt bis zur Genehmigung, `kleinanzeigen` ist ausgeschlossen und lässt sich nicht freischalten. Zusätzliche Quellen werden in einer `quellen.json` neben der Datei freigegeben, jeweils mit Hinweis zum Nutzungsrecht.
+
+
+## Reiner Offline-Mock-Adapter (S-005/T3)
+
+Die eigene Testquelle `MockAdapter` benötigt **keinen Account, keine
+KI-API, keine Netzwerkverbindung und keine zusätzlichen Pakete**.
+Sie liefert genau zwei deutlich als **TEST** markierte Beispieldatensätze
+mit nicht aufrufbaren `.invalid`-Links. Einer der beiden Preise ist bewusst
+älter als 24 Stunden und wird als **veraltet** markiert. Das sind keine
+echten Schnäppchen.
+
+```sh
+PYTHONPATH=app python -c "from schnapper.adapter import MockAdapter, finde; print([(t.angebot.titel, str(t.angebot.gesamtpreis), t.warnungen) for t in finde(MockAdapter()).treffer])"
+python -m unittest discover -s tests -v
+```
+
+Die Quelle `mock` muss im Quellen-Register freigegeben sein. Vom
+MockAdapter eingeschleuste fremde Quellen werden abgewehrt. Die Tests
+`tests/test_mock_adapter.py` prüfen unter anderem Netzwerkfreiheit,
+gesperrte Quellen, veraltete Preise und fehlerhafte Testdaten. Diese
+Implementierung schließt **nur** den Offline-Testblocker S-005/T3;
+Liveangebote/eBay-Zugang bleiben bewusst gesperrt, bis Nutzungsrechte
+und Kosten überprüfbar freigegeben sind.
+
