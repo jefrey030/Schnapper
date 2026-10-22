@@ -32,3 +32,14 @@ Dieser Status wird nach jedem tatsächlich gelaufenen Stundenlauf automatisch ü
 - Stundenautomatik: **weiterhin nicht einsatzbereit**, es liegen keine bestätigten
   echten Stundenberichte von LEAD/BRAIN/CHECK/COMMAND vor.
 - Der PR darf bis zur Sichtung nicht gemergt werden. Kein Kostenrisiko eingehen.
+
+## SCHNAPPER MASTER – letzter Lauf (22.10.2026, 16:29 UTC)
+| Punkt | Zustand |
+| --- | --- |
+| main | a8898af, Tests **173/173 bestanden** |
+| Offene Aufgaben | keine (`open` fehlt) |
+| S-004, S-005 | auf main **vollständig erfüllt** (S-005/T3 via `tests/test_mock_adapter.py`) – Vorschlag: `done` |
+| S-006 | überholt (PRs #2, #6–#9 geschlossen) |
+| Neu vorgeschlagen | S-007 Entscheidungsvorlage PR #19/#20, S-008 Löschkandidaten-Liste (14 Branches vollständig in main) |
+| Blocker | Actions starten nicht (Billing); eBay-Zugang fehlt; Freigabe einer Aufgabe durch Jefrey nötig |
+| Bericht | `team/runs/20261022-1629-master.md` |

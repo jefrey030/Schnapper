@@ -57,7 +57,7 @@
         "T2: Angebot aus unbekannter Quelle wird abgewiesen, Hinweis 'Quelle nicht freigegeben'",
         "Kein Netzwerkzugriff, alle Tests grün"
       ],
-      "hinweis": "Abgleich 22.10.2026: main (7a0b83e) erfüllt T1 und T2 bereits (app/schnapper/quellen.py, belegt durch tests/test_abgleich_s004_s005.py). Vorschlag: S-004 nach Sichtung auf 'done' setzen statt neu umzusetzen."
+      "hinweis": "Abgleich 22.10.2026: main (7a0b83e) erfüllt T1 und T2 bereits (app/schnapper/quellen.py, belegt durch tests/test_abgleich_s004_s005.py). Vorschlag: S-004 nach Sichtung auf 'done' setzen statt neu umzusetzen. | Abgleich 22.10.2026 16:29 UTC (main a8898af): T1/T2 weiterhin erfüllt, Vorschlag unverändert: 'done'."
     },
     {
       "id": "S-005",
@@ -71,7 +71,7 @@
         "T5: gesamte Test-Suite läuft ohne Netz grün",
         "Keine Zugangsdaten, Schlüssel oder echten Preise im Repo"
       ],
-      "hinweis": "Abgleich 22.10.2026: main erfüllt T4 (EbayAdapter gesperrt, kein Netzaufruf, belegt durch tests/test_abgleich_s004_s005.py) und T5. Offen ist nur T3: ein Mock-Adapter mit erkennbaren TEST-Daten und quelle = 'mock' fehlt auf main (Quelle 'mock' ist im Register erlaubt, aber ohne Adapter)."
+      "hinweis": "Abgleich 22.10.2026: main erfüllt T4 (EbayAdapter gesperrt, kein Netzaufruf, belegt durch tests/test_abgleich_s004_s005.py) und T5. Offen ist nur T3: ein Mock-Adapter mit erkennbaren TEST-Daten und quelle = 'mock' fehlt auf main (Quelle 'mock' ist im Register erlaubt, aber ohne Adapter). | Abgleich 22.10.2026 16:29 UTC (main a8898af): T3 jetzt ebenfalls erfüllt – MockAdapter mit TEST-1/TEST-2 und quelle='mock' in app/schnapper/adapter.py, belegt durch tests/test_mock_adapter.py. Alle Kriterien T3–T5 auf main erfüllt, Vorschlag: 'done'."
     },
     {
       "id": "S-006",
@@ -84,7 +84,31 @@
         "Kein Merge, kein Schließen von PRs durch Agenten",
         "Branches ohne PR, die vollständig in main enthalten sind, werden als Löschkandidaten belegt (tests/test_branches_s006.py) – Löschen nur durch Jefrey"
       ],
-      "hinweis": "Abgleich 22.10.2026 07:28 UTC: vier Branches ohne offenen PR sind inhaltlich vollständig in main enthalten (git diff --shortstat leer): fix/schnapper-web-main-20261022 und feature/schnapper-web-quellen-20261022 (Baum = main 7a0b83e), feature/schnapper-angebotskern-20261021 (Baum = 5343009), fix/schnapper-hourly-rotation-20261021 (0 Commits vor main). Empfehlung: Jefrey kann sie löschen – Agenten löschen keine Branches."
+      "hinweis": "Abgleich 22.10.2026 07:28 UTC: vier Branches ohne offenen PR sind inhaltlich vollständig in main enthalten (git diff --shortstat leer): fix/schnapper-web-main-20261022 und feature/schnapper-web-quellen-20261022 (Baum = main 7a0b83e), feature/schnapper-angebotskern-20261021 (Baum = 5343009), fix/schnapper-hourly-rotation-20261021 (0 Commits vor main). Empfehlung: Jefrey kann sie löschen – Agenten löschen keine Branches. | Abgleich 22.10.2026 16:29 UTC: überholt – PRs #2, #6, #7, #8, #9 sind alle geschlossen; offen sind nur #19 und #20. Vorschlag: S-006 verwerfen bzw. 'done', Nachfolger S-007/S-008."
+    },
+    {
+      "id": "S-007",
+      "priority": 7,
+      "status": "proposed",
+      "title": "Entscheidungsvorlage zu den offenen PRs #19 (Preisverlauf) und #20 (Open-Prices-Link)",
+      "acceptance": [
+        "Je PR: Zweck, geänderte Dateien (git diff --stat gegen main), Konflikte mit main, Testergebnis auf dem PR-Branch belegt",
+        "Empfehlung je PR (übernehmen/überarbeiten/schließen) mit Begründung – Entscheidung bleibt bei Jefrey",
+        "Kein Merge, kein Schließen, kein Push auf fremde Branches durch Agenten"
+      ],
+      "hinweis": "Vorschlag SCHNAPPER MASTER 22.10.2026 16:29 UTC. #19 ist 1 Commit vor main, #20 ist 1 Commit vor main (2 Dateien)."
+    },
+    {
+      "id": "S-008",
+      "priority": 8,
+      "status": "proposed",
+      "title": "Löschkandidaten-Liste für Branches aktualisieren (Nachfolger von S-006)",
+      "acceptance": [
+        "tests/test_branches_s006.py (oder neuer Test) belegt lesend, welche Remote-Branches inhaltlich vollständig in main enthalten sind (Baum in main-Historie oder 0 Commits vor main)",
+        "Branches mit eigenen Commits außerhalb main (z. B. feature/local-free-brain-20261021, agent/master/20261021-21) werden ausdrücklich NICHT als Löschkandidaten geführt",
+        "Löschen nur durch Jefrey, Agenten löschen keine Branches"
+      ],
+      "hinweis": "Abgleich 22.10.2026 16:29 UTC: 14 Remote-Branches haben einen Baum aus der main-Historie bzw. 0 Commits vor main; Liste im Bericht team/runs/20261022-1629-master.md."
     }
   ]
 }
