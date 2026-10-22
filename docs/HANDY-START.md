@@ -26,3 +26,19 @@ Für deine eigene Liste statt der Beispieldaten in Schritt 4 `app/vorlagen/meine
 ## Grenzen
 - Die App läuft nur, solange Termux läuft. Wird Termux beendet, zeigt die Seite „Server nicht erreichbar“.
 - Sie ist nur auf diesem Handy erreichbar. Eine Version im Internet (ohne eigenes Gerät) wäre eine Veröffentlichung und braucht deine Freigabe (siehe Masterplan).
+
+## Wichtiger Hinweis zu PR #15 (noch kein Release)
+Die neue Barcode-Suche und die aktuelle Team-Vorbereitung liegen derzeit **nur**
+im Entwicklungsbranch `integration/schnapper-gesamtstand-20261022` (PR #15).
+Der obige Download von `main` enthält diese neuen Funktionen noch nicht.
+
+Zum Testen erst im privaten GitHub-Repository auf den Branch
+`integration/schnapper-gesamtstand-20261022` umschalten und dort `Code → Download ZIP` wählen.
+Anschließend im Termux-Download-Verzeichnis die **tatsächliche ZIP-Datei**
+entpacken und in ihren Ordner wechseln (Name unterscheidet sich vom `main`-Archiv).
+Danach SCHNAPPER wie in Schritt 4 starten. Die Barcode-Suche bleibt ohne
+`SCHNAPPER_OPENPRICES_FREIGABE=ja` ausdrücklich **aus**.
+
+**Kein bewiesener Handytest:** Der beschriebene Ablauf ist vorbereitet, aber
+auf dem echten Android-Gerät noch nicht ausgeführt. Ohne Internetverbindung
+können auch nach Freigabe keine Live-Preise geladen werden.
