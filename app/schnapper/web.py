@@ -142,11 +142,41 @@ def baue_handler(zustand: Zustand):
             return self._json(HTTPStatus.NOT_FOUND, {"fehler": "Nicht gefunden"})
 
         def do_POST(self):
-            if urlsplit(self.path).path != "/api/import":
+            ziel = urlsplit(self.path).path
+            if ziel not in ("/api/import", "/api/openprices"):
                 return self._json(HTTPStatus.NOT_FOUND, {"fehler": "Nicht gefunden"})
             # Schutz gegen fremde Webseiten, die im Hintergrund Daten hochladen wollen
             if self.headers.get("X-Schnapper") != "1":
                 return self._json(HTTPStatus.FORBIDDEN, {"fehler": "Anfrage nicht erlaubt"})
+            if ziel == "/api/openprices":
+                from .openprices import (LIZENZ, OpenPricesAdapter,
+                                         OpenPricesFehler, OpenPricesGesperrt)
+                try:
+                    laenge = int(self.headers.get("Content-Length", ""))
+                except ValueError:
+                    return self._json(HTTPStatus.LENGTH_REQUIRED, {"fehler": "Länge fehlt"})
+                if not 1 <= laenge <= 256:
+                    return self._json(HTTPStatus.REQUEST_ENTITY_TOO_LARGE, {"fehler": "Barcode-Anfrage zu groß oder leer"})
+                try:
+                    eingabe = json.loads(self.rfile.read(laenge))
+                except (json.JSONDecodeError, UnicodeDecodeError):
+                    return self._json(HTTPStatus.BAD_REQUEST, {"fehler": "Ungültiges JSON"})
+                if not isinstance(eingabe, dict) or not isinstance(eingabe.get("ean"), str):
+                    return self._json(HTTPStatus.BAD_REQUEST, {"fehler": "Barcode fehlt"})
+                try:
+                    adapter = OpenPricesAdapter(eingabe["ean"], register=zustand.register)
+                    geladen = adapter.lade()
+                except ValueError as exc:
+                    return self._json(HTTPStatus.BAD_REQUEST, {"fehler": str(exc)})
+                except OpenPricesGesperrt as exc:
+                    return self._json(HTTPStatus.FORBIDDEN, {"fehler": str(exc)})
+                except OpenPricesFehler as exc:
+                    return self._json(HTTPStatus.SERVICE_UNAVAILABLE, {"fehler": str(exc)})
+                daten = als_json(finde_in(geladen, Filter(), "preis"), "Open Prices", False)
+                daten["lizenz"] = LIZENZ
+                daten["hinweise"] = adapter.hinweise[:50]
+                daten["begrenzung"] = "Nur die bis zu 50 neuesten gemeldeten Preise; keine Vollständigkeitsgarantie."
+                return self._json(HTTPStatus.OK, daten)
             try:
                 laenge = int(self.headers.get("Content-Length", ""))
             except ValueError:
