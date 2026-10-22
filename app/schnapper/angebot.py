@@ -32,8 +32,13 @@ def geld(wert) -> Decimal:
         betrag = Decimal(str(wert))
     elif isinstance(wert, str):
         text = wert.strip().replace("€", "").replace("EUR", "").replace(" ", "").replace(" ", "")
-        if "," in text and "." in text:  # 1.299,99 -> 1299.99
-            text = text.replace(".", "").replace(",", ".")
+        if "," in text and "." in text:
+            # Das rechte Trennzeichen kennzeichnet die Nachkommastellen:
+            # 1.299,99 (DE) und 1,299.99 (EN) bedeuten beide 1299.99.
+            if text.rfind(",") > text.rfind("."):
+                text = text.replace(".", "").replace(",", ".")
+            else:
+                text = text.replace(",", "")
         else:
             text = text.replace(",", ".")
         try:
