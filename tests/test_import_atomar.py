@@ -136,9 +136,9 @@ class ImportHTTPRegression(unittest.TestCase):
         basis = f"http://127.0.0.1:{server.server_address[1]}"
         opener = urllib.request.build_opener(urllib.request.ProxyHandler({}))
         payload = (
-            "id;titel;preis;url;quelle;erfasst_am\\n"
-            "e1;Lampe;19;https://shop.example/l;eigene;2026-10-21T20:00:00Z\\n"
-        ).replace("\\\\n", "\\n").encode("utf-8")
+            "id;titel;preis;url;quelle;erfasst_am\n"
+            "e1;Lampe;19;https://shop.example/l;eigene;2026-10-21T20:00:00Z\n"
+        ).encode("utf-8")
         try:
             request = urllib.request.Request(
                 basis + "/api/import", data=payload, method="POST",
