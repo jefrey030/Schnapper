@@ -22,8 +22,18 @@ def run_suite(root: pathlib.Path, name: str, cmd: list[str], count_pattern: str,
     (report_dir / f"{name}.log").write_text(output, encoding="utf-8")
     counts = re.findall(count_pattern, output, flags=re.MULTILINE)
     tests = int(counts[-1]) if counts else 0
-    return {"suite": name, "status": "PASS" if exit_code == 0 and tests > 0 else "FAIL",
-            "exit_code": exit_code, "tests_reported": tests, "log": f"{name}.log"}
+    # A runner that merely skips tests is not a passed acceptance run.
+    if name == "python":
+        skipped = bool(re.search(r"\b(?:skipped|expected failures|unexpected successes)\s*=\s*[1-9]", output))
+    else:
+        skipped = any(int(v) > 0 for key in ("skipped", "todo", "cancelled", "fail")
+                      for v in re.findall(rf"^# {key} (\d+)\s*$", output, re.MULTILINE))
+        passed = re.findall(r"^# pass (\d+)\s*$", output, re.MULTILINE)
+        if not passed or int(passed[-1]) != tests:
+            skipped = True
+    return {"suite": name, "status": "PASS" if exit_code == 0 and tests > 0 and not skipped else "FAIL",
+            "exit_code": exit_code, "tests_reported": tests, "skipped_or_incomplete": skipped,
+            "log": f"{name}.log"}
 
 
 def main(argv: list[str] | None = None) -> int:
@@ -55,7 +65,7 @@ def main(argv: list[str] | None = None) -> int:
                                 r"^# tests (\d+)\s*$", reports))
     else:
         suites.append({"suite": "node", "status": "FAIL", "tests_reported": 0, "error": "No Node test files"})
-    ok = all(s["status"] == "PASS" for s in suites)
+    ok = sha != "UNKNOWN" and all(s["status"] == "PASS" for s in suites)
     summary = {"scope": "offline_unit_only", "production_release_approved": False,
                "e2e_verified": False, "github_ci_verified": False, "commit": sha,
                "utc": dt.datetime.now(dt.timezone.utc).isoformat(),
