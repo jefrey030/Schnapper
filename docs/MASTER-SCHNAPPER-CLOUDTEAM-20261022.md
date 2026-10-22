@@ -38,7 +38,7 @@ Protokolle hinterlassen, ohne offenen Chat, Tablet oder heimischen PC.
 - Ein Cron-Trigger `17 * * * *` (UTC); erst nach Free-Tarif-Nachweis.
 - Private D1-Datenbank `schnapper-agent-reports`, keine öffentliche
   Webansicht und keine Veröffentlichung der Reports.
-- Einmaliger Versuch je UTC-Stunde durch D1-Primärschlüssel.
+- Jeder beabsichtigte Modellaufruf wird vorab über\n  `schnapper_runs.attempted_calls` gespeichert. Bei D1-Ausfall keine Inferenz.\n- Einmaliger Versuch je UTC-Stunde durch D1-Primärschlüssel.
   Fehlgeschlagener Lauf wird **nicht** automatisch wiederholt.
 - Vier Zeilen je abgeschlossener Stunde mit Rollenname, Modell,
   Zeit, Antworttext und SHA-256; Run hat `started/completed/blocked`.
@@ -48,12 +48,12 @@ Protokolle hinterlassen, ohne offenen Chat, Tablet oder heimischen PC.
 - Keine Skripte autonom testen, Commits erstellen, PRs mergen,
   Live-Angebote abrufen oder SCHNAPPER deployen.
 - Kein Beleg echter Live-Ausführung, bevor D1 und KI-Provider tatsächliche
-  Ausführung und Logs zeigen. Die sieben lokalen Tests sind **Simulationen**.
+  Ausführung und Logs zeigen. Die zehn am 22.10.2026 tatsächlich lokal mit Node.js 22 ausgeführten Tests sind **Simulationen** (10/10 bestanden).
 
 ## Umsetzung und Abnahme
 1. Änderungen auf eigenem GitHub-Branch vorbereiten, niemals ohne Prüfung
    in `main` zusammenführen.
-2. `node --test cloudflare/test/worker.test.mjs` (Mock-AI/D1) ausführen.
+2. `node --test cloudflare/test/worker.test.mjs` wurde in einer isolierten\n   Testumgebung tatsächlich ausgeführt: **10/10 bestanden**; das D1-Schema\n   bestand zusätzlich einen SQLite-Fremdschlüssel-/Duplikat-Test.\n   Diese Tests beweisen keine Cloud-KI- oder Cron-Ausführung.
 3. Cloudflare-Konto im Dashboard auf Free kontrollieren. Bei Paid oder
    nicht auslesbar: **STOP**, nicht deployen/aktivieren.
 4. Erst bei bestätigtem Free-Plan: kostenlose D1 anlegen,
