@@ -15,6 +15,8 @@ import sys
 import time
 import uuid
 
+from agent import GEHEIMNIS_MUSTER  # Dieselben Token-Indikatoren wie in Agentenberichten
+
 ROOT = pathlib.Path(__file__).resolve().parent.parent
 TEAM = ROOT / "team"
 ROLES = ("LEAD", "BRAIN", "CHECK", "COMMAND")
@@ -108,10 +110,11 @@ def einmal():
     # Kein Rückfall auf GitHub Models, Cloudflare oder andere KI-Anbieter.
     env["SCHNAPPER_KI_BACKEND"] = "ollama"
     schritte = []
+    sperre_fehler = False
     for rolle in (*ROLES, "BERICHT"):
-        if rolle != "BERICHT" and gestoppt():
+        if rolle != "BERICHT" and (gestoppt() or sperre_fehler):
             schritte.append({"rolle": rolle, "exitcode": -2,
-                             "fehler": "Betreiber-Not-Aus aktiv; Agent nicht gestartet"})
+                             "fehler": "Not-Aus oder vorheriger Agent gescheitert; Agent nicht gestartet"})
             continue
         try:
             proc = subprocess.run(
@@ -119,9 +122,18 @@ def einmal():
                 cwd=ROOT, env=env, capture_output=True, text=True,
                 timeout=240, check=False,
             )
-            schritte.append({"rolle": rolle, "exitcode": proc.returncode,
-                             "stdout": proc.stdout[-1500:], "stderr": proc.stderr[-1500:]})
+            ausgabe = (proc.stdout or "")[-1500:]
+            fehlerausgabe = (proc.stderr or "")[-1500:]
+            geheimnis = bool(GEHEIMNIS_MUSTER.search(ausgabe + fehlerausgabe))
+            schritte.append({"rolle": rolle, "exitcode": -3 if geheimnis else proc.returncode,
+                             "stdout": GEHEIMNIS_MUSTER.sub("[REDACTED]", ausgabe),
+                             "stderr": GEHEIMNIS_MUSTER.sub("[REDACTED]", fehlerausgabe),
+                             "fehler": "Geheimnisindikator in Prozesslog – Pilot gestoppt"
+                                       if geheimnis else None})
+            if geheimnis or proc.returncode != 0:
+                sperre_fehler = True
         except subprocess.TimeoutExpired:
+            sperre_fehler = True
             schritte.append({"rolle": rolle, "exitcode": -1,
                              "fehler": "Zeitlimit 240 Sekunden überschritten"})
     (lauf / "prozesse.json").write_text(
