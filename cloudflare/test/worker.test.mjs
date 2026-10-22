@@ -4,10 +4,17 @@ import {webcrypto} from 'node:crypto';
 import worker,{runSlot,verifyGate,MODEL,ROLES,utcSlot} from '../src/worker.mjs';
 if(!globalThis.crypto) globalThis.crypto=webcrypto;
 function fakeDB(){
- const slots=new Set(),reports=[],statuses=[],audit=[];
+ const slots=new Set(),reports=[],statuses=[],audit=[],control={paused:0,readFails:false,reads:0};
  return {
-  slots,reports,statuses,audit,
+  slots,reports,statuses,audit,control,
   prepare(sql) {
+   if(sql.startsWith('SELECT paused FROM schnapper_control')) {
+    return {async first(){
+     control.reads++;
+     if(control.readFails) throw Error('D1 control unavailable');
+     return {paused:control.paused};
+    }};
+   }
    return { bind(...args) {
     return { async run() {
      if(sql.startsWith('INSERT OR IGNORE')) {
@@ -39,5 +46,32 @@ test('Capacity failure records interrupted role and refuses retry',async()=>{con
 test('Bad AI response blocks without fabricated report',async()=>{const x=fakeEnv();x.env.AI.run=async()=>({response:''});assert.equal((await runSlot(x.env,Date.UTC(2026,9,22,10))).status,'BLOCKIERT');assert.equal(x.db.reports.length,0);});
 test('No database or schema means zero calls',async()=>{const x=fakeEnv({DB:{prepare(){throw Error('no schema');}}});assert.equal((await runSlot(x.env,Date.UTC(2026,9,22,3))).status,'BLOCKIERT');assert.equal(x.getCalls(),0);});
 test('DB audit failure before inference prevents charges',async()=>{const x=fakeEnv();const original=x.env.DB.prepare;x.env.DB.prepare=(sql)=>{if(sql.startsWith('UPDATE schnapper_runs SET attempted_calls='))throw Error('D1 down');return original(sql);};assert.equal((await runSlot(x.env,Date.UTC(2026,9,22,3))).status,'BLOCKIERT');assert.equal(x.getCalls(),0);});
+test('Persistent emergency stop blocks all model calls',async()=>{
+ const x=fakeEnv();x.db.control.paused=1;
+ const out=await runSlot(x.env,Date.UTC(2026,9,22,13));
+ assert.equal(out.status,'BLOCKIERT');
+ assert.equal(out.attempted_calls,0);
+ assert.equal(x.getCalls(),0);
+ assert.equal(x.db.slots.size,0);
+});
+test('D1 emergency stop read error fails closed',async()=>{
+ const x=fakeEnv();x.db.control.readFails=true;
+ const out=await runSlot(x.env,Date.UTC(2026,9,22,14));
+ assert.equal(out.status,'BLOCKIERT');assert.equal(x.getCalls(),0);
+});
+test('Emergency stop in the middle of a run blocks all next calls',async()=>{
+ const x=fakeEnv();let calls=0;
+ x.env.AI.run=async()=>{
+  calls++;
+  if(calls===1)x.db.control.paused=1;
+  return {response:'Abgeschlossene Antwort'};
+ };
+ const out=await runSlot(x.env,Date.UTC(2026,9,22,15));
+ assert.equal(out.status,'BLOCKIERT');
+ assert.equal(out.attempted_calls,1);
+ assert.deepEqual(out.completed_roles,['LEAD']);
+ assert.equal(calls,1);
+ assert.equal(x.db.statuses.at(-1)[0],'blocked');
+});
 test('Malformed timestamps not accepted',async()=>{const x=fakeEnv();assert.equal((await runSlot(x.env,'not-a-date')).status,'BLOCKIERT');assert.equal(x.getCalls(),0);assert.equal(utcSlot(Date.UTC(2026,9,22,4,17)),'2026102204');});
 test('HTTP does not expose private reports',async()=>{assert.equal((await worker.fetch()).status,404);});
