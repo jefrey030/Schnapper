@@ -9,12 +9,16 @@ im Laden gesehen haben, mit Barcode, Datum und Geschäft. Kostenlos, ohne Konto,
 Gut für **Lebensmittel und Drogerie** – nicht für Gebrauchtware oder Elektronik.
 
 ## Rechte (Prüfung 22.10.2026, keine Rechtsberatung)
-- Lizenz **ODbL**. Zwei Bedingungen: **Quelle nennen** und **Weitergabe unter gleichen Bedingungen** –
-  wer die Daten mit anderen zu einer neuen Datenbank verbindet, muss diese ebenfalls offen veröffentlichen.
-  Beleg: [Open Food Facts – Bedingungen der API](https://support.openfoodfacts.org/help/en-gb/12-api-data-reuse/94-are-there-conditions-to-use-the-api)
+- Lizenz **ODbL**: Quellenangabe bei öffentlicher Nutzung, Lizenzhinweis und Share-Alike
+  bei öffentlicher Nutzung einer angepassten/abgeleiteten Open-Prices-Datenbank.
+  Ob eine eigene Datenbank rechtlich als „adapted database“ gilt, hängt von der tatsächlichen
+  Integration/Nutzung ab und lässt sich nicht allein aus dem Namen der App ableiten.
+  Belege: [ODbL-Zusammenfassung](https://opendatacommons.org/licenses/odbl/summary/)
+  und [Open Food Facts – API-Datenbedingungen](https://support.openfoodfacts.org/help/en-gb/12-api-data-reuse/94-are-there-conditions-to-use-the-api).
 - Pflicht: eigener User-Agent → `SCHNAPPER/0.1 (…)`.
-- **Folge für einen späteren Verkauf:** SCHNAPPER zeigt Open-Prices-Preise nur an und speichert sie nicht dauerhaft.
-  Eine eigene Preisdatenbank, die Open-Prices-Daten enthält, müsste offen veröffentlicht werden.
+- **Folge für einen späteren Verkauf:** SCHNAPPER zeigt Open-Prices-Preise isoliert an,
+  speichert sie nicht dauerhaft und erstellt daraus keine eigene Preisdatenbank.
+  Eine künftige öffentliche Datenbank-Aggregation braucht eine gesonderte Lizenzprüfung.
 
 ## Schutzmaßnahmen im Code (`app/schnapper/openprices.py`)
 - Im Quellen-Register **„später“**; erst `SCHNAPPER_OPENPRICES_FREIGABE=ja` gibt genau diese Quelle frei (nie eine ausgeschlossene).
@@ -29,7 +33,8 @@ SCHNAPPER_OPENPRICES_FREIGABE=ja PYTHONPATH=app python -m schnapper --openprices
 ```
 Ohne Schalter: Meldung „Freigabeschalter … fehlt“, kein Netzwerkaufruf.
 
-Tests: `tests/test_openprices.py` (19 Fälle, ohne Netz, Antwortstruktur laut
+Tests: `tests/test_openprices.py` (ursprünglich 19 Fälle, inzwischen um Fehlertests erweitert;
+nach den neuen GitHub-Änderungen noch nicht erneut lokal ausgeführt; Antwortstruktur laut
 [API-Dokumentation](https://openfoodfacts.github.io/documentation/docs/Open-prices/prices/prices_list/)).
 
 ## Auf der lokalen Handy-/Browseroberfläche (neu in PR #15)
