@@ -1,0 +1,160 @@
+{
+  "project": "SCHNAPPER",
+  "version": 1,
+  "tasks": [
+    {
+      "id": "S-000",
+      "priority": 0,
+      "status": "review",
+      "title": "Vier-Agenten-Probelauf: prüfbares Konzept für die erste SCHNAPPER-Suche nach günstigen Gebrauchtartikeln erstellen",
+      "acceptance": [
+        "LEAD: exakt 3 priorisierte MVP-Funktionen nennen, inklusive klarer Auswahlbegründung",
+        "BRAIN: einen konkreten Eingabe-Ausgabe-Ablauf und ein minimales Datenfeld-Schema für ein Inserat beschreiben; keine existierende Integration behaupten",
+        "CHECK: mindestens 3 konkrete Fehlerszenarien nennen, darunter veralteter Preis, doppeltes Inserat und fehlende Nutzungsrechte; jeweils mit passendem Test",
+        "COMMAND: kompaktes Ergebnis mit Fertig/nicht-fertig, Belegen aus den anderen Agentenantworten und genau einem nächsten Schritt dokumentieren",
+        "Kein Code ändern, nichts veröffentlichen, keine kostenpflichtigen API-Aufrufe ohne vorhandene Konfiguration"
+      ]
+    },
+    {
+      "id": "S-001",
+      "priority": 1,
+      "status": "review",
+      "title": "SCHNAPPER-Bestandsaufnahme: vorhandene App-Bausteine und fehlende Schnittstellen dokumentieren",
+      "acceptance": [
+        "Vorhandene Dateien und Funktionen belegbar auflisten",
+        "Fehlende Abhängigkeiten dokumentieren"
+      ]
+    },
+    {
+      "id": "S-002",
+      "priority": 2,
+      "status": "review",
+      "title": "Sicheren technischen Plan für Preisvergleich und Schnäppchen-Suche erstellen",
+      "acceptance": [
+        "Datenquellen und Nutzungsrechte klären",
+        "Mindestfunktionen und Testfälle entwerfen"
+      ]
+    },
+    {
+      "id": "S-003",
+      "priority": 3,
+      "status": "review",
+      "title": "Stundenlauf, Agentenrollen und Prüfprotokolle validieren",
+      "acceptance": [
+        "Jeder der vier Agenten schreibt einen Bericht",
+        "Fehlende API-Anbindung korrekt als Blocker markieren"
+      ]
+    },
+    {
+      "id": "S-004",
+      "priority": 4,
+      "status": "done",
+      "title": "MF1 Quellen-Register: nur freigegebene Quellen (eigene Daten, Mock) zulassen",
+      "voraussetzung": "erfüllt: App-Kern (PR #5) und Quellen-Register (PR #10) sind seit 5343009/7a0b83e auf main",
+      "acceptance": [
+        "Register mit Kennung und Entscheidung je Quelle (erlaubt/ausgeschlossen/später) aus team/konzept/S-002-datenquellen-plan.md",
+        "T1: Angebot aus Quelle 'kleinanzeigen' wird abgewiesen, Hinweis 'Quelle ausgeschlossen'",
+        "T2: Angebot aus unbekannter Quelle wird abgewiesen, Hinweis 'Quelle nicht freigegeben'",
+        "Kein Netzwerkzugriff, alle Tests grün"
+      ],
+      "hinweis": "Abgleich 22.10.2026: main (7a0b83e) erfüllt T1 und T2 bereits (app/schnapper/quellen.py, belegt durch tests/test_abgleich_s004_s005.py). Vorschlag: S-004 nach Sichtung auf 'done' setzen statt neu umzusetzen. | Erledigt 22.10.2026 (Freigabe Jefrey, Lauf 20261022-2029): T1/T2 auf main belegt durch tests/test_abgleich_s004_s005.py."
+    },
+    {
+      "id": "S-005",
+      "priority": 5,
+      "status": "done",
+      "title": "MF2 Adapter-Schnittstelle suche(anfrage) mit Mock-Adapter; eBay-Adapter nur als gesperrte Hülle",
+      "voraussetzung": "S-004 erledigt",
+      "acceptance": [
+        "T3: Mock-Adapter liefert erkennbare Testdaten (TEST-…), Treffer tragen quelle = 'mock'",
+        "T4: eBay-Adapter ohne Freigabeschalter und Zugangsdaten aus der Umgebung wird nicht aktiviert, kein Netzwerkaufruf (per Test belegt)",
+        "T5: gesamte Test-Suite läuft ohne Netz grün",
+        "Keine Zugangsdaten, Schlüssel oder echten Preise im Repo"
+      ],
+      "hinweis": "Abgleich 22.10.2026: main erfüllt T4 (EbayAdapter gesperrt, kein Netzaufruf, belegt durch tests/test_abgleich_s004_s005.py) und T5. Offen ist nur T3: ein Mock-Adapter mit erkennbaren TEST-Daten und quelle = 'mock' fehlt auf main (Quelle 'mock' ist im Register erlaubt, aber ohne Adapter). | Erledigt 22.10.2026 (Freigabe Jefrey, Lauf 20261022-2029): T3 belegt durch tests/test_mock_adapter.py (MockAdapter, quelle='mock'), T4 durch tests/test_abgleich_s004_s005.py, T5 durch grüne Offline-Suite."
+    },
+    {
+      "id": "S-006",
+      "priority": 6,
+      "status": "done",
+      "title": "Entscheidungsvorlage: überlappende Draft-PRs #2, #6, #7, #8, #9 ordnen (PR #5 und #10 sind inzwischen auf main übernommen)",
+      "acceptance": [
+        "Je PR: Zweck, geänderte Dateien, Überschneidungen und Konflikte mit main belegt (git diff --stat)",
+        "Empfehlung je PR (übernehmen/zusammenführen/schließen) mit Begründung – Entscheidung bleibt bei Jefrey",
+        "Kein Merge, kein Schließen von PRs durch Agenten",
+        "Branches ohne PR, die vollständig in main enthalten sind, werden als Löschkandidaten belegt (tests/test_branches_s006.py) – Löschen nur durch Jefrey"
+      ],
+      "hinweis": "Abgleich 22.10.2026 07:28 UTC: vier Branches ohne offenen PR sind inhaltlich vollständig in main enthalten (git diff --shortstat leer): fix/schnapper-web-main-20261022 und feature/schnapper-web-quellen-20261022 (Baum = main 7a0b83e), feature/schnapper-angebotskern-20261021 (Baum = 5343009), fix/schnapper-hourly-rotation-20261021 (0 Commits vor main). Empfehlung: Jefrey kann sie löschen – Agenten löschen keine Branches. | Erledigt 22.10.2026 (Freigabe Jefrey, Lauf 20261022-2029): überholt – PRs #2, #6, #7, #8, #9 sind geschlossen bzw. gemergt; keine Aktion mehr nötig. S-007/S-008 (nur Vorschläge auf agent/master/reports) werden nicht übernommen; S-007 ist zudem durch offenen PR #33 belegt."
+    },
+    {
+      "id": "S-009",
+      "priority": 9,
+      "status": "open",
+      "title": "F2 Angebot direkt in der App erfassen (Formular, POST-Endpunkt, CSV-Download)",
+      "acceptance": [
+        "Formular in der Web-App erfasst Titel, Preis, Zustand, Quelle und Link eines eigenen Angebots",
+        "POST-Endpunkt nimmt Angebote nur mit Header X-Schnapper an; ohne Header Ablehnung (403), Test belegt",
+        "Größenlimit für den Request-Body; zu große Anfrage wird abgewiesen (413), Test belegt",
+        "Eingaben laufen durch die bestehende Prüfung (Preis, URL, Quellen-Register); ungültige Angebote werden abgewiesen",
+        "Erfasste Angebote werden in der Oberfläche nur per textContent angezeigt (kein innerHTML); Test/Prüfung belegt",
+        "Erfasste Angebote als CSV im Format von app/vorlagen/meine-angebote.csv herunterladbar",
+        "Kein Netzwerkzugriff nach außen, alle Tests grün"
+      ],
+      "hinweis": "Freigegeben von Jefrey am 22.10.2026 als F2 (Lauf 20261022-2029 eingetragen)."
+    },
+    {
+      "id": "S-010",
+      "priority": 10,
+      "status": "open",
+      "title": "F3 Merkliste und Preisalarme als JSON sichern und wiederherstellen",
+      "acceptance": [
+        "Export erzeugt eine JSON-Datei mit Merkliste und Preisalarmen inkl. Formatversion",
+        "Import stellt denselben Stand wieder her (Rundreise-Test: Export → Import → gleicher Inhalt)",
+        "Import prüft die Struktur jedes Eintrags; ungültige Einträge werden gemeldet statt übernommen. Defekte, zu große oder falsch versionierte JSON-Dateien werden mit Hinweis abgewiesen, bestehende Daten bleiben unverändert",
+        "Import beachtet die Obergrenzen MAX_MERK (200) und MAX_ALARME (50) aus app/schnapper/web/app.js; Überschreitung wird mit Hinweis abgewiesen, Test belegt",
+        "Keine Daten verlassen das Gerät, alle Tests grün"
+      ],
+      "hinweis": "Freigegeben von Jefrey am 22.10.2026 als F3 (Lauf 20261022-2029 eingetragen)."
+    },
+    {
+      "id": "S-011",
+      "priority": 11,
+      "status": "open",
+      "title": "F4 Barcode per Kamera scannen (BarcodeDetector)",
+      "acceptance": [
+        "Kamera-Knopf nutzt die Browser-API BarcodeDetector (EAN-13/EAN-8/UPC) und übernimmt den erkannten Code in die Barcode-Suche",
+        "Ohne BarcodeDetector-Unterstützung oder ohne Kamerafreigabe: verständlicher Hinweis, manuelle Eingabe bleibt nutzbar",
+        "Kein Bild wird gespeichert oder hochgeladen; keine externe Bibliothek",
+        "Alle Tests grün"
+      ],
+      "hinweis": "Freigegeben von Jefrey am 22.10.2026 als F4 (Lauf 20261022-2029 eingetragen)."
+    },
+    {
+      "id": "S-012",
+      "priority": 12,
+      "status": "review",
+      "title": "F5 Ein-Befehl-Start für Android/Termux (start-schnapper.sh, docs/HANDY-START.md)",
+      "acceptance": [
+        "start-schnapper.sh startet die App mit einem Befehl unter Termux (prüft python3, startet Server nur auf 127.0.0.1, nennt die URL)",
+        "docs/HANDY-START.md beschreibt den Ein-Befehl-Start Schritt für Schritt",
+        "Skript lädt nichts aus dem Internet nach und braucht keine Zugangsdaten; Test prüft Skript auf diese Regeln",
+        "Solange nicht auf echtem Android/Termux-Gerät geprüft, steht in start-schnapper.sh und docs/HANDY-START.md deutlich der Hinweis „auf echtem Gerät ungetestet“; alle Tests grün"
+      ],
+      "hinweis": "Freigegeben von Jefrey am 22.10.2026 als F5 (Lauf 20261022-2029 eingetragen). Umgesetzt in Lauf 20261022-2328: Draft-PR #44 (Branch agent/master/20261022-23, Commit a584774), CHECK bestanden, 232/232 Tests OK, Cloudflare 10/10; auf echtem Gerät ungetestet."
+    },
+    {
+      "id": "S-013",
+      "priority": 13,
+      "status": "open",
+      "title": "F6 eBay vorbereiten (app/schnapper/ebay.py, Sandbox standard, Quelle gesperrt, docs/EBAY.md)",
+      "acceptance": [
+        "app/schnapper/ebay.py nutzt standardmäßig die eBay-Sandbox; Produktivbetrieb nur mit zusätzlichem Schalter (Name wird in S-013 festgelegt)",
+        "Zugangsdaten nur aus den Umgebungsvariablen SCHNAPPER_EBAY_CLIENT_ID und SCHNAPPER_EBAY_CLIENT_SECRET, nie im Repo; Test belegt, dass ohne diese Variablen keine Verbindung aufgebaut wird",
+        "Quelle „ebay“ bleibt im Quellen-Register gesperrt, bis der Freigabe-Schalter (bestehend: SCHNAPPER_EBAY_FREIGABE in app/schnapper/adapter.py) gesetzt ist und die Zugangsdaten vorhanden sind; Tests machen keinen Netzwerkaufruf",
+        "docs/EBAY.md erklärt Entwicklerkonto, Sandbox, Produktivfreigabe und Env-Variablen",
+        "Alle Tests grün"
+      ],
+      "hinweis": "Freigegeben von Jefrey am 22.10.2026 als F6 (Lauf 20261022-2029 eingetragen)."
+    }
+  ]
+}
