@@ -146,6 +146,7 @@ class TestAgenten(unittest.TestCase):
                 bericht = self.alle()
         finally:
             server.shutdown()
+            server.server_close()
         self.assertEqual(len(Nachahmer.aufrufe), 4)
         self.assertEqual(set(Nachahmer.aufrufe), {"meta/Llama-3.3-70B-Instruct"})
         self.assertTrue(bericht["team_einsatzbereit"])

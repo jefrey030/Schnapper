@@ -64,6 +64,9 @@ async function suchen() {
     $("beispiel").hidden = !daten.beispieldaten;
     $("treffer").replaceChildren(...daten.treffer.map(karte));
     $("leer").hidden = daten.treffer.length > 0;
+    $("leer").textContent = daten.eingelesen === 0
+      ? "Noch keine Angebote geladen. Tippe oben rechts auf „Eigene Liste“ und wähle deine CSV- oder JSON-Datei."
+      : "Keine Treffer. Lockere die Filter oder suche nach etwas anderem.";
     $("status").textContent = `${daten.treffer.length} Treffer aus ${daten.eingelesen} Angeboten · Liste: ${daten.liste}`;
     probleme(daten);
   } catch {
