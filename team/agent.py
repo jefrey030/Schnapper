@@ -256,19 +256,36 @@ def bericht(ordner):
     lead_plan = alle["LEAD"].get("plan") or {}
     urteil = (alle["CHECK"].get("urteil") or {}).get("urteil")
     tests = (alle["CHECK"].get("werkzeug") or {}).get("tests") or {}
-    einsatzbereit = (len(echt) == 4
-                    and all(alle[r].get("status") == "OK" for r in ROLES)
-                    and bool(lead_plan.get("aufgabe_id"))
-                    and urteil in ("bestanden", "nachbessern", "abgelehnt")
-                    and tests.get("ok") is True
-                    and tests.get("anzahl", 0) > 0)
+    # Ein KI-Feld allein ist kein Nachweis. Vier eindeutige echte Antwort-IDs
+    # und der auf Platte persistierte Aufrufzähler müssen übereinstimmen.
+    zaehler_pfad = ordner / "ki_aufrufe.txt"
+    try:
+        ki_aufrufe = int(zaehler_pfad.read_text()) if zaehler_pfad.exists() else 0
+    except (OSError, ValueError):
+        ki_aufrufe = 0
+    antwort_ids = [(alle[r].get("ki") or {}).get("antwort_id") for r in ROLES]
+    vier_eindeutige_antworten = (
+        all(isinstance(a, str) and bool(a.strip()) for a in antwort_ids)
+        and len(set(antwort_ids)) == 4
+        and ki_aufrufe >= 4
+    )
+    einsatzbereit = (
+        len(echt) == 4
+        and all(alle[r].get("status") == "OK" for r in ROLES)
+        and bool(lead_plan.get("aufgabe_id"))
+        and urteil in ("bestanden", "nachbessern", "abgelehnt")
+        and tests.get("ok") is True
+        and tests.get("anzahl", 0) > 0
+        and vier_eindeutige_antworten
+    )
     modelle = sorted({(alle[r].get("ki") or {}).get("modell") for r in echt} - {None})
     proto = alle["COMMAND"].get("protokoll") or {}
     zusammen = {"lauf": ordner.name, "ende_utc": jetzt(), "team_einsatzbereit": einsatzbereit,
                 "agenten_mit_echter_ki": echt, "modelle": modelle,
                 "aufgabe": lead_plan.get("aufgabe_id"), "check_urteil": urteil,
                 "tests_ok": tests.get("ok"), "tests_anzahl": tests.get("anzahl"),
-                "ki_aufrufe": int((ordner / "ki_aufrufe.txt").read_text()) if (ordner / "ki_aufrufe.txt").exists() else 0,
+                "ki_aufrufe": ki_aufrufe,
+                "antwort_ids_eindeutig": vier_eindeutige_antworten,
                 "naechster_schritt": proto.get("naechster_schritt"), "agenten": alle}
     runs = TEAM / "runs"
     runs.mkdir(parents=True, exist_ok=True)
