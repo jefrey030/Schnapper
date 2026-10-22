@@ -56,7 +56,8 @@
         "T1: Angebot aus Quelle 'kleinanzeigen' wird abgewiesen, Hinweis 'Quelle ausgeschlossen'",
         "T2: Angebot aus unbekannter Quelle wird abgewiesen, Hinweis 'Quelle nicht freigegeben'",
         "Kein Netzwerkzugriff, alle Tests grün"
-      ]
+      ],
+      "hinweis": "Überschneidung: PR #10 (feature/schnapper-web-quellen-20261022) enthält bereits app/schnapper/quellen.py mit Register, 'kleinanzeigen' ausgeschlossen und Abweisung unbekannter Quellen – vor Freigabe gegen PR #10 prüfen, keine Doppelarbeit."
     },
     {
       "id": "S-005",
@@ -69,13 +70,14 @@
         "T4: eBay-Adapter ohne Freigabeschalter und Zugangsdaten aus der Umgebung wird nicht aktiviert, kein Netzwerkaufruf (per Test belegt)",
         "T5: gesamte Test-Suite läuft ohne Netz grün",
         "Keine Zugangsdaten, Schlüssel oder echten Preise im Repo"
-      ]
+      ],
+      "hinweis": "Überschneidung: PR #10 enthält bereits app/schnapper/adapter.py mit gesperrtem EbayAdapter (Schalter SCHNAPPER_EBAY_FREIGABE, kein Netzaufruf) – vor Freigabe gegen PR #10 prüfen, keine Doppelarbeit."
     },
     {
       "id": "S-006",
       "priority": 6,
       "status": "proposed",
-      "title": "Entscheidungsvorlage: überlappende Draft-PRs #2, #6, #7, #8, #9 und PR #5 ordnen",
+      "title": "Entscheidungsvorlage: überlappende Draft-PRs #2, #6, #7, #8, #9 sowie PR #5 und PR #10 ordnen",
       "acceptance": [
         "Je PR: Zweck, geänderte Dateien, Überschneidungen und Konflikte mit main belegt (git diff --stat)",
         "Empfehlung je PR (übernehmen/zusammenführen/schließen) mit Begründung – Entscheidung bleibt bei Jefrey",

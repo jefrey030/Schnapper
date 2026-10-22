@@ -35,6 +35,14 @@ class TestVorschlaege(unittest.TestCase):
             self.assertIsInstance(t.get("acceptance"), list, t["id"])
             self.assertGreaterEqual(len(t["acceptance"]), 2, t["id"])
 
+    def test_hinweis_ist_nichtleerer_text_und_aendert_status_nicht(self):
+        for t in load_tasks():
+            if "hinweis" in t:
+                self.assertIsInstance(t["hinweis"], str, t["id"])
+                self.assertTrue(t["hinweis"].strip(), t["id"])
+        mit_hinweis = [{"id": "P", "priority": 0, "status": "proposed", "title": "x", "hinweis": "PR #10"}]
+        self.assertIsNone(choose_task(mit_hinweis))
+
 
 if __name__ == "__main__":
     unittest.main()
