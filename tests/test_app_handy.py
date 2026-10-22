@@ -148,6 +148,37 @@ class BarcodeWeb(unittest.TestCase):
             eigene = json.loads(r.read())
         self.assertEqual(eigene["eingelesen"], 0)
 
+    def test_zweifach_barcode_abruf_wird_lokal_begrenzt(self):
+        self.entered = threading.Event()
+        freigabe = threading.Event()
+        ergebnis = []
+
+        def langsamer_abruf(_url):
+            self.entered.set()
+            freigabe.wait(timeout=3)
+            return {"items": []}
+
+        with mock.patch.dict("os.environ", {op.FREIGABE_VARIABLE: "ja"}, clear=True), \
+             mock.patch.object(op, "_abruf", side_effect=langsamer_abruf) as abruf:
+            erster = threading.Thread(target=lambda: ergebnis.append(self.post(self.EAN)))
+            erster.start()
+            try:
+                self.assertTrue(self.entered.wait(timeout=2))
+                code, data = self.post(self.EAN)
+                self.assertEqual(code, 429)
+                self.assertIn("bereits", data["fehler"])
+            finally:
+                freigabe.set()
+                erster.join(timeout=5)
+        self.assertEqual(abruf.call_count, 1)
+        self.assertEqual(ergebnis[0][0], 200)
+
+    def test_nan_filter_antwortet_400_und_keine_500(self):
+        for wert in ("NaN", "Infinity", "-Infinity", "1e999999"):
+            with self.assertRaises(urllib.error.HTTPError) as caught:
+                self.opener.open(self.basis + "/api/suche?min_rabatt=" + wert, timeout=5)
+            self.assertEqual(caught.exception.code, 400)
+
     def test_browser_hat_barcode_formular(self):
         with self.opener.open(self.basis + "/", timeout=5) as r:
             html = r.read().decode("utf-8")
