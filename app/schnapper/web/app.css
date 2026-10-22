@@ -103,3 +103,7 @@ main { max-width: 720px; margin: 0 auto; padding: 0 16px 48px; }
 .alarm-treffer a:hover { text-decoration: underline; }
 .leise { color: var(--leise); font-size: 13px; }
 [hidden] { display: none !important; }
+
+.verlauf { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 8px; margin: 6px 0 0; font-size: 13.5px;
+  color: var(--leise); font-variant-numeric: tabular-nums; }
+.verlauf .tief { font-weight: 700; font-size: 12.5px; padding: 2px 8px; border-radius: 6px; background: var(--gut-grund); color: var(--gut); }

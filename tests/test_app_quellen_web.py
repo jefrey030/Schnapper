@@ -124,6 +124,7 @@ class Web(unittest.TestCase):
         daten = json.loads(inhalt)
         self.assertEqual(status, 200)
         self.assertTrue(daten["beispieldaten"])
+        self.assertFalse(daten["verlauf_aktiv"])  # ohne --verlauf wird nichts gespeichert
         self.assertEqual([t["id"] for t in daten["treffer"]], ["b2", "b3"])
         self.assertEqual(daten["treffer"][0]["gesamtpreis"], "54.89")
 
@@ -174,6 +175,50 @@ class WebImport(Web):
         self.assertEqual(suche["liste"], "meine.csv")
         self.assertFalse(suche["beispieldaten"])
         self.assertEqual([t["id"] for t in suche["treffer"]], ["e1"])
+
+
+class WebVerlauf(unittest.TestCase):
+    """Server mit --verlauf: Preise werden festgehalten und auf den Karten ausgewertet."""
+
+    def setUp(self):
+        self.tmp = tempfile.TemporaryDirectory()
+        self.verlauf = pathlib.Path(self.tmp.name, "verlauf.json")
+        self.server = erstelle_server(BEISPIEL, port=0, verlauf=self.verlauf)
+        self.basis = f"http://127.0.0.1:{self.server.server_address[1]}"
+        threading.Thread(target=self.server.serve_forever, daemon=True).start()
+
+    def tearDown(self):
+        self.server.shutdown()
+        self.server.server_close()
+        self.tmp.cleanup()
+
+    hole = Web.hole
+
+    def lade(self, preis, tag):
+        csv_text = ("id;titel;preis;referenzpreis;url;quelle;erfasst_am\n"
+                    f"e{tag};Lampe;{preis};199;https://x.example/l?utm_source={tag};eigene;2025-03-{tag:02d}T10:00:00Z\n")
+        status, _, _ = self.hole("/api/import", csv_text.encode(), {"X-Schnapper": "1", "X-Dateiname": "l.csv"})
+        self.assertEqual(status, 200)
+        return json.loads(self.hole("/api/suche")[2])["treffer"][0]
+
+    def test_beispieldaten_beim_start_festgehalten(self):
+        self.assertTrue(self.verlauf.exists())
+        daten = json.loads(self.verlauf.read_text(encoding="utf-8"))
+        self.assertEqual(daten["version"], 1)
+        self.assertTrue(daten["angebote"])
+
+    def test_tiefstpreis_und_fragwuerdiger_statt_preis(self):
+        self.assertIsNone(self.lade("69", 1)["verlauf"])  # erste Beobachtung: noch nichts zu sagen
+        self.lade("72", 5)
+        t = self.lade("49", 10)
+        self.assertTrue(t["verlauf"]["ist_tiefstpreis"])
+        self.assertEqual(t["verlauf"]["vorher"], "72.00")
+        self.assertEqual((t["verlauf"]["tiefst"], t["verlauf"]["hoechst"]), ("49.00", "72.00"))
+        # 199 € "statt"-Preis, aber in 9 Tagen nie über 72 € gesehen
+        self.assertTrue(any(w.startswith("referenzpreis fragwürdig") for w in t["warnungen"]))
+
+    def test_verlauf_aktiv_gemeldet(self):
+        self.assertTrue(json.loads(self.hole("/api/suche")[2])["verlauf_aktiv"])
 
 
 if __name__ == "__main__":
