@@ -167,6 +167,21 @@ class AdapterTests(unittest.TestCase):
             with self.assertRaises(op.OpenPricesGesperrt):
                 op._abruf(url)
 
+    def test_nicht_utf8_json_antwort_wird_sauber_gemeldet(self):
+        class Antwort(io.BytesIO):
+            status = 200
+
+            def __enter__(self):
+                return self
+
+            def __exit__(self, *args):
+                return False
+
+        with mock.patch("urllib.request.OpenerDirector.open",
+                        return_value=Antwort(b"\\xff\\xfe")):
+            with self.assertRaisesRegex(op.OpenPricesFehler, "UTF-8"):
+                op._abruf(op.anfrage_url(EAN))
+
     def test_netzfehler_wird_sauber_gemeldet(self):
         with mock.patch("urllib.request.OpenerDirector.open", side_effect=OSError("kein Netz")):
             with self.assertRaisesRegex(op.OpenPricesFehler, "nicht erreichbar"):
