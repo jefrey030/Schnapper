@@ -57,3 +57,18 @@ main { max-width: 720px; margin: 0 auto; padding: 0 16px 48px; }
 .link { display: inline-block; margin-top: 10px; color: var(--akzent); font-weight: 600; text-decoration: none; min-height: 32px; padding: 4px 0; }
 .link:hover { text-decoration: underline; }
 .leer { text-align: center; color: var(--leise); margin: 32px 0; }
+
+/* Opt-in-Preissuche bleibt von den eigenen Angeboten getrennt. */
+.barcode-bereich { margin: 18px 0; padding: 14px; background: var(--flaeche);
+  border: 1px solid var(--linie); border-radius: 14px; }
+.barcode-bereich h2 { margin: 0; font-size: 18px; }
+.barcode-bereich > p { margin: 8px 0; color: var(--leise); font-size: 14px; }
+.barcode-form { margin: 12px 0 6px; }
+.barcode-form label { display: block; font-size: 13px; color: var(--leise); margin-bottom: 4px; }
+.barcode-zeile { display: flex; gap: 8px; flex-wrap: wrap; }
+.barcode-zeile input { flex: 1 1 185px; min-width: 0; padding: 10px 12px; min-height: 44px;
+  border: 1px solid var(--linie); border-radius: 10px; font: inherit; background: var(--grund); color: var(--text); }
+.barcode-zeile button { min-height: 44px; padding: 10px 14px; border: none; border-radius: 10px;
+  background: var(--akzent); color: var(--akzent-text); font: inherit; font-weight: 700; cursor: pointer; }
+.barcode-zeile button:disabled { opacity: .6; cursor: wait; }
+.barcode-bereich .treffer { margin-top: 12px; }
