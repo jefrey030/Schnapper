@@ -61,7 +61,18 @@ separaten Terminal). GitHub kann für das private Repository bei
 `git clone` eine einmalige Anmeldung verlangen; keine Tokens in den Chat
 kopieren.
 
-## Schritt 2: Echter Probe-Stundenlauf (ohne Automation)
+## Schritt 2: Erst die kostenlose Diagnose (ohne Modellaufruf)
+
+```sh
+python3 team/diagnose_local.py
+```
+
+Die Diagnose prüft Python, Git, Betriebssystem, Ollama und das lokale
+Modell, ruft aber **keine KI-Inferenz** auf. Wenn sie `"startbereit": false`
+meldet, **keinen** Stundenbetrieb starten. Besonders auf einem älteren Mac
+wird der Grund erklärt.
+
+## Schritt 3: Echter Probe-Stundenlauf (ohne Automation)
 
 **Windows PowerShell:**
 
@@ -89,7 +100,7 @@ Der ausführliche Bericht steht in `team/runs/<lauf>.json` sowie
 `team/runs/<lauf>.md`, die Rohlogs in `team/work/<lauf>/prozesse.json`.
 Keine Bestätigung ohne echte lokale Modellantworten.
 
-## Schritt 3: Stundenrhythmus erst nach bestandenem Pilot
+## Schritt 4: Stundenrhythmus erst nach bestandenem Pilot
 
 Windows PowerShell:
 
