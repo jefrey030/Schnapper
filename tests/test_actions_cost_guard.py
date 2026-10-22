@@ -28,6 +28,18 @@ class HourlyWorkflowCostGuardTests(unittest.TestCase):
         self.assertIn("vars.SCHNAPPER_PAUSE != 'true'", self.job_guard)
         self.assertNotIn("||", self.job_guard)
 
+    def test_guard_exact_required_predicates(self):
+        # A future OR exception, typo or hidden shortcut must not silently re-enable
+        # private-repository jobs. The guard is intentionally an allow-list.
+        normalized = " ".join(self.job_guard.split())
+        self.assertEqual(
+            normalized,
+            "github.repository == 'jefrey030/schnapper' && "
+            "vars.SCHNAPPER_PAUSE != 'true' && "
+            "vars.SCHNAPPER_OEFFENTLICH == 'true' && "
+            "toJSON(github.event.repository.private) == 'false'",
+        )
+
     def test_independent_visibility_check_before_agent_calls(self):
         self.assertIn('Kostenschutz – nur öffentliches Repository', self.workflow)
         self.assertIn('if [ "$privat" != "False" ]', self.workflow)
