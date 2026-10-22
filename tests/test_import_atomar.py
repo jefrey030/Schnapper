@@ -2,11 +2,15 @@
 
 Kein Netzwerk, keine Cloud und keine kostenpflichtigen Dienste.
 """
+import json
 import pathlib
 import tempfile
 import sys
 import threading
 import unittest
+import urllib.error
+import urllib.request
+from http.server import ThreadingHTTPServer
 from unittest import mock
 
 ROOT = pathlib.Path(__file__).resolve().parents[1]
@@ -14,7 +18,7 @@ sys.path.insert(0, str(ROOT / "app"))
 
 from schnapper.einlesen import Importergebnis  # noqa: E402
 from schnapper.quellen import Register  # noqa: E402
-from schnapper.web import Zustand  # noqa: E402
+from schnapper.web import Zustand, baue_handler  # noqa: E402
 from schnapper.angebot import Angebot, normalisiere_url  # noqa: E402
 from schnapper.verlauf import Verlauf  # noqa: E402
 
@@ -118,6 +122,45 @@ class ImportZustand(unittest.TestCase):
         self.assertFalse(fehler, str(fehler))
         self.assertTrue(zweiter_speichert.is_set())
         self.assertEqual(self.zustand.lesen()[1], "zweiter.csv")
+
+
+class ImportHTTPRegression(unittest.TestCase):
+    """Testet den echten lokalen HTTP-Fehlerpfad, ohne das Internet."""
+
+    def test_speicherfehler_antwortet_500_und_behaelt_bisherige_liste(self):
+        alt = Importergebnis()
+        zustand = Zustand(Register(), alt, "bisher.csv", True)
+        server = ThreadingHTTPServer(("127.0.0.1", 0), baue_handler(zustand))
+        thread = threading.Thread(target=server.serve_forever, daemon=True)
+        thread.start()
+        basis = f"http://127.0.0.1:{server.server_address[1]}"
+        opener = urllib.request.build_opener(urllib.request.ProxyHandler({}))
+        payload = (
+            "id;titel;preis;url;quelle;erfasst_am\\n"
+            "e1;Lampe;19;https://shop.example/l;eigene;2026-10-21T20:00:00Z\\n"
+        ).replace("\\\\n", "\\n").encode("utf-8")
+        try:
+            request = urllib.request.Request(
+                basis + "/api/import", data=payload, method="POST",
+                headers={"X-Schnapper": "1", "X-Dateiname": "neu.csv",
+                         "Content-Type": "text/csv"})
+            with mock.patch.object(zustand, "preise_merken", side_effect=OSError("voll")):
+                with self.assertRaises(urllib.error.HTTPError) as caught:
+                    opener.open(request, timeout=5)
+            self.assertEqual(caught.exception.code, 500)
+            fehler = json.loads(caught.exception.read().decode("utf-8"))["fehler"]
+            self.assertIn("nicht übernommen", fehler)
+            self.assertNotIn("Liste geladen", fehler)
+            with opener.open(basis + "/api/suche", timeout=5) as response:
+                daten = json.loads(response.read())
+            self.assertEqual(daten["liste"], "bisher.csv")
+            self.assertTrue(daten["beispieldaten"])
+            self.assertEqual(daten["eingelesen"], 0)
+            self.assertIs(zustand.lesen()[0], alt)
+        finally:
+            server.shutdown()
+            server.server_close()
+            thread.join(timeout=2)
 
 
 class VerlaufTransaktion(unittest.TestCase):
