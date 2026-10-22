@@ -83,3 +83,36 @@ ausgeführt. In privaten Repositories sind die GitHub Actions bewusst `skipped`.
 **Abnahme noch ausstehend:** Python- und Node-Tests für diese SHA, echter
 Not-Aus-Test, unabhängiges Review, Free-Tarif-Nachweis und zwei echte
 aufeinanderfolgende Teamläufe. Weder GitHub- noch Cloudflare-Produktivjobs starten.
+
+
+## Nachtrag – Gate-Reparaturen und Statischer Codeabgleich (22.10.2026, spätabends)
+
+**Betriebsentscheidung unverändert: GESPERRT.** Dieser Nachtrag ist kein grüner CI-Lauf.
+
+- Der stündliche GitHub-Workflow hat im Sicherheitsbranch bereits das strenge Gate
+  `toJSON(github.event.repository.private) == 'false'` **UND**
+  `vars.SCHNAPPER_OEFFENTLICH == 'true'`; fehlende Sichtbarkeit wird nicht als
+  öffentlich behandelt. Der dazu überlappende PR #22 wurde ohne Merge geschlossen.
+- Der Git-Geheimnis-Scan nutzt `git ls-files -z`. Zwei Test-Fixtures verwendeten
+  fälschlich ein *wörtliches* `\\0` statt eines NUL-Trennzeichens und wurden
+  korrigiert; andernfalls hätten die Tests trotz korrekter Implementierung versagt.
+- Verdächtige KI-Antworten werden bereits **vor** der Weitergabe an Folgerollen
+  verworfen. Der Agentenprozess liefert dafür nun Fehlerstatus statt 0.
+- Der lokale Ollama-Lauf stoppt nach Agentenfehler, Zeitüberschreitung oder
+  Geheimnisfund weitere Agentenaufrufe. `BERICHT` darf weiterhin den Fehler
+  dokumentieren. Erkennbare Zugangsdaten werden in `prozesse.json` geschwärzt.
+- Neue Unit-Tests für Fehler-Exit, Abbruch nach Fehlrolle und redigierte Prozesslogs
+  liegen in `tests/test_failsafe.py` und `tests/test_local_service.py`.
+
+**Nachweis dieser Änderungsrunde:** neun statische Quellcodeprüfungen für
+Repo-Visibility-Gate, NUL-Dateinamen, Geheimnis-Erkennung, Prozess-Exit, Stopp
+und Logredaktion ergaben **9/9 bestanden**. Das ist nur ein Code-Abgleich,
+**keine** Ausführung der Python- oder Node-Tests.
+
+**Nächste verpflichtende Abnahme:** Vor einem Merge die komplette Python-Suite
+(`python -m unittest discover -s tests -v`) und Cloudflare-Node-Suite
+(`node --test cloudflare/test/worker.test.mjs`) in einer isolierten kostenlosen
+Laufzeit durchführen; Ergebnis samt exakter Commit-SHA und Exitcodes speichern.
+Danach unabhängiger Security-Review. Live-/Cloud-Tests und echte stündliche
+Agentenläufe fehlen weiterhin; **kein** Cloudflare Worker, D1 oder Cron auf
+Verdacht aktivieren.
