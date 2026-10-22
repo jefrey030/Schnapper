@@ -18,6 +18,12 @@ import uuid
 ROOT = pathlib.Path(__file__).resolve().parent.parent
 TEAM = ROOT / "team"
 ROLES = ("LEAD", "BRAIN", "CHECK", "COMMAND")
+STOP_DATEI = TEAM / "work" / "STOP"
+
+
+def gestoppt():
+    """Betreiber-Not-Aus: Flag-Datei blockiert den nächsten Prozess und Stundenlauf."""
+    return (TEAM / "work" / "STOP").exists()
 
 
 def pruefe_nachweise(bericht, lauf, schritte):
@@ -74,10 +80,10 @@ def pruefe_nachweise(bericht, lauf, schritte):
         ordner = (TEAM / "proposals").resolve()
         if not datei.is_relative_to(ordner) or not datei.is_file():
             fehler.append("BRAIN-Vorschlag fehlt oder liegt außerhalb von team/proposals.")
-    if bericht.get("check_urteil") not in ("bestanden", "nachbessern", "abgelehnt"):
-        fehler.append("CHECK hat kein gültiges fachliches Urteil geliefert.")
+    if bericht.get("check_urteil") != "bestanden":
+        fehler.append("CHECK hat nicht bestanden: keine positive Pilotabnahme.")
     command = (agenten.get("COMMAND") or {}).get("protokoll") or {}
-    if not isinstance(command, dict) or command.get("freigabe") not in ("ja", "nein") or not (
+    if not isinstance(command, dict) or command.get("freigabe") != "ja" or not (
         isinstance(command.get("naechster_schritt"), str) and
         command["naechster_schritt"].strip()
     ):
@@ -92,6 +98,9 @@ def pruefe_nachweise(bericht, lauf, schritte):
 
 
 def einmal():
+    if gestoppt():
+        print("BLOCKIERT: Betreiber-Not-Aus team/work/STOP ist aktiv.")
+        return 2
     stempel = dt.datetime.now(dt.timezone.utc).strftime("%Y%m%dT%H%M%SZ")
     lauf = TEAM / "work" / (stempel + "-" + uuid.uuid4().hex[:6])
     lauf.mkdir(parents=True, exist_ok=False)
@@ -100,6 +109,10 @@ def einmal():
     env["SCHNAPPER_KI_BACKEND"] = "ollama"
     schritte = []
     for rolle in (*ROLES, "BERICHT"):
+        if rolle != "BERICHT" and gestoppt():
+            schritte.append({"rolle": rolle, "exitcode": -2,
+                             "fehler": "Betreiber-Not-Aus aktiv; Agent nicht gestartet"})
+            continue
         try:
             proc = subprocess.run(
                 [sys.executable, str(TEAM / "agent.py"), rolle, str(lauf)],
@@ -166,12 +179,18 @@ def start():
         if args.once:
             return einmal()
         while True:
+            if gestoppt():
+                print("STOP: Betreiber-Not-Aus aktiv. Kein weiterer Stundenlauf.")
+                return 2
             einmal()
             jetzt = dt.datetime.now(dt.timezone.utc)
             naechste = (jetzt.replace(minute=0, second=0, microsecond=0)
                         + dt.timedelta(hours=1))
             print(f"Nächster Start (UTC): {naechste.isoformat()}", flush=True)
             while (naechste - dt.datetime.now(dt.timezone.utc)).total_seconds() > 0:
+                if gestoppt():
+                    print("STOP: Betreiber-Not-Aus aktiv.")
+                    return 2
                 zeit = (naechste - dt.datetime.now(dt.timezone.utc)).total_seconds()
                 time.sleep(max(0.1, min(zeit, 30)))
     except KeyboardInterrupt:
