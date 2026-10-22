@@ -16,13 +16,16 @@ sind klar als "werkzeug" gekennzeichnet und werden nie als KI ausgegeben.
 """
 import datetime as dt
 import json
+import os
 import pathlib
 import re
 import subprocess
 import sys
 
 sys.path.insert(0, str(pathlib.Path(__file__).resolve().parent))
-from ki import KI, KINichtVerfuegbar  # noqa: E402
+from ki import KI as GitHubKI, KINichtVerfuegbar  # noqa: E402
+from local_ollama import KI as LokaleKI  # noqa: E402
+KI = LokaleKI if os.environ.get("SCHNAPPER_KI_BACKEND") == "ollama" else GitHubKI
 from runner import ROLES, choose_task, load_tasks, previous_task_id  # noqa: E402
 
 ROOT = pathlib.Path(__file__).resolve().parent.parent
@@ -310,7 +313,7 @@ def bericht(ordner):
         ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
     zeilen = [f"# SCHNAPPER-KI-Team – Stundenbericht {ordner.name}", "",
               f"**Team-Status:** {'EINSATZBEREIT – alle vier Agenten mit echter KI' if einsatzbereit else 'NICHT EINSATZBEREIT'}",
-              f"**KI-Laufzeit:** GitHub Models, kostenloses Kontingent; Modell(e): {', '.join(modelle) or 'keins'}",
+              f"**KI-Laufzeit:** {', '.join(sorted({(alle[r].get('ki') or {}).get('laufzeit') for r in echt} - {None})) or 'keine (nicht gestartet)'}; Modell(e): {', '.join(modelle) or 'keins'}",
               f"**KI-Aufrufe in diesem Lauf:** {zusammen['ki_aufrufe']}",
               f"**Aufgabe:** {lead_plan.get('aufgabe_id') or '–'}",
               f"**Tests (echt ausgeführt):** {'bestanden' if tests.get('ok') else 'FEHLER/nicht ausgeführt'} ({tests.get('anzahl', 0)})",
