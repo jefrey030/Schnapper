@@ -61,7 +61,8 @@ async function suchen() {
     const daten = await antwort.json();
     if (nr !== anfrageNr) return; // veraltete Antwort ignorieren
     if (!antwort.ok) { $("status").textContent = daten.fehler || "Fehler bei der Suche"; return; }
-    $("beispiel").hidden = !daten.beispieldaten;
+    // Mock-Angebote bleiben selbst nach dem Import als Testdaten markiert.
+    $("beispiel").hidden = !(daten.beispieldaten || daten.enthaelt_testdaten);
     $("treffer").replaceChildren(...daten.treffer.map(karte));
     $("leer").hidden = daten.treffer.length > 0;
     $("leer").textContent = daten.eingelesen === 0

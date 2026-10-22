@@ -76,7 +76,14 @@ def zeilen_aus_antwort(antwort: dict, ean: str, jetzt: dt.datetime | None = None
     if not isinstance(antwort, dict) or not isinstance(antwort.get("items"), list):
         raise OpenPricesFehler("Antwort ohne 'items'-Liste – Format hat sich geändert?")
     zeilen, hinweise = [], []
-    for item in antwort["items"]:
+    jetzt = jetzt or dt.datetime.now(dt.timezone.utc)
+    if jetzt.tzinfo is None:
+        raise ValueError("Prüfzeitpunkt muss eine Zeitzone enthalten")
+    heute_utc = jetzt.astimezone(dt.timezone.utc).date()
+    items = antwort["items"]
+    if len(items) > MAX_ERGEBNISSE:
+        hinweise.append(f"Antwort enthält mehr als {MAX_ERGEBNISSE} Preise – nur die ersten werden verarbeitet")
+    for item in items[:MAX_ERGEBNISSE]:
         if not isinstance(item, dict):
             hinweise.append("Eintrag ohne Objektstruktur übersprungen")
             continue
@@ -103,6 +110,9 @@ def zeilen_aus_antwort(antwort: dict, ean: str, jetzt: dt.datetime | None = None
         except ValueError:
             hinweise.append(f"{kennung}: ohne gültiges Datum – übersprungen")
             continue
+        if beobachtet > heute_utc + dt.timedelta(days=1):
+            hinweise.append(f"{kennung}: Beobachtungsdatum liegt in der Zukunft – übersprungen")
+            continue
         produkt = item.get("product")
         ort = item.get("location")
         produkt = produkt if isinstance(produkt, dict) else {}
@@ -123,7 +133,7 @@ def zeilen_aus_antwort(antwort: dict, ean: str, jetzt: dt.datetime | None = None
             # Beobachtungstag, Tagesbeginn UTC – höchstens „jetzt“, denn ein Datum aus einer Zeitzone
             # östlich von UTC kann kurz nach Mitternacht noch in der UTC-Zukunft liegen.
             "erfasst_am": min(dt.datetime.combine(beobachtet, dt.time(0), dt.timezone.utc),
-                              jetzt or dt.datetime.now(dt.timezone.utc)).isoformat(),
+                              jetzt).isoformat(),
             "zustand": "neu",
             "kategorie": "Ladenpreis",
             "ean": ean,
@@ -136,8 +146,14 @@ def zeilen_aus_antwort(antwort: dict, ean: str, jetzt: dt.datetime | None = None
 
 def _abruf(url: str, timeout: float = 15.0) -> dict:
     teile = urllib.parse.urlsplit(url)
-    if teile.scheme != "https" or teile.hostname != HOST:
-        raise OpenPricesGesperrt(f"Nur https://{HOST} ist erlaubt")
+    try:
+        port_erlaubt = teile.port in (None, 443)
+    except ValueError:
+        port_erlaubt = False
+    if (teile.scheme != "https" or teile.hostname != HOST
+            or teile.username is not None or teile.password is not None
+            or not port_erlaubt or teile.path != "/api/v1/prices"):
+        raise OpenPricesGesperrt(f"Nur die Preislisten-API auf https://{HOST} ist erlaubt")
     req = urllib.request.Request(url, headers={"User-Agent": USER_AGENT, "Accept": "application/json"})
 
     class KeineWeiterleitung(urllib.request.HTTPRedirectHandler):

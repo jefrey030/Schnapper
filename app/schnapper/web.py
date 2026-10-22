@@ -88,7 +88,9 @@ def filter_aus_query(q: dict) -> tuple[Filter, str]:
 
 def als_json(ergebnis, name: str, beispiel: bool) -> dict:
     return {
-        "liste": name, "beispieldaten": beispiel, "eingelesen": ergebnis.eingelesen,
+        "liste": name, "beispieldaten": beispiel,
+        "enthaelt_testdaten": any(t.angebot.quelle == "mock" for t in ergebnis.treffer),
+        "eingelesen": ergebnis.eingelesen,
         "ungueltig": ergebnis.fehler,
         "dubletten": [{"entfernt": a.id, "behalten": b.id, "titel": a.titel} for a, b in ergebnis.dubletten],
         "treffer": [{

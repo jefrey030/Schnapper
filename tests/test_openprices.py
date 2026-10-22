@@ -101,6 +101,37 @@ class UmwandlungTests(unittest.TestCase):
         self.assertEqual(zeilen[0]["titel"], f"Produkt {EAN}")
         self.assertEqual(zeilen[1]["titel"], "Keks – Berlin")
 
+    def test_beobachtung_aus_ferner_zukunft_wird_abgewiesen(self):
+        jetzt = dt.datetime(2026, 10, 22, 9, 0, tzinfo=dt.timezone.utc)
+        zeilen, hinweise = op.zeilen_aus_antwort(
+            antwort(item(43, 1.0, datum="2030-01-01")), EAN, jetzt=jetzt)
+        self.assertEqual(zeilen, [])
+        self.assertTrue(any("Zukunft" in h for h in hinweise))
+
+
+    def test_zeitzonen_grenzfall_toleriert_folgetag_aber_nicht_uebermorgen(self):
+        jetzt = dt.datetime(2026, 10, 21, 22, 30, tzinfo=dt.timezone.utc)
+        zeilen, hinweise = op.zeilen_aus_antwort(antwort(
+            item(44, 1.0, datum="2026-10-22"),
+            item(45, 1.0, datum="2026-10-23")), EAN, jetzt=jetzt)
+        self.assertEqual([z["id"] for z in zeilen], ["openprices-44"])
+        self.assertEqual(len(hinweise), 1)
+
+
+    def test_zu_grosse_preisliste_wird_auf_50_angebote_begrenzt(self):
+        heute = dt.date(2026, 10, 22)
+        angebote = [item(i, 1.0, datum=heute.isoformat()) for i in range(1, 70)]
+        zeilen, hinweise = op.zeilen_aus_antwort(
+            antwort(*angebote), EAN, jetzt=dt.datetime(2026, 10, 22, 12, tzinfo=dt.timezone.utc))
+        self.assertEqual(len(zeilen), 50)
+        self.assertEqual(zeilen[-1]["id"], "openprices-50")
+        self.assertTrue(any("nur die ersten" in x for x in hinweise))
+
+
+    def test_naiver_pruefzeitpunkt_ist_nicht_zulaessig(self):
+        with self.assertRaises(ValueError):
+            op.zeilen_aus_antwort(antwort(), EAN, jetzt=dt.datetime(2026, 10, 22, 9, 0))
+
     def test_rabatt_nur_wenn_wirklich_teurer(self):
         zeilen, _ = op.zeilen_aus_antwort(antwort(
             item(1, 2.0, price_is_discounted=True, price_without_discount=1.5)), EAN)
@@ -181,6 +212,17 @@ class AdapterTests(unittest.TestCase):
                         return_value=Antwort(b"\xff\xfe")):
             with self.assertRaisesRegex(op.OpenPricesFehler, "UTF-8"):
                 op._abruf(op.anfrage_url(EAN))
+
+    def test_abweichender_api_pfad_und_credentials_sind_blockiert(self):
+        urls = (
+            "https://prices.openfoodfacts.org/api/v1/prices/42",
+            "https://nutzer:pass@prices.openfoodfacts.org/api/v1/prices",
+            "https://prices.openfoodfacts.org:4443/api/v1/prices",
+            "https://prices.openfoodfacts.org:kein-port/api/v1/prices",
+        )
+        for url in urls:
+            with self.subTest(url), self.assertRaises(op.OpenPricesGesperrt):
+                op._abruf(url)
 
     def test_netzfehler_wird_sauber_gemeldet(self):
         with mock.patch("urllib.request.OpenerDirector.open", side_effect=OSError("kein Netz")):
