@@ -65,7 +65,9 @@ class UmwandlungTests(unittest.TestCase):
         a, b = zeilen
         self.assertEqual(a["id"], "openprices-11")
         self.assertEqual(a["titel"], "Testschokolade 100 g – Testmarkt · Berlin")
-        self.assertEqual(a["url"], "https://prices.openfoodfacts.org/api/v1/prices/11")
+        # Link führt zur lesbaren Webseite, nicht zur JSON-API
+        self.assertEqual(a["url"], "https://prices.openfoodfacts.org/prices/11")
+        self.assertNotIn("/api/", a["url"])
         self.assertEqual(a["referenzpreis"], "")
         self.assertEqual(b["referenzpreis"], "1.79")
         self.assertEqual(a["erfasst_am"], "2026-10-20T00:00:00+00:00")
