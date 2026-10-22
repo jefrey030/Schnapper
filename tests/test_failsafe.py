@@ -83,5 +83,43 @@ class TestFailClosedAgentReports(unittest.TestCase):
         self.assertFalse(report["team_einsatzbereit"])
 
 
+    def _gueltige_antworten(self):
+        self._schreibe("LEAD", ki={"antwort_id": "lead-1"}, plan={"aufgabe_id": "S-000"})
+        self._schreibe("BRAIN", ki={"antwort_id": "brain-2"})
+        self._schreibe("CHECK", ki={"antwort_id": "check-3"},
+                       urteil={"urteil": "bestanden"},
+                       werkzeug={"tests": {"ok": True, "anzahl": 2}, "geheimnis_funde": []})
+        self._schreibe("COMMAND", ki={"antwort_id": "command-4"},
+                       protokoll={"freigabe": "ja", "naechster_schritt": "Prüfen"})
+
+    def _bereit(self):
+        agent.bericht(self.lauf)
+        return json.loads((self.team / "runs" / (self.lauf.name + ".json")).read_text())
+
+    def test_four_unique_response_ids_and_four_calls_allow_readiness(self):
+        self._gueltige_antworten()
+        (self.lauf / "ki_aufrufe.txt").write_text("4", encoding="utf-8")
+        bericht = self._bereit()
+        self.assertTrue(bericht["team_einsatzbereit"])
+        self.assertTrue(bericht["antwort_ids_eindeutig"])
+
+    def test_duplicate_response_id_blocks_false_readiness(self):
+        self._gueltige_antworten()
+        self._schreibe("COMMAND", ki={"antwort_id": "check-3"},
+                       protokoll={"freigabe": "ja", "naechster_schritt": "Prüfen"})
+        (self.lauf / "ki_aufrufe.txt").write_text("4", encoding="utf-8")
+        bericht = self._bereit()
+        self.assertFalse(bericht["team_einsatzbereit"])
+        self.assertFalse(bericht["antwort_ids_eindeutig"])
+
+    def test_missing_or_corrupt_call_counter_blocks_readiness(self):
+        self._gueltige_antworten()
+        self.assertFalse(self._bereit()["team_einsatzbereit"])
+        (self.lauf / "ki_aufrufe.txt").write_text("kaputt", encoding="utf-8")
+        bericht = self._bereit()
+        self.assertEqual(bericht["ki_aufrufe"], 0)
+        self.assertFalse(bericht["team_einsatzbereit"])
+
+
 if __name__ == "__main__":
     unittest.main()
