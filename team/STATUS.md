@@ -43,3 +43,19 @@ Dieser Status wird nach jedem tatsächlich gelaufenen Stundenlauf automatisch ü
 | Neu vorgeschlagen | S-007 Entscheidungsvorlage PR #19/#20, S-008 Löschkandidaten-Liste (14 Branches vollständig in main) |
 | Blocker | Actions starten nicht (Billing); eBay-Zugang fehlt; Freigabe einer Aufgabe durch Jefrey nötig |
 | Bericht | `team/runs/20261022-1629-master.md` |
+
+## SCHNAPPER MASTER – letzter Lauf (22.10.2026, 20:29 UTC)
+| Punkt | Zustand |
+| --- | --- |
+| main | e134cd0, Tests **190/190 bestanden**, Cloudflare **10/10** |
+| Aufgabe | F1 Aufräumen (freigegeben von Jefrey) |
+| Ergebnis | **Draft-PR #36** in Prüfung: https://github.com/jefrey030/Schnapper/pull/36 (Branch `agent/master/20261022-20` @ 4d48068) |
+| S-004, S-005, S-006 | im PR auf **done** gesetzt (S-006 überholt) – wirksam erst nach Merge durch Jefrey |
+| S-009 bis S-013 | im PR als **open** angelegt (F2 Angebot erfassen, F3 JSON-Sicherung, F4 Barcode-Kamera, F5 Termux-Start, F6 eBay vorbereiten) |
+| S-007, S-008 | nicht übernommen (ID-Kollision mit offenem PR #33); möglicher Textkonflikt am Ende von `team/tasks.json` mit #33 |
+| Masterplan | Abschnitt B jetzt PR-Tabelle mit echtem GitHub-Stand (34 PRs), D.3 angepasst |
+| Blocker | Actions starten nicht (Billing, laut früheren Berichten); eBay-Zugangsdaten fehlen; Merge-Entscheidung über PR #36 bei Jefrey |
+| Nächster Schritt | S-009 (F2) im nächsten Lauf, sofern PR #36 bestehen bleibt |
+| Bericht | `team/runs/20261022-2029-master.md` |
+
+Hinweis: `team/tasks.json` wurde nicht separat geändert; die tasks.json-Änderung ist ausschließlich in PR #36 enthalten.
