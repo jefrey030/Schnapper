@@ -55,6 +55,7 @@ class Zustand:
         self.register = register
         self.verlauf = verlauf
         self._lock = threading.Lock()
+        self._import_lock = threading.Lock()  # komplette Import-/Verlaufstransaktion serialisieren
         self._openprices_lock = threading.Lock()  # höchstens ein externer API-Abruf gleichzeitig
         self._daten = (geladen, name, beispiel)
 
@@ -63,11 +64,13 @@ class Zustand:
             return self._daten
 
     def ersetzen(self, geladen: Importergebnis, name: str):
-        # Bei einem Fehler beim Speichern des Preisverlaufs bleibt die bisherige
-        # Liste aktiv. Der HTTP-Import meldet dann korrekt einen Fehler.
-        self.preise_merken(geladen)
-        with self._lock:
-            self._daten = (geladen, name, False)
+        # Immer nur ein Import zur Zeit: Ein langsamer Verlaufsschreibvorgang darf
+        # nicht von einem zweiten Import überholt werden.
+        with self._import_lock:
+            # Bei einem Speicherfehler bleibt die bislang aktive Liste unverändert.
+            self.preise_merken(geladen)
+            with self._lock:
+                self._daten = (geladen, name, False)
 
     def preise_merken(self, geladen: Importergebnis):
         if self.verlauf is not None:
