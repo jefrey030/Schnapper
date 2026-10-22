@@ -50,14 +50,14 @@
       "priority": 4,
       "status": "proposed",
       "title": "MF1 Quellen-Register: nur freigegebene Quellen (eigene Daten, Mock) zulassen",
-      "voraussetzung": "PR #5 (App-Kern app/schnapper) ist von Jefrey gemergt",
+      "voraussetzung": "erfüllt: App-Kern (PR #5) und Quellen-Register (PR #10) sind seit 5343009/7a0b83e auf main",
       "acceptance": [
         "Register mit Kennung und Entscheidung je Quelle (erlaubt/ausgeschlossen/später) aus team/konzept/S-002-datenquellen-plan.md",
         "T1: Angebot aus Quelle 'kleinanzeigen' wird abgewiesen, Hinweis 'Quelle ausgeschlossen'",
         "T2: Angebot aus unbekannter Quelle wird abgewiesen, Hinweis 'Quelle nicht freigegeben'",
         "Kein Netzwerkzugriff, alle Tests grün"
       ],
-      "hinweis": "Überschneidung: PR #10 (feature/schnapper-web-quellen-20261022) enthält bereits app/schnapper/quellen.py mit Register, 'kleinanzeigen' ausgeschlossen und Abweisung unbekannter Quellen – vor Freigabe gegen PR #10 prüfen, keine Doppelarbeit."
+      "hinweis": "Abgleich 22.10.2026: main (7a0b83e) erfüllt T1 und T2 bereits (app/schnapper/quellen.py, belegt durch tests/test_abgleich_s004_s005.py). Vorschlag: S-004 nach Sichtung auf 'done' setzen statt neu umzusetzen."
     },
     {
       "id": "S-005",
@@ -71,13 +71,13 @@
         "T5: gesamte Test-Suite läuft ohne Netz grün",
         "Keine Zugangsdaten, Schlüssel oder echten Preise im Repo"
       ],
-      "hinweis": "Überschneidung: PR #10 enthält bereits app/schnapper/adapter.py mit gesperrtem EbayAdapter (Schalter SCHNAPPER_EBAY_FREIGABE, kein Netzaufruf) – vor Freigabe gegen PR #10 prüfen, keine Doppelarbeit."
+      "hinweis": "Abgleich 22.10.2026: main erfüllt T4 (EbayAdapter gesperrt, kein Netzaufruf, belegt durch tests/test_abgleich_s004_s005.py) und T5. Offen ist nur T3: ein Mock-Adapter mit erkennbaren TEST-Daten und quelle = 'mock' fehlt auf main (Quelle 'mock' ist im Register erlaubt, aber ohne Adapter)."
     },
     {
       "id": "S-006",
       "priority": 6,
       "status": "proposed",
-      "title": "Entscheidungsvorlage: überlappende Draft-PRs #2, #6, #7, #8, #9 sowie PR #5 und PR #10 ordnen",
+      "title": "Entscheidungsvorlage: überlappende Draft-PRs #2, #6, #7, #8, #9 ordnen (PR #5 und #10 sind inzwischen auf main übernommen)",
       "acceptance": [
         "Je PR: Zweck, geänderte Dateien, Überschneidungen und Konflikte mit main belegt (git diff --stat)",
         "Empfehlung je PR (übernehmen/zusammenführen/schließen) mit Begründung – Entscheidung bleibt bei Jefrey",
