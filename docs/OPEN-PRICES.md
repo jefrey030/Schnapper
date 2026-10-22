@@ -31,3 +31,15 @@ Ohne Schalter: Meldung „Freigabeschalter … fehlt“, kein Netzwerkaufruf.
 
 Tests: `tests/test_openprices.py` (19 Fälle, ohne Netz, Antwortstruktur laut
 [API-Dokumentation](https://openfoodfacts.github.io/documentation/docs/Open-prices/prices/prices_list/)).
+
+## Auf der lokalen Handy-/Browseroberfläche (neu in PR #15)
+- Es gibt nun eine eigene Barcode-Suche mit getrennten Ergebnissen; die eigenen CSV-Angebote bleiben unverändert.
+- Ab Werk bleibt die Netzwerkabfrage gesperrt. Ohne `SCHNAPPER_OPENPRICES_FREIGABE=ja` kommt HTTP 403 und **kein Netzwerkaufruf** zustande.
+- Für einen ausdrücklich gewünschten lokalen Test den Webserver wie folgt starten (kein externer Dienst wird veröffentlicht):
+  ```sh
+  SCHNAPPER_OPENPRICES_FREIGABE=ja PYTHONPATH=app python -m schnapper.web app/beispiele/angebote.csv
+  ```
+  Im Browser `http://127.0.0.1:8765` öffnen, Barcode eingeben und „Ladenpreise suchen“ drücken.
+- Die Suche zeigt **höchstens die 50 zuletzt gemeldeten Preise zum Barcode**, nicht garantiert alle Preise oder das deutschlandweit günstigste Angebot.
+- Preisbeobachtungen sind nutzergemeldete Momentaufnahmen, keine verifizierten aktuellen Ladenangebote.
+- Der HTTP-Endpunkt `POST /api/openprices` ist nur von der lokalen Oberfläche für manuelle Abfragen vorgesehen; der Klick allein hebt die Freigabesperre nicht auf.
