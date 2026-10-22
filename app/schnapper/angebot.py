@@ -32,9 +32,23 @@ def geld(wert) -> Decimal:
         betrag = Decimal(str(wert))
     elif isinstance(wert, str):
         text = wert.strip().replace("€", "").replace("EUR", "").replace(" ", "").replace(" ", "")
-        if "," in text and "." in text:  # 1.299,99 -> 1299.99
-            text = text.replace(".", "").replace(",", ".")
+        if "," in text and "." in text:
+            # Das *letzte* Trennzeichen bezeichnet die Nachkommastellen:
+            # 1.299,99 (DE) und 1,299.99 (EN) sind beide 1299.99.
+            deutsch = text.rfind(",") > text.rfind(".")
+            muster = (r"[+-]?\d{1,3}(?:\.\d{3})+,\d{1,2}" if deutsch
+                      else r"[+-]?\d{1,3}(?:,\d{3})+\.\d{1,2}")
+            if not re.fullmatch(muster, text):
+                raise AngebotFehler(f"Preis nicht lesbar: {wert!r}")
+            text = (text.replace(".", "").replace(",", ".") if deutsch
+                    else text.replace(",", ""))
         else:
+            # Ein einzelner Trenner vor genau drei Ziffern ist mehrdeutig:
+            # "1.299" kann 1,299 oder 1299 bedeuten. Keine Fantasie-Rabatte.
+            if re.fullmatch(r"[+-]?[0-9]+[.,][0-9]{3}", text):
+                raise AngebotFehler(
+                    f"Preis nicht eindeutig: {wert!r} – bitte z. B. 1299 oder 1.299,00 angeben"
+                )
             text = text.replace(",", ".")
         try:
             betrag = Decimal(text)
