@@ -32,8 +32,18 @@ def geld(wert) -> Decimal:
         betrag = Decimal(str(wert))
     elif isinstance(wert, str):
         text = wert.strip().replace("€", "").replace("EUR", "").replace(" ", "").replace(" ", "")
-        if "," in text and "." in text:  # 1.299,99 -> 1299.99
-            text = text.replace(".", "").replace(",", ".")
+        if "," in text and "." in text:
+            # Bei gemischten Trennzeichen steht das Dezimalzeichen rechts:
+            # 1.299,99 (DE) und 1,299.99 (EN) müssen denselben Wert ergeben.
+            dezimal = "," if text.rfind(",") > text.rfind(".") else "."
+            tausender = "." if dezimal == "," else ","
+            vor, nach = text.rsplit(dezimal, 1)
+            gruppen = vor.split(tausender)
+            if (len(gruppen) < 2 or not re.fullmatch(r"[0-9]{1,3}", gruppen[0])
+                    or any(not re.fullmatch(r"[0-9]{3}", gruppe) for gruppe in gruppen[1:])
+                    or not re.fullmatch(r"[0-9]{1,2}", nach)):
+                raise AngebotFehler(f"Preis nicht lesbar: {wert!r}")
+            text = "".join(gruppen) + "." + nach
         else:
             text = text.replace(",", ".")
         try:
