@@ -56,6 +56,7 @@ function warnText(w) {
   if (w.startsWith("betrugsverdacht")) return { text: "Vorsicht: zu billig für Neuware", gefahr: true, titel: w };
   if (w.startsWith("kein Referenzpreis")) return { text: "Ersparnis unbekannt", gefahr: false, titel: w };
   if (w.startsWith("teurer")) return { text: "Teurer als üblich", gefahr: true, titel: w };
+  if (w.startsWith("referenzpreis fragwürdig")) return { text: "„Statt“-Preis fragwürdig", gefahr: true, titel: w };
   return { text: w, gefahr: false, titel: w };
 }
 
@@ -94,6 +95,7 @@ function karte(t) {
   if (Number(t.versand) > 0) teile.push(`inkl. ${euro.format(Number(t.versand))} Versand`);
   if (t.referenzpreis) teile.push(`sonst ${euro.format(Number(t.referenzpreis))}`);
   e.querySelector(".details").textContent = teile.join(" · ");
+  verlaufZeile(e.querySelector(".verlauf"), t);
   const ul = e.querySelector(".warnungen");
   for (const w of t.warnungen) {
     const info = warnText(w);
@@ -105,6 +107,24 @@ function karte(t) {
   if (/^https:\/\//.test(t.url)) a.href = t.url; else a.remove();
   merkKnopf(e.querySelector(".merken"), t);
   return e;
+}
+
+// Preisverlauf: Tiefstpreis, Spanne der letzten 30 Tage, vorheriger Preis
+function verlaufZeile(p, t) {
+  const v = t.verlauf;
+  if (!v) return;
+  const teile = [];
+  if (v.ist_tiefstpreis) {
+    p.appendChild(el("span", `Tiefstpreis seit ${v.seit_tagen} Tag${v.seit_tagen === 1 ? "" : "en"}`, "tief"));
+  }
+  if (v.vorher !== null) {
+    const diff = Number(t.gesamtpreis) - Number(v.vorher);
+    teile.push(`${diff < 0 ? "↓" : "↑"} vorher ${euro.format(Number(v.vorher))}`);
+  }
+  teile.push(`${euro.format(Number(v.tiefst))}–${euro.format(Number(v.hoechst))} in ${v.seit_tagen} Tagen`);
+  p.appendChild(el("span", teile.join(" · ")));
+  p.title = `${v.anzahl} Preise beobachtet`;
+  p.hidden = false;
 }
 
 function probleme(daten) {
