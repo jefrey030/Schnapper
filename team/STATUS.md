@@ -80,3 +80,15 @@ Hinweis: `team/tasks.json` wurde nicht separat geändert; die tasks.json-Änderu
 | Tests (Branch F3) | 196/196 OK (davon 6 neu, darunter 3 Playwright-Browsertests mit 390x844), Cloudflare 10/10 | `team/runs/20261022-2228-master.md` |
 | Blocker | Actions starten nicht (Billing). Die Merge-Entscheidung über #36, #39 und #40 liegt bei Jefrey. Mögliche Konflikte mit den fremden PRs #28, #29 und #30 (Preisalarm). Der `gh`-Token ist ungültig, deshalb wurde der PR über das GitHub-MCP angelegt. eBay hat keine Zugangsdaten | – |
 | Nächster Schritt | F4 = S-011 Barcode per Kamera | – |
+
+## SCHNAPPER MASTER – letzter Lauf (22.10.2026, 22:38 UTC, Lauf 20261022-2238)
+| Aufgabe | Zustand | Beleg |
+| --- | --- | --- |
+| F1 Aufräumen (tasks.json, Masterplan B) | **Draft-PR #36** (Branch `agent/master/20261022-20` @ 4d48068), wartet auf Jefrey | `team/runs/20261022-2029-master.md` |
+| F2 = S-009 Angebot direkt in der App erfassen | **Draft-PR #39** (Branch `agent/master/20261022-21` @ 6dbeb82), wartet auf Jefrey | `team/runs/20261022-2128-master.md` |
+| F3 = S-010 Merkliste und Preisalarme sichern und wiederherstellen | **Draft-PR #40** (Branch `agent/master/20261022-22` @ 3ab36fa), wartet auf Jefrey | `team/runs/20261022-2228-master.md` |
+| F4 = S-011 Barcode per Kamera scannen (BarcodeDetector) | **Draft-PR #41** (Branch `agent/master/20261022-2238` @ 38a469e), CHECK bestanden (AK 1–12 erfüllt), wartet auf Jefrey. Auf echtem Gerät ungetestet; Kamera nur im Secure Context (https/localhost) | https://github.com/jefrey030/Schnapper/pull/41, `tests/test_app_kamera_s011.py` |
+| tasks.json | Auf main unverändert. Auf dem Report-Branch ist S-011 als **review** mit Hinweis auf PR #41 eingetragen; der Eintrag stammt aus #36. Im Feature-Branch wurde tasks.json nicht geändert | – |
+| Tests (Branch F4) | 200/200 OK (davon 10 neu, darunter 7 Playwright-Browsertests mit 390x844), Cloudflare 10/10. CSP unverändert | `team/runs/20261022-2238-master.md` |
+| Blocker | PR-Check python-tests lief auf #40 grün (Actions-Billing-Blocker für PR-Checks überholt; Stundenlauf ungeprüft). Die Merge-Entscheidung über #36, #39, #40 und #41 liegt bei Jefrey. Mögliche Konflikte mit #28/#29/#30 sowie #36/#39/#40 (`app/schnapper/web*`). Der `gh`-Token ist ungültig, PR über GitHub-MCP angelegt. eBay-Sandbox-Schlüssel für F6 fehlt | – |
+| Nächster Schritt | F5 = S-012 Ein-Befehl-Start unter Termux | – |

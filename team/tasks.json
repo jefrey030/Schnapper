@@ -123,6 +123,19 @@
         "Keine Daten verlassen das Gerät, alle Tests grün"
       ],
       "hinweis": "Freigegeben von Jefrey am 22.10.2026 als F3 (Lauf 20261022-2029 eingetragen). | Lauf 20261022-2228: umgesetzt in Draft-PR #40 (Branch agent/master/20261022-22 @ 3ab36fa), CHECK bestanden, 196/196 Tests OK, Cloudflare 10/10. Wartet auf Jefrey; Eintrag stammt aus PR #36 (dort 'open')."
+    },
+    {
+      "id": "S-011",
+      "priority": 11,
+      "status": "review",
+      "title": "F4 Barcode per Kamera scannen (BarcodeDetector)",
+      "acceptance": [
+        "Kamera-Knopf nutzt die Browser-API BarcodeDetector (EAN-13/EAN-8/UPC) und übernimmt den erkannten Code in die Barcode-Suche",
+        "Ohne BarcodeDetector-Unterstützung oder ohne Kamerafreigabe: verständlicher Hinweis, manuelle Eingabe bleibt nutzbar",
+        "Kein Bild wird gespeichert oder hochgeladen; keine externe Bibliothek",
+        "Alle Tests grün"
+      ],
+      "hinweis": "Freigegeben von Jefrey am 22.10.2026 als F4 (Lauf 20261022-2029 eingetragen). | Lauf 20261022-2238: umgesetzt in Draft-PR #41 (Branch agent/master/20261022-2238 @ 38a469e), CHECK bestanden, 200/200 Tests OK, Cloudflare 10/10. Wartet auf Jefrey; Eintrag stammt aus PR #36 (dort 'open')."
     }
   ]
 }
