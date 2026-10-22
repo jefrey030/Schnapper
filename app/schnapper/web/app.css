@@ -107,3 +107,10 @@ main { max-width: 720px; margin: 0 auto; padding: 0 16px 48px; }
 .verlauf { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 8px; margin: 6px 0 0; font-size: 13.5px;
   color: var(--leise); font-variant-numeric: tabular-nums; }
 .verlauf .tief { font-weight: 700; font-size: 12.5px; padding: 2px 8px; border-radius: 6px; background: var(--gut-grund); color: var(--gut); }
+
+#sicherung { display: grid; gap: 8px; margin-top: 20px; padding-top: 12px; border-top: 1px solid var(--linie); }
+#sicherung h2 { margin: 0; font-size: 17px; }
+#sicherung .knopf { padding: 0 14px; }
+.sicherung-laden { display: grid; gap: 4px; font-size: 14px; color: var(--leise); }
+.sicherung-laden input { max-width: 100%; font: inherit; }
+#sicherung-fehler { margin: 0; padding-left: 18px; font-size: 13px; color: var(--gefahr); overflow-wrap: anywhere; }
