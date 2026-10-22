@@ -94,7 +94,7 @@ class AlarmGuardrails(unittest.TestCase):
                 Wunsch.aus_dict({"suche": "Fahrrad", "min_rabatt": wert})
 
     def test_ungueltige_zustandstypen_abweisen(self):
-        for z in (42, {"gebraucht": True}, True):
+        for z in (42, 0, False, {}, {"gebraucht": True}, True):
             with self.subTest(z=z), self.assertRaisesRegex(WunschFehler, "Zustand"):
                 Wunsch.aus_dict({"suche": "Fahrrad", "max_preis": "100", "zustaende": z})
 
