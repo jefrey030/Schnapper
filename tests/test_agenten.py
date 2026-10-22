@@ -62,6 +62,73 @@ class TestKostenbremsen(unittest.TestCase):
                 ki._pruefe_url(url)
         ki._pruefe_url(ki.INFERENZ_URL)
 
+    def test_api_url_erfordert_https_und_sicheren_port(self):
+        for url in (
+            "http://models.github.ai/inference/chat/completions",
+            "https://models.github.ai:8080/inference/chat/completions",
+            "https://benutzer:passwort@models.github.ai/inference/chat/completions",
+            "https://models.github.ai/inference/chat/completions#fragment",
+            "https://models.github.ai:ungueltig/inference/chat/completions",
+            "https://models.github.ai.evil.example/inference/chat/completions",
+        ):
+            with self.subTest(url=url), self.assertRaises(ki.KINichtVerfuegbar):
+                ki._pruefe_url(url)
+        ki._pruefe_url("https://models.github.ai:443/inference/chat/completions")
+
+    def test_redirect_ist_vor_weitergabe_des_tokens_blockiert(self):
+        handler = ki._KeineWeiterleitung()
+        for code in (301, 302, 303, 307, 308):
+            with self.subTest(code=code), self.assertRaises(ki.KINichtVerfuegbar):
+                handler.redirect_request(None, None, code, "Moved", {}, "https://evil.example/")
+
+    def test_ki_http_folgt_keinem_redirect_und_sendet_keinen_token(self):
+        class Ziel(http.server.BaseHTTPRequestHandler):
+            empfangene_token = []
+
+            def log_message(self, *args):
+                pass
+
+            def do_GET(self):
+                Ziel.empfangene_token.append(self.headers.get("Authorization"))
+                self.send_response(200)
+                self.end_headers()
+                self.wfile.write(b"{}")
+
+        class Umleiter(http.server.BaseHTTPRequestHandler):
+            ziel = ""
+
+            def log_message(self, *args):
+                pass
+
+            def do_GET(self):
+                self.send_response(302)
+                self.send_header("Location", Umleiter.ziel)
+                self.end_headers()
+
+        Ziel.empfangene_token = []
+        ziel_server = http.server.HTTPServer(("127.0.0.1", 0), Ziel)
+        umleiter_server = http.server.HTTPServer(("127.0.0.1", 0), Umleiter)
+        Umleiter.ziel = f"http://127.0.0.1:{ziel_server.server_port}/abfangen"
+        threads = [
+            threading.Thread(target=server.serve_forever, daemon=True)
+            for server in (ziel_server, umleiter_server)
+        ]
+        try:
+            for thread in threads:
+                thread.start()
+            # Ausschließlich für diesen lokalen Netzwerktest den Produktions-
+            # URL-Validator mocken; reale Modell-URLs bleiben HTTPS-pflichtig.
+            with mock.patch.object(ki, "_pruefe_url", return_value=None):
+                with self.assertRaises(ki.KINichtVerfuegbar):
+                    ki._http(f"http://127.0.0.1:{umleiter_server.server_port}/umleitung",
+                             "nur-ein-test-token")
+            self.assertEqual(Ziel.empfangene_token, [])
+        finally:
+            umleiter_server.shutdown()
+            ziel_server.shutdown()
+            umleiter_server.server_close()
+            ziel_server.server_close()
+
     def test_kein_bezahlter_anbieter_im_code(self):
         for datei in ("team/ki.py", "team/agent.py", "team/runner.py", ".github/workflows/schnapper-hourly.yml"):
             text = (ROOT / datei).read_text(encoding="utf-8")
@@ -169,7 +236,7 @@ class TestAgenten(unittest.TestCase):
         basis_url = f"http://127.0.0.1:{server.server_port}"
         try:
             with mock.patch.dict(os.environ, {"GITHUB_TOKEN": "test", "SCHNAPPER_MODELL": ""}), \
-                 mock.patch.object(ki, "ERLAUBTER_HOST", "127.0.0.1"), \
+                 mock.patch.object(ki, "_pruefe_url", return_value=None), \
                  mock.patch.object(ki, "INFERENZ_URL", basis_url + "/inference"), \
                  mock.patch.object(ki, "KATALOG_URL", basis_url + "/catalog"), \
                  mock.patch.object(ki.KI.__init__, "__defaults__", (None, basis_url + "/inference", basis_url + "/catalog")), \
