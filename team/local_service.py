@@ -58,6 +58,30 @@ def pruefe_nachweise(bericht, lauf, schritte):
             antwort_ids.append(identifier)
     if len(set(antwort_ids)) != len(ROLES):
         fehler.append("Antwort-IDs sind nicht viermal eindeutig.")
+    # Vier lesbare KI-Antworten genügen nicht: Rollen müssen sinnvolle
+    # strukturierte Übergaben erzeugen, sonst dreht die Rotation ins Leere.
+    lead = agenten.get("LEAD") or {}
+    plan = lead.get("plan") or {}
+    if not isinstance(plan, dict) or not isinstance(
+        plan.get("aufgabe_id"), str) or not plan.get("aufgabe_id"):
+        fehler.append("LEAD hat keinen gültigen Aufgabenauftrag erstellt.")
+    brain = agenten.get("BRAIN") or {}
+    pfad = brain.get("vorschlag_datei")
+    if not isinstance(pfad, str) or not pfad.startswith("team/proposals/"):
+        fehler.append("BRAIN hat keine Vorschlagsdatei nachgewiesen.")
+    else:
+        datei = (ROOT / pfad).resolve()
+        ordner = (TEAM / "proposals").resolve()
+        if not datei.is_relative_to(ordner) or not datei.is_file():
+            fehler.append("BRAIN-Vorschlag fehlt oder liegt außerhalb von team/proposals.")
+    if bericht.get("check_urteil") not in ("bestanden", "nachbessern", "abgelehnt"):
+        fehler.append("CHECK hat kein gültiges fachliches Urteil geliefert.")
+    command = (agenten.get("COMMAND") or {}).get("protokoll") or {}
+    if not isinstance(command, dict) or command.get("freigabe") not in ("ja", "nein") or not (
+        isinstance(command.get("naechster_schritt"), str) and
+        command["naechster_schritt"].strip()
+    ):
+        fehler.append("COMMAND hat kein gültiges Abschlussprotokoll erstellt.")
     if bericht.get("tests_ok") is not True or not isinstance(
         bericht.get("tests_anzahl"), int) or bericht["tests_anzahl"] < 1:
         fehler.append("Unit-Tests nicht erfolgreich nachgewiesen.")
