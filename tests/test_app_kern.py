@@ -51,6 +51,10 @@ class HarteRegeln(unittest.TestCase):
             "fremdwaehrung": roh(waehrung="USD"), "zustand": roh(zustand="super"),
             "id fehlt": roh(id=""), "zukunft": roh(erfasst_am="2099-01-01T00:00:00Z"),
             "versand negativ": roh(versand="-2"), "referenz null": roh(referenzpreis="0"),
+            "kaputte IPv6-URL": roh(url="https://[kaputt"),
+            "ungueltiger Port": roh(url="https://shop.example:abc/1"),
+            "Port 0": roh(url="https://shop.example:0/1"),
+            "Zugangsdaten in URL": roh(url="https://user:pass@shop.example/1"),
         }
         for name, daten in faelle.items():
             with self.subTest(name), self.assertRaises(AngebotFehler):
@@ -80,6 +84,14 @@ class Dubletten(unittest.TestCase):
     def test_url_ohne_tracking_ist_gleich(self):
         self.assertEqual(normalisiere_url("https://www.Shop.example/a/1/?utm_source=x&farbe=rot#oben"),
                          normalisiere_url("https://shop.example/a/1?farbe=rot"))
+
+    def test_port_ist_teil_der_url(self):
+        # 443 entspricht dem Standardport; 8443 kann eine andere Quelle sein.
+        basis = "https://shop.example/a/1"
+        self.assertEqual(normalisiere_url(basis), normalisiere_url("https://shop.example:443/a/1"))
+        self.assertNotEqual(normalisiere_url(basis), normalisiere_url("https://shop.example:8443/a/1"))
+        self.assertEqual(normalisiere_url("https://[2001:db8::1]:8443/a"),
+                         "https://[2001:db8::1]:8443/a")
 
     def test_gleiche_url_neuester_bleibt(self):
         alt = Angebot.aus_dict(roh(id="alt", erfasst_am="2026-10-21T10:00:00Z", url="https://shop.example/a/1?ref=x"))
@@ -144,6 +156,17 @@ class Import(unittest.TestCase):
         e = lies_text(text, "json", reg)
         self.assertEqual([a.id for a in e.angebote], ["a"])
         self.assertEqual(len(e.fehler), 2)
+
+    def test_kaputte_url_verhindert_nicht_den_restimport(self):
+        # Eine kaputte URL darf nicht die gesamte importierte Angebotsliste abbrechen.
+        reg = Register()
+        reg.erlaube("shop", "Test-Shop", "erfundene Testquelle")
+        text = json.dumps([roh(id="kaputt", url="https://[kaputt"),
+                           roh(id="gueltig", url="https://shop.example/ok")])
+        ergebnis = lies_text(text, "json", reg)
+        self.assertEqual([a.id for a in ergebnis.angebote], ["gueltig"])
+        self.assertEqual(len(ergebnis.fehler), 1)
+        self.assertIn("URL", ergebnis.fehler[0])
 
     def test_kaputtes_json(self):
         self.assertEqual(len(lies_text("{kaputt", "json").fehler), 1)
