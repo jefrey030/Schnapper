@@ -50,7 +50,7 @@ class AnfrageTests(unittest.TestCase):
                              "duplicate_of__isnull": "true", "size": "50", "page": "1"})
 
     def test_ungueltige_eingaben(self):
-        for ean in ("", "123", "abc4008400402", "1" * 15):
+        for ean in ("", "123", "abc4008400402", "1" * 15, "١٢٣٤٥٦٧٨"):
             with self.assertRaises(ValueError):
                 op.anfrage_url(ean)
         with self.assertRaises(ValueError):
