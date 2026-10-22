@@ -5,7 +5,7 @@
     {
       "id": "S-000",
       "priority": 0,
-      "status": "open",
+      "status": "review",
       "title": "Vier-Agenten-Probelauf: prüfbares Konzept für die erste SCHNAPPER-Suche nach günstigen Gebrauchtartikeln erstellen",
       "acceptance": [
         "LEAD: exakt 3 priorisierte MVP-Funktionen nennen, inklusive klarer Auswahlbegründung",
@@ -18,7 +18,7 @@
     {
       "id": "S-001",
       "priority": 1,
-      "status": "open",
+      "status": "review",
       "title": "SCHNAPPER-Bestandsaufnahme: vorhandene App-Bausteine und fehlende Schnittstellen dokumentieren",
       "acceptance": [
         "Vorhandene Dateien und Funktionen belegbar auflisten",
@@ -28,7 +28,7 @@
     {
       "id": "S-002",
       "priority": 2,
-      "status": "open",
+      "status": "review",
       "title": "Sicheren technischen Plan für Preisvergleich und Schnäppchen-Suche erstellen",
       "acceptance": [
         "Datenquellen und Nutzungsrechte klären",
@@ -38,12 +38,53 @@
     {
       "id": "S-003",
       "priority": 3,
-      "status": "open",
+      "status": "review",
       "title": "Stundenlauf, Agentenrollen und Prüfprotokolle validieren",
       "acceptance": [
         "Jeder der vier Agenten schreibt einen Bericht",
         "Fehlende API-Anbindung korrekt als Blocker markieren"
       ]
+    },
+    {
+      "id": "S-004",
+      "priority": 4,
+      "status": "proposed",
+      "title": "MF1 Quellen-Register: nur freigegebene Quellen (eigene Daten, Mock) zulassen",
+      "voraussetzung": "erfüllt: App-Kern (PR #5) und Quellen-Register (PR #10) sind seit 5343009/7a0b83e auf main",
+      "acceptance": [
+        "Register mit Kennung und Entscheidung je Quelle (erlaubt/ausgeschlossen/später) aus team/konzept/S-002-datenquellen-plan.md",
+        "T1: Angebot aus Quelle 'kleinanzeigen' wird abgewiesen, Hinweis 'Quelle ausgeschlossen'",
+        "T2: Angebot aus unbekannter Quelle wird abgewiesen, Hinweis 'Quelle nicht freigegeben'",
+        "Kein Netzwerkzugriff, alle Tests grün"
+      ],
+      "hinweis": "Abgleich 22.10.2026: main (7a0b83e) erfüllt T1 und T2 bereits (app/schnapper/quellen.py, belegt durch tests/test_abgleich_s004_s005.py). Vorschlag: S-004 nach Sichtung auf 'done' setzen statt neu umzusetzen."
+    },
+    {
+      "id": "S-005",
+      "priority": 5,
+      "status": "proposed",
+      "title": "MF2 Adapter-Schnittstelle suche(anfrage) mit Mock-Adapter; eBay-Adapter nur als gesperrte Hülle",
+      "voraussetzung": "S-004 erledigt",
+      "acceptance": [
+        "T3: Mock-Adapter liefert erkennbare Testdaten (TEST-…), Treffer tragen quelle = 'mock'",
+        "T4: eBay-Adapter ohne Freigabeschalter und Zugangsdaten aus der Umgebung wird nicht aktiviert, kein Netzwerkaufruf (per Test belegt)",
+        "T5: gesamte Test-Suite läuft ohne Netz grün",
+        "Keine Zugangsdaten, Schlüssel oder echten Preise im Repo"
+      ],
+      "hinweis": "Abgleich 22.10.2026: main erfüllt T4 (EbayAdapter gesperrt, kein Netzaufruf, belegt durch tests/test_abgleich_s004_s005.py) und T5. Offen ist nur T3: ein Mock-Adapter mit erkennbaren TEST-Daten und quelle = 'mock' fehlt auf main (Quelle 'mock' ist im Register erlaubt, aber ohne Adapter)."
+    },
+    {
+      "id": "S-006",
+      "priority": 6,
+      "status": "proposed",
+      "title": "Entscheidungsvorlage: überlappende Draft-PRs #2, #6, #7, #8, #9 ordnen (PR #5 und #10 sind inzwischen auf main übernommen)",
+      "acceptance": [
+        "Je PR: Zweck, geänderte Dateien, Überschneidungen und Konflikte mit main belegt (git diff --stat)",
+        "Empfehlung je PR (übernehmen/zusammenführen/schließen) mit Begründung – Entscheidung bleibt bei Jefrey",
+        "Kein Merge, kein Schließen von PRs durch Agenten",
+        "Branches ohne PR, die vollständig in main enthalten sind, werden als Löschkandidaten belegt (tests/test_branches_s006.py) – Löschen nur durch Jefrey"
+      ],
+      "hinweis": "Abgleich 22.10.2026 07:28 UTC: vier Branches ohne offenen PR sind inhaltlich vollständig in main enthalten (git diff --shortstat leer): fix/schnapper-web-main-20261022 und feature/schnapper-web-quellen-20261022 (Baum = main 7a0b83e), feature/schnapper-angebotskern-20261021 (Baum = 5343009), fix/schnapper-hourly-rotation-20261021 (0 Commits vor main). Empfehlung: Jefrey kann sie löschen – Agenten löschen keine Branches."
     }
   ]
 }
