@@ -60,7 +60,7 @@ class AnfrageTests(unittest.TestCase):
 class UmwandlungTests(unittest.TestCase):
     def test_gueltige_preise_mit_quelle_link_und_lizenz(self):
         zeilen, hinweise = op.zeilen_aus_antwort(antwort(
-            item(11, 1.49), item(12, 0.99, price_is_discounted=True, price_without_discount=1.79)), EAN)
+            item(11, 1.49, price_per="UNIT"), item(12, 0.99, price_is_discounted=True, price_without_discount=1.79)), EAN)
         self.assertEqual(hinweise, [])
         a, b = zeilen
         self.assertEqual(a["id"], "openprices-11")
@@ -124,7 +124,7 @@ class AdapterTests(unittest.TestCase):
     def test_voller_suchablauf_mit_echtem_format(self):
         heute = dt.date.today().isoformat()
         abruf = mock.Mock(return_value=antwort(
-            item(21, 1.29, datum=heute), item(22, 0.89, datum=heute, price_is_discounted=True, price_without_discount=1.29),
+            item(21, 1.29, datum=heute, price_per="UNIT"), item(22, 0.89, datum=heute, price_is_discounted=True, price_without_discount=1.29),
             item(23, 1.29, currency="USD")))
         adapter = op.OpenPricesAdapter(EAN, tage=30, abruf=abruf, umgebung=FREI)
         ergebnis = finde(adapter, sortierung="preis")
