@@ -142,6 +142,38 @@ class TestDienst(unittest.TestCase):
         self.assertTrue(any("keine bestätigte lokale Laufzeit" in e for e in fehler))
         self.assertTrue(any("nicht viermal eindeutig" in e for e in fehler))
 
+    def test_geheimnis_im_prozesslog_wird_redigiert_und_stoppt_folgerollen(self):
+        geheimnis = "ghp_" + "A" * 25
+        aufrufe = []
+
+        def fake(cmd, **kwargs):
+            aufrufe.append(cmd[2])
+            return SimpleNamespace(returncode=0,
+                                   stdout="Debug: " + geheimnis if cmd[2] == "LEAD" else "",
+                                   stderr="")
+
+        with mock.patch.object(dienst.subprocess, "run", side_effect=fake):
+            self.assertEqual(dienst.einmal(), 1)
+        self.assertEqual(aufrufe, ["LEAD", "BERICHT"])
+        lauf = next((self.team / "work").glob("*/"))
+        protokoll = (lauf / "prozesse.json").read_text(encoding="utf-8")
+        self.assertNotIn(geheimnis, protokoll)
+        eintraege = json.loads(protokoll)
+        self.assertEqual(eintraege[0]["exitcode"], -3)
+        self.assertTrue(all(x["exitcode"] == -2 for x in eintraege[1:4]))
+
+    def test_agentenfehler_stoppt_naechste_kostenrelevante_rollen(self):
+        aufrufe = []
+
+        def fake(cmd, **kwargs):
+            aufrufe.append(cmd[2])
+            return SimpleNamespace(returncode=1 if cmd[2] == "LEAD" else 0,
+                                   stdout="", stderr="")
+
+        with mock.patch.object(dienst.subprocess, "run", side_effect=fake):
+            self.assertEqual(dienst.einmal(), 1)
+        self.assertEqual(aufrufe, ["LEAD", "BERICHT"])
+
     def test_betreiber_not_aus_verhindert_neuen_lauf(self):
         stop = self.team / "work" / "STOP"
         stop.parent.mkdir(parents=True)
