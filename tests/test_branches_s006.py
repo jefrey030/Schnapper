@@ -22,6 +22,8 @@ KANDIDATEN = {
     "fix/ki-team-github-models-20261021": None,
 }
 
+OFFENE_PRS = (2, 6, 7, 8, 12, 13, 14, 15, 16)
+
 
 def _git(*args):
     return subprocess.run(["git", *args], cwd=ROOT, capture_output=True, text=True)
@@ -60,6 +62,17 @@ class TestBranchesS006(unittest.TestCase):
         for branch in KANDIDATEN:
             self.assertIn(branch, s006["hinweis"])
         self.assertIn("Agenten löschen keine Branches", s006["hinweis"])
+
+    def test_s006_nennt_alle_bekannten_offenen_prs(self):
+        # Stand 22.10.2026 10:30 UTC (per GitHub-PR-Liste); neue PRs hier nachtragen.
+        tasks = json.loads((ROOT / "team" / "tasks.json").read_text(encoding="utf-8"))["tasks"]
+        s006 = next(t for t in tasks if t["id"] == "S-006")
+        for nr in OFFENE_PRS:
+            with self.subTest(pr=nr):
+                self.assertRegex(s006["title"], r"#%d\b" % nr)
+        # PR #16 wird mit belegtem Befund geführt, nicht nur namentlich
+        self.assertIn("fix/schnapper-price-source-integrity-20261022", s006["hinweis"])
+        self.assertIn("0b758dd", s006["hinweis"])
 
 
 if __name__ == "__main__":
