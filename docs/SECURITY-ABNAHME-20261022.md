@@ -116,3 +116,20 @@ Laufzeit durchführen; Ergebnis samt exakter Commit-SHA und Exitcodes speichern.
 Danach unabhängiger Security-Review. Live-/Cloud-Tests und echte stündliche
 Agentenläufe fehlen weiterhin; **kein** Cloudflare Worker, D1 oder Cron auf
 Verdacht aktivieren.
+
+
+## Letzte Eingangsprüfung – Schutz vor Geheimnissen schon im KI-Prompt
+
+- Vor `ki.frage(...)` scannt `team/agent.py::ki_teil` jetzt den Systemtext und
+  den untrusted Aufgabentext auf die bekannten Token-Indikatoren.
+- Erkennt die Prüfung etwas, wird **kein** Modellaufruf gestartet. Die
+  Fehlerbeschreibung nennt keinen gefundenen Schlüssel und der Rollenprozess
+  beendet sich mit nonzero Exit, damit Folgerollen nicht weiterarbeiten.
+- Ein neuer Mock-Test prüft ausdrücklich, dass `fake.frage.assert_not_called()`
+  gilt. Das ist ein Quellcode-/Unit-Test, **noch keine durchgeführte Liveprobe**.
+- Sieben gezielte statische Checks dieses letzten Änderungsstands ergaben **7/7**
+  für Prompt-Gate, Fehler-Exit, lokale Logredaktion, Rollenabbruch,
+  Regressionstest-Vorhandensein und GitHub-Kostensperre.
+
+**Sicherheitsstatus bleibt BLOCKIERT**, bis aktuelle Python-/Node-Tests tatsächlich
+ausgeführt wurden und die getrennten Freigabe-Gates erfüllt sind.
