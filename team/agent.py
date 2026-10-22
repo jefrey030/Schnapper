@@ -72,15 +72,24 @@ def schreibe(ordner, rolle, daten):
 
 
 def json_aus_text(text):
-    """Holt das erste JSON-Objekt aus einer KI-Antwort (auch in ```json-Blöcken)."""
-    treffer = re.search(r"\{.*\}", text, re.S)
-    if not treffer:
+    """Liest das erste vollständige JSON-Objekt – auch aus Codeblöcken mit Zusatztext.
+
+    Anders als ein gieriger Regex werden mehrere JSON-Beispiele nicht
+    versehentlich zu einem unlesbaren Objekt zusammengezogen.
+    """
+    decoder = json.JSONDecoder()
+    if not isinstance(text, str):
         return None
-    try:
-        obj = json.loads(treffer.group(0))
-        return obj if isinstance(obj, dict) else None
-    except ValueError:
-        return None
+    for start, zeichen in enumerate(text):
+        if zeichen != "{":
+            continue
+        try:
+            obj, _ = decoder.raw_decode(text[start:])
+        except ValueError:
+            continue
+        if isinstance(obj, dict):
+            return obj
+    return None
 
 
 def repo_ueberblick(max_zeichen=6000):
@@ -196,10 +205,12 @@ def check(ordner, ki):
     if fehler:
         erg["fehler"] = fehler
         return erg
-    urteil = json_aus_text(antwort["text"]) or {}
-    if urteil.get("urteil") not in ("bestanden", "nachbessern", "abgelehnt"):
-        urteil["urteil"] = "unklar"
-    if funde or not tests["ok"]:
+    urteil = json_aus_text(antwort["text"])
+    if not isinstance(urteil, dict) or urteil.get("urteil") not in ("bestanden", "nachbessern", "abgelehnt"):
+        erg.update(ki=antwort, ki_echt=True, status="FEHLER",
+                   fehler="CHECK lieferte kein gültiges JSON-Urteil.")
+        return erg
+    if funde or not tests.get("ok") or tests.get("anzahl", 0) < 1:
         urteil["urteil"] = "abgelehnt"  # Werkzeugbefund schlägt KI-Meinung
     erg.update(ki=antwort, ki_echt=True, status="OK", urteil=urteil)
     return erg
@@ -214,7 +225,27 @@ def command(ordner, ki):
     if fehler:
         erg["fehler"] = fehler
     else:
-        erg.update(ki=antwort, ki_echt=True, status="OK", protokoll=json_aus_text(antwort["text"]) or {})
+        protokoll = json_aus_text(antwort["text"])
+        if (not isinstance(protokoll, dict)
+                or protokoll.get("freigabe") not in ("ja", "nein")
+                or not isinstance(protokoll.get("zusammenfassung"), str)
+                or not isinstance(protokoll.get("naechster_schritt"), str)
+                or not protokoll["naechster_schritt"].strip()):
+            erg.update(ki=antwort, ki_echt=True, status="FEHLER",
+                       fehler="COMMAND lieferte kein gültiges Abschlussprotokoll.")
+        else:
+            pruefung = vorher.get("CHECK") or {}
+            werkzeuge = pruefung.get("werkzeug") or {}
+            tests = werkzeuge.get("tests") or {}
+            if ((pruefung.get("urteil") or {}).get("urteil") != "bestanden"
+                    or tests.get("ok") is not True
+                    or tests.get("anzahl", 0) < 1
+                    or werkzeuge.get("geheimnis_funde")):
+                protokoll["freigabe"] = "nein"
+                protokoll.setdefault("fehler", [])
+                if isinstance(protokoll["fehler"], list):
+                    protokoll["fehler"].append("Keine Freigabe: CHECK-/Testnachweis fehlt oder ist negativ.")
+            erg.update(ki=antwort, ki_echt=True, status="OK", protokoll=protokoll)
     return erg
 
 
@@ -236,10 +267,31 @@ def bericht(ordner):
     """Deterministisch (Werkzeug, keine KI): Stundenbericht, STATUS.md und Zustand speichern."""
     alle = {r: lies(ordner, r) or {"status": "FEHLT", "ki_echt": False} for r in ROLES}
     echt = [r for r in ROLES if alle[r].get("ki_echt")]
-    einsatzbereit = len(echt) == 4
     lead_plan = alle["LEAD"].get("plan") or {}
     urteil = (alle["CHECK"].get("urteil") or {}).get("urteil")
     tests = (alle["CHECK"].get("werkzeug") or {}).get("tests") or {}
+    # Ein KI-Feld allein ist kein Nachweis. Vier eindeutige echte Antwort-IDs
+    # und der auf Platte persistierte Aufrufzähler müssen übereinstimmen.
+    zaehler_pfad = ordner / "ki_aufrufe.txt"
+    try:
+        ki_aufrufe = int(zaehler_pfad.read_text()) if zaehler_pfad.exists() else 0
+    except (OSError, ValueError):
+        ki_aufrufe = 0
+    antwort_ids = [(alle[r].get("ki") or {}).get("antwort_id") for r in ROLES]
+    vier_eindeutige_antworten = (
+        all(isinstance(a, str) and bool(a.strip()) for a in antwort_ids)
+        and len(set(antwort_ids)) == 4
+        and ki_aufrufe >= 4
+    )
+    einsatzbereit = (
+        len(echt) == 4
+        and all(alle[r].get("status") == "OK" for r in ROLES)
+        and bool(lead_plan.get("aufgabe_id"))
+        and urteil in ("bestanden", "nachbessern", "abgelehnt")
+        and tests.get("ok") is True
+        and tests.get("anzahl", 0) > 0
+        and vier_eindeutige_antworten
+    )
     modelle = sorted({(alle[r].get("ki") or {}).get("modell") for r in echt} - {None})
     proto = alle["COMMAND"].get("protokoll") or {}
     blocker = blocker_ermitteln(alle)
@@ -247,7 +299,8 @@ def bericht(ordner):
                 "agenten_mit_echter_ki": echt, "modelle": modelle,
                 "aufgabe": lead_plan.get("aufgabe_id"), "check_urteil": urteil,
                 "tests_ok": tests.get("ok"), "tests_anzahl": tests.get("anzahl"),
-                "ki_aufrufe": int((ordner / "ki_aufrufe.txt").read_text()) if (ordner / "ki_aufrufe.txt").exists() else 0,
+                "ki_aufrufe": ki_aufrufe,
+                "antwort_ids_eindeutig": vier_eindeutige_antworten,
                 "naechster_schritt": proto.get("naechster_schritt"), "blocker": blocker,
                 "agenten": alle}
     runs = TEAM / "runs"
