@@ -30,11 +30,15 @@ from .suche import SORTIERUNGEN, Filter
 STATISCH = pathlib.Path(__file__).resolve().parent / "web"
 DATEIEN = {"/": ("index.html", "text/html; charset=utf-8"),
            "/app.js": ("app.js", "text/javascript; charset=utf-8"),
-           "/app.css": ("app.css", "text/css; charset=utf-8")}
+           "/app.css": ("app.css", "text/css; charset=utf-8"),
+           "/manifest.webmanifest": ("manifest.webmanifest", "application/manifest+json; charset=utf-8"),
+           "/icon-192.png": ("icon-192.png", "image/png"),
+           "/icon-512.png": ("icon-512.png", "image/png"),
+           "/icon-maskable-512.png": ("icon-maskable-512.png", "image/png")}
 MAX_UPLOAD = 5 * 1024 * 1024
 SICHERHEIT = {
     "Content-Security-Policy": "default-src 'none'; script-src 'self'; style-src 'self'; connect-src 'self'; "
-                               "img-src 'self' data:; base-uri 'none'; form-action 'none'; frame-ancestors 'none'",
+                               "img-src 'self' data:; manifest-src 'self'; base-uri 'none'; form-action 'none'; frame-ancestors 'none'",
     "X-Content-Type-Options": "nosniff",
     "Referrer-Policy": "no-referrer",
     "Cache-Control": "no-store",

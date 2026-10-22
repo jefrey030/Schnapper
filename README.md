@@ -110,3 +110,7 @@ Implementierung schließt **nur** den Offline-Testblocker S-005/T3;
 Liveangebote/eBay-Zugang bleiben bewusst gesperrt, bis Nutzungsrechte
 und Kosten überprüfbar freigegeben sind.
 
+## Weitere Dokumente
+- `docs/SCHNAPPER-MASTERPLAN.md` – alle offenen Punkte mit Status, Nachweis und offenen Entscheidungen
+- `docs/EIGENE-ANGEBOTE.md` – echte, selbst gefundene Angebote eintragen und laden (Vorlage: `app/vorlagen/meine-angebote.csv`)
+- `docs/HANDY-START.md` – SCHNAPPER am Android-Handy mit Termux starten und auf den Startbildschirm legen
