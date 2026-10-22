@@ -5,6 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="color-scheme" content="light dark">
 <title>SCHNAPPER</title>
+<link rel="icon" href="data:,">
 <link rel="stylesheet" href="/app.css">
 <script src="/app.js" defer></script>
 </head>
@@ -16,7 +17,15 @@
   </label>
 </header>
 
+<nav class="ansichten" aria-label="Ansicht">
+  <button type="button" data-ansicht="suche" aria-pressed="true">Suche</button>
+  <button type="button" data-ansicht="merkliste" aria-pressed="false">Merkliste <span id="anzahl-merk" class="zahl" hidden></span></button>
+  <button type="button" data-ansicht="alarme" aria-pressed="false">Preisalarme <span id="anzahl-alarm" class="zahl" hidden></span></button>
+</nav>
+
 <main>
+  <p id="speicher-hinweis" class="banner" hidden>Dein Browser erlaubt kein Speichern – Merkliste und Alarme gehen beim Schließen verloren.</p>
+  <section id="ansicht-suche">
   <p id="beispiel" class="banner" hidden>Vorführung mit <strong>ausgedachten Beispieldaten</strong> – keine echten Angebote.</p>
 
   <form id="filter" class="filter" autocomplete="off" role="search">
@@ -43,6 +52,8 @@
       <label><input type="checkbox" name="ohne_veraltet" value="1"> Veraltete Preise ausblenden</label>
       <label><input type="checkbox" name="mit_verdacht" value="1"> Verdächtige Angebote zeigen</label>
     </div>
+    <button id="alarm-anlegen" type="button" class="knopf" disabled>⚡ Preisalarm für diese Suche</button>
+    <p id="alarm-tipp" class="tipp">Für einen Preisalarm: Suchbegriff und „Bis €“ oder „Ab % billiger“ ausfüllen.</p>
   </form>
 
   <p id="status" class="status" aria-live="polite">Lade …</p>
@@ -53,18 +64,43 @@
 
   <ol id="treffer" class="treffer"></ol>
   <p id="leer" class="leer" hidden>Keine Treffer. Lockere die Filter oder suche nach etwas anderem.</p>
+  </section>
+
+  <section id="ansicht-merkliste" hidden>
+    <p class="status">Gemerkte Angebote bleiben auf diesem Gerät gespeichert. Ändert sich der Preis in der geladenen Liste, siehst du es hier.</p>
+    <ol id="merk-liste" class="treffer"></ol>
+    <p id="merk-leer" class="leer" hidden>Noch nichts gemerkt. Tippe in der Suche bei einem Angebot auf ☆.</p>
+  </section>
+
+  <section id="ansicht-alarme" hidden>
+    <p class="status">Preisalarme prüfen bei jedem Öffnen die geladene Liste. Verdächtige und veraltete Angebote lösen keinen Alarm aus.</p>
+    <ol id="alarm-liste" class="treffer"></ol>
+    <p id="alarm-leer" class="leer" hidden>Noch kein Preisalarm. Lege in der Suche einen an.</p>
+  </section>
 </main>
 
 <template id="karte">
   <li class="karte">
     <div class="oben">
       <span class="rabatt"></span>
-      <span class="preis"></span>
+      <span class="rechts"><span class="preis"></span><button type="button" class="merken" aria-pressed="false" aria-label="Merken">☆</button></span>
     </div>
     <h2 class="titel"></h2>
     <p class="details"></p>
     <ul class="warnungen"></ul>
     <a class="link" target="_blank" rel="noopener noreferrer">Zum Angebot ↗</a>
+  </li>
+</template>
+
+<template id="karte-alarm">
+  <li class="karte alarm">
+    <div class="oben">
+      <span class="ausgeloest"></span>
+      <button type="button" class="loeschen" aria-label="Preisalarm löschen">Löschen</button>
+    </div>
+    <h2 class="titel"></h2>
+    <p class="details"></p>
+    <ul class="alarm-treffer"></ul>
   </li>
 </template>
 </body>

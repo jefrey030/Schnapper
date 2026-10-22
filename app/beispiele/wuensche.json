@@ -1,0 +1,7 @@
+{
+  "wuensche": [
+    {"name": "Kopfhörer bis 60 €", "suche": "kopfhoerer", "max_preis": "60", "zustaende": ["gebraucht", "wie_neu"]},
+    {"name": "Kaffeevollautomat günstig", "suche": "kaffeevollautomat", "max_preis": "150"},
+    {"name": "Spielkonsole stark reduziert", "suche": "spielkonsole", "min_rabatt": "50"}
+  ]
+}

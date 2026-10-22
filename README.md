@@ -84,5 +84,22 @@ PYTHONPATH=app python -m schnapper.web app/beispiele/angebote.csv
 Dann im Browser `http://127.0.0.1:8765` öffnen. Suche, Filter, Sortierung und „Eigene Liste“ (CSV/JSON hochladen) funktionieren am Handy wie am PC. Hochgeladene Listen bleiben nur im Arbeitsspeicher.
 Mit `--host 0.0.0.0` ist die Seite im eigenen WLAN erreichbar (ohne Passwort, daher nur im Heimnetz).
 
+### Merkliste und Preisalarm in der Web-Oberfläche
+- **☆ Merken** auf jeder Karte: Das Angebot landet in der **Merkliste**. Dort steht, ob der Preis in der aktuell geladenen Liste seit dem Merken **günstiger, teurer oder gleich** ist – oder ob das Angebot verschwunden ist.
+- **⚡ Preisalarm für diese Suche:** Suchbegriff plus „Bis €“ und/oder „Ab % billiger“ eingeben, Knopf drücken. Unter **Preisalarme** steht bei jedem Öffnen, welche Wünsche gerade erfüllt sind (günstigstes Angebot zuerst). Die Zahl am Reiter zeigt, wie viele Alarme anschlagen.
+- Verdächtige (Betrugsverdacht) und veraltete Angebote lösen **keinen** Alarm aus.
+- Merkliste und Alarme werden nur **im Browser dieses Geräts** gespeichert (max. 200 gemerkte Angebote, 50 Alarme). Kein Konto, kein Server-Speicher.
+
+## Preisalarm auf der Kommandozeile (`app/schnapper/alarm.py`)
+Wunschliste als JSON (Beispiel: `app/beispiele/wuensche.json`):
+```json
+{"wuensche": [{"name": "Kopfhörer bis 60 €", "suche": "kopfhoerer", "max_preis": "60", "zustaende": ["gebraucht", "wie_neu"]}]}
+```
+```
+PYTHONPATH=app python -m schnapper.alarm app/beispiele/angebote.csv app/beispiele/wuensche.json
+```
+Jeder Wunsch braucht einen Suchbegriff und mindestens Höchstpreis (inkl. Versand) oder Mindestrabatt. Optionen: `--mit-veraltet` (auch Preise älter als 24 Std.), `--json`.
+Rückgabewert für Automatisierung: `0` = mindestens ein Alarm, `3` = kein Alarm, `2` = fehlerhafte Wünsche, `1` = Datei nicht lesbar.
+
 ## Quellen-Register (`app/schnapper/quellen.py`)
 Angezeigt werden nur Angebote aus freigegebenen Quellen (Plan S-002): `mock` und `eigene` sind erlaubt, `ebay` bleibt gesperrt bis zur Genehmigung, `kleinanzeigen` ist ausgeschlossen und lässt sich nicht freischalten. Zusätzliche Quellen werden in einer `quellen.json` neben der Datei freigegeben, jeweils mit Hinweis zum Nutzungsrecht.
