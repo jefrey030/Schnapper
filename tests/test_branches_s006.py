@@ -9,12 +9,17 @@ import unittest
 
 ROOT = pathlib.Path(__file__).resolve().parents[1]
 
-# Branch -> Commit, dessen Baum identisch sein muss (None = vollständig Vorfahre von main)
+# Branch -> fester main-Commit, dessen Baum identisch sein muss (None = vollständig
+# Vorfahre von main). Bewusst feste Commits statt origin/main: main wandert weiter,
+# der Beleg "Inhalt steckt in main" bleibt trotzdem gültig, solange der Vergleichs-
+# Commit ein Vorfahre von origin/main ist.
 KANDIDATEN = {
-    "fix/schnapper-web-main-20261022": "origin/main",
-    "feature/schnapper-web-quellen-20261022": "origin/main",
+    "fix/schnapper-web-main-20261022": "7a0b83e",
+    "feature/schnapper-web-quellen-20261022": "7a0b83e",
     "feature/schnapper-angebotskern-20261021": "5343009",
     "fix/schnapper-hourly-rotation-20261021": None,
+    "fix/agent-status-fail-closed-20261022": None,
+    "fix/ki-team-github-models-20261021": None,
 }
 
 
@@ -40,6 +45,8 @@ class TestBranchesS006(unittest.TestCase):
                     r = _git("merge-base", "--is-ancestor", ref, "origin/main")
                     self.assertEqual(r.returncode, 0, f"{branch} hat Commits, die nicht in main sind")
                 else:
+                    r = _git("merge-base", "--is-ancestor", vergleich, "origin/main")
+                    self.assertEqual(r.returncode, 0, f"{vergleich} ist nicht (mehr) in main")
                     r = _git("diff", "--quiet", vergleich, ref)
                     self.assertEqual(r.returncode, 0, f"{branch} unterscheidet sich von {vergleich}")
                 geprueft += 1
