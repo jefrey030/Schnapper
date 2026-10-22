@@ -32,10 +32,24 @@ def geld(wert) -> Decimal:
         betrag = Decimal(str(wert))
     elif isinstance(wert, str):
         text = wert.strip().replace("€", "").replace("EUR", "").replace(" ", "").replace(" ", "")
-        if "," in text and "." in text:  # 1.299,99 -> 1299.99
-            text = text.replace(".", "").replace(",", ".")
-        else:
+        if "," in text and "." in text:
+            # Gemischte Trennzeichen: 1.299,99 (DE) und 1,299.99 (EN).
+            # Ungueltige Gruppierung darf keine scheinbaren Billigpreise erzeugen.
+            deutsch = text.rfind(",") > text.rfind(".")
+            muster = (r"[+-]?\d{1,3}(?:\.\d{3})+,\d{1,2}" if deutsch
+                      else r"[+-]?\d{1,3}(?:,\d{3})+\.\d{1,2}")
+            if not re.fullmatch(muster, text):
+                raise AngebotFehler(f"Preis nicht lesbar: {wert!r}")
+            text = (text.replace(".", "").replace(",", ".") if deutsch
+                    else text.replace(",", ""))
+        elif "," in text or "." in text:
+            # 1,234 / 1.234 sind mehrdeutig: 1234 EUR oder 1,234 EUR?
+            # Statt stiller Rundung auf 1,23 EUR Eingabe verwerfen.
+            if not re.fullmatch(r"[+-]?\d+[.,]\d{1,2}", text):
+                raise AngebotFehler(f"Preis nicht lesbar: {wert!r}")
             text = text.replace(",", ".")
+        elif not re.fullmatch(r"[+-]?\d+", text):
+            raise AngebotFehler(f"Preis nicht lesbar: {wert!r}")
         try:
             betrag = Decimal(text)
         except InvalidOperation as exc:
@@ -81,6 +95,11 @@ def normalisiere_url(url: str) -> str:
     host = (teile.hostname or "").lower()
     if host.startswith("www."):
         host = host[4:]
+    if ":" in host:
+        host = f"[{host}]"  # IPv6 host
+    port = teile.port
+    if port is not None and port != 443:
+        host = f"{host}:{port}"
     query = urlencode(sorted((k, v) for k, v in parse_qsl(teile.query, keep_blank_values=True)
                              if not TRACKING_PARAMETER.match(k)))
     pfad = teile.path.rstrip("/") or "/"
@@ -165,9 +184,18 @@ def pruefe(angebot: Angebot, jetzt: dt.datetime | None = None) -> None:
         raise AngebotFehler(f"Nur EUR unterstützt, nicht {angebot.waehrung}")
     if angebot.zustand not in ZUSTAENDE:
         raise AngebotFehler(f"Unbekannter Zustand: {angebot.zustand}")
-    teile = urlsplit(angebot.url)
-    if teile.scheme != "https" or not teile.hostname:
+    try:
+        teile = urlsplit(angebot.url)
+        host = teile.hostname
+        port = teile.port
+    except ValueError as exc:
+        raise AngebotFehler("URL ist ungültig") from exc
+    if teile.scheme != "https" or not host:
         raise AngebotFehler("URL muss mit https:// beginnen")
+    if teile.username is not None or teile.password is not None:
+        raise AngebotFehler("URL darf keine Zugangsdaten enthalten")
+    if port == 0:
+        raise AngebotFehler("URL-Port 0 ist ungültig")
     if angebot.erfasst_am > (jetzt or dt.datetime.now(dt.timezone.utc)) + dt.timedelta(minutes=5):
         raise AngebotFehler("Erfassungszeit liegt in der Zukunft")
 
