@@ -17,9 +17,12 @@ Stand: 22.10.2026, 10:50 (Berlin) · Basis: `main` @ 4bc37e7 · Erstellt nach ec
 | A6 | Start am Android-Handy ohne PC (Termux) | 🔨 | `docs/HANDY-START.md` – **auf echtem Gerät noch ungetestet** |
 | A7 | App im Internet, ohne eigenes Gerät | ⏳ | Wäre eine Veröffentlichung → braucht Freigabe. Kostenlos möglich, aber Python-Server müsste dafür umgebaut werden. |
 | A8 | Echte Angebote automatisch (eBay Browse API) | ⏳ | Jefrey: eBay-Entwicklerkonto + Produktivfreigabe bei eBay beantragen. Bis dahin nur eigene Listen (A4). |
+| A8b | **Echte Ladenpreise ohne Konto (Open Prices, ODbL)** | 🔨 | `app/schnapper/openprices.py`, `docs/OPEN-PRICES.md`; offline getestet, **live noch nie abgerufen**; aktiv erst mit `SCHNAPPER_OPENPRICES_FREIGABE=ja` |
 | A9 | Preisverlauf, Benachrichtigungen, Konto | 💤 | Bewusst nicht im MVP (Konzept S-000) |
 
 ## B. Offene Pull Requests
+
+> **Nachtrag 22.10. (Gesamtstand-PR):** #6 (Konflikt gelöst), #12, #7, #8, #13, #14 sind in **einem** Branch `integration/schnapper-gesamtstand-20261022` zusammengeführt, dazu die Reparatur der uhrzeitabhängigen #13-Tests und A8b. 137/137 Python-Tests (1 übersprungen) + 10/10 Cloudflare-Tests grün. #2 bleibt draußen (durch #7 überholt).
 
 | PR | Inhalt | Status | Nachweis / Empfehlung |
 | --- | --- | --- | --- |
@@ -48,6 +51,7 @@ Stand: 22.10.2026, 10:50 (Berlin) · Basis: `main` @ 4bc37e7 · Erstellt nach ec
 2. **Laufzeit fürs KI-Team** wählen (C2: a, b oder c).
 3. **PRs prüfen und mergen** in der Reihenfolge aus Abschnitt B.
 4. **eBay-Zugang** beantragen – ja oder nein (A8).
+4b. **Open Prices** einschalten – ja oder nein (A8b). Achtung ODbL: Preise nur anzeigen, keine eigene Preisdatenbank daraus.
 5. **App öffentlich ins Internet** – ja oder nein (A7).
 
 ## E. Kosten

@@ -114,3 +114,4 @@ und Kosten überprüfbar freigegeben sind.
 - `docs/SCHNAPPER-MASTERPLAN.md` – alle offenen Punkte mit Status, Nachweis und offenen Entscheidungen
 - `docs/EIGENE-ANGEBOTE.md` – echte, selbst gefundene Angebote eintragen und laden (Vorlage: `app/vorlagen/meine-angebote.csv`)
 - `docs/HANDY-START.md` – SCHNAPPER am Android-Handy mit Termux starten und auf den Startbildschirm legen
+- `docs/OPEN-PRICES.md` – echte Ladenpreise zu einem Barcode (Open Prices, ODbL); aus, bis `SCHNAPPER_OPENPRICES_FREIGABE=ja`
