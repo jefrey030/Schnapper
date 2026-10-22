@@ -32,6 +32,18 @@ class Preise(unittest.TestCase):
         self.assertEqual(geld("12.5"), Decimal("12.50"))
         self.assertEqual(geld(0.1 + 0.2), Decimal("0.30"))
 
+    def test_englische_und_deutsche_tausenderformate(self):
+        self.assertEqual(geld("1.299,99 €"), Decimal("1299.99"))
+        self.assertEqual(geld("1,299.99 EUR"), Decimal("1299.99"))
+        self.assertEqual(geld("12.345.678,90"), Decimal("12345678.90"))
+        self.assertEqual(geld("12,345,678.90"), Decimal("12345678.90"))
+
+    def test_gemischte_trennzeichen_ohne_gueltige_gruppierung_abweisen(self):
+        # Solche Angaben duerfen niemals stillschweigend als Billigpreis gelten.
+        for wert in ("12,34.56", "12.34,56.78", "1,23.456"):
+            with self.subTest(wert=wert), self.assertRaises(AngebotFehler):
+                geld(wert)
+
     def test_unlesbar_und_bool(self):
         for wert in ("abc", None, True, "NaN", "inf"):
             with self.assertRaises(AngebotFehler):
