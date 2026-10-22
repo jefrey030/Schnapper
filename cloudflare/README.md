@@ -12,7 +12,7 @@ Der Code hat zwei Sperren: `RUN_ENABLED=false` und
 ```sh
 node --test cloudflare/test/worker.test.mjs
 ```
-Die Tests simulieren Antworten; sie beweisen **keine** echte Cloud-KI.
+**Lokal auf Node.js 22 ausgeführt: 10/10 Tests erfolgreich (22.10.2026).**\nDie Tests simulieren Antworten; sie beweisen **keine** echte Cloud-KI.\nDas D1-SQL-Schema wurde zusätzlich mit SQLite auf Fremdschlüssel und\neindeutige Stundenkennungen geprüft.
 
 ## Späterer, ausdrücklich kontrollierter Free-Rollout
 1. Im Cloudflare-Dashboard prüfen, dass der aktuelle **Workers Free** Plan
@@ -28,7 +28,7 @@ Die Tests simulieren Antworten; sie beweisen **keine** echte Cloud-KI.
    **nur einen** Zeitplan `17 * * * *` aktivieren.
 6. In D1 zwei echte Stunden vergleichen:
    ```sql
-   SELECT slot, task_id, status, error FROM schnapper_runs
+   SELECT slot, task_id, status, attempted_calls, error FROM schnapper_runs
    ORDER BY slot DESC LIMIT 8;
    SELECT slot, role, model, sha256, created_utc FROM schnapper_reports
    ORDER BY slot DESC, role ASC LIMIT 16;
@@ -42,3 +42,28 @@ private GitHub-Dateien oder externe Shopangebote zu. Dafür braucht
 es später gesondert geprüfte Integrationen.
 
 Master: `docs/MASTER-SCHNAPPER-CLOUDTEAM-20261022.md`.
+
+## Tatsächlich geprüfte Cloudflare-Ressourcen (22.10.2026)
+
+- Verbundenes Cloudflare-Konto antwortet auf reine Lesefunktionen.
+- D1-Datenbankliste: **leer**.
+- Workers-Liste: ausschließlich bestehender `jerry-al`-Worker;
+  **kein** SCHNAPPER-Worker vorhanden.
+- Billing- und Tarifabfragen mit aktueller OAuth-Verbindung: **403**,
+  fehlender `Billing Read`-Zugriff. `default_usage_model=standard`
+  beweist **keinen** Free-Tarif.
+- Aus diesem Grund wurde **nichts** in Cloudflare angelegt/deployt,
+  keine KI gestartet und kein Stundentimer aktiviert.
+
+Das Software-Flag `ACCOUNT_FREE_PLAN_CONFIRMED=yes` ist nur eine
+Konfigurationssperre und kein Zugriff auf Cloudflares Abrechnung.
+Sollte ein Workers-Paid-Tarif oder eine spätere Umstellung vorliegen,
+könnten AI-Aufrufe **auch innerhalb selbstgesetzter Aufruflimits kosten**.
+Daher muss Workers Free vor Aktivierung im Dashboard nachgewiesen
+und vor einer späteren Tarifumstellung die Automatik wieder deaktiviert
+werden. Niemals den Wert blind auf `yes` setzen.
+
+Jeder gestartete Inferenzversuch wird in D1 unter
+`schnapper_runs.attempted_calls` **vor** dem Modellaufruf notiert.
+Wenn dieses Protokoll nicht geschrieben werden kann, wird keine KI
+aufgerufen; ein fehlgeschlagener Stundenlauf wird nicht automatisch neu gestartet.
