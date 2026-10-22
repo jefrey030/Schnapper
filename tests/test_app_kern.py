@@ -29,6 +29,9 @@ def roh(**kw):
 class Preise(unittest.TestCase):
     def test_deutsches_und_englisches_format(self):
         self.assertEqual(geld("1.299,99 €"), Decimal("1299.99"))
+        self.assertEqual(geld("1,299.99 €"), Decimal("1299.99"))
+        self.assertEqual(geld("12.345,67"), Decimal("12345.67"))
+        self.assertEqual(geld("12,345.67"), Decimal("12345.67"))
         self.assertEqual(geld("12.5"), Decimal("12.50"))
         self.assertEqual(geld(0.1 + 0.2), Decimal("0.30"))
 
