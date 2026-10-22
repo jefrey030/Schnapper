@@ -70,8 +70,15 @@ def lies(ordner, rolle):
 
 
 def schreibe(ordner, rolle, daten):
+    """KI-Antworten vor der Ablage redigieren; bei Fund nie positiv freigeben."""
     ordner.mkdir(parents=True, exist_ok=True)
-    (ordner / f"{rolle}.json").write_text(json.dumps(daten, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
+    roh = json.dumps(daten, ensure_ascii=False, indent=2)
+    if GEHEIMNIS_MUSTER.search(roh):
+        daten = {**daten, "status": "FEHLER", "geheimnis_redigiert": True,
+                 "fehler": "Geheimnisindikator entdeckt: Inhalt redigiert und Agent gesperrt."}
+        roh = json.dumps(daten, ensure_ascii=False, indent=2)
+        roh = GEHEIMNIS_MUSTER.sub("[REDACTED]", roh)
+    (ordner / f"{rolle}.json").write_text(roh + "\n", encoding="utf-8")
 
 
 def json_aus_text(text):
@@ -184,7 +191,9 @@ def brain(ordner, ki):
     vorschlag.parent.mkdir(parents=True, exist_ok=True)
     vorschlag.write_text(f"# BRAIN-Vorschlag {l['plan']['aufgabe_id']} ({stempel})\n\n"
                          f"_Erzeugt von {antwort['modell']} über {antwort['laufzeit']}. "
-                         "Vorschlag, nicht automatisch umgesetzt._\n\n" + antwort["text"] + "\n", encoding="utf-8")
+                         "Vorschlag, nicht automatisch umgesetzt._\n\n" +
+                         GEHEIMNIS_MUSTER.sub("[REDACTED]", antwort["text"]) + "\n",
+                         encoding="utf-8")
     erg.update(ki=antwort, ki_echt=True, status="OK", vorschlag_datei=f"team/proposals/{vorschlag.name}")
     return erg
 
@@ -297,7 +306,8 @@ def bericht(ordner):
     # Nur Rollennamen als Fund protokollieren, niemals den gefundenen Geheimtext.
     ki_geheimnis_rollen = [
         r for r in ROLES
-        if GEHEIMNIS_MUSTER.search(str((alle[r].get("ki") or {}).get("text") or ""))
+        if alle[r].get("geheimnis_redigiert") is True
+        or GEHEIMNIS_MUSTER.search(str((alle[r].get("ki") or {}).get("text") or ""))
     ]
     einsatzbereit = (
         len(echt) == 4
@@ -375,7 +385,7 @@ def main(argv):
     schreibe(ordner, rolle, erg)
     print(f"[{rolle}] status={erg['status']} ki_echt={erg['ki_echt']} "
           f"modell={(erg.get('ki') or {}).get('modell')} antwort_id={(erg.get('ki') or {}).get('antwort_id')} "
-          f"fehler={erg.get('fehler')}")
+          f"fehler={GEHEIMNIS_MUSTER.sub('[REDACTED]', str(erg.get('fehler') or ''))}")
     if erg.get("ki"):
         # Sicherheitsregel: Kein ungefilterter KI-Rohtext in den Workflow-Logs.
         print(f"[{rolle}] KI-Antwort gespeichert; Rohtext im Konsolenlog unterdrückt.")
