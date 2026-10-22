@@ -234,7 +234,7 @@ def baue_handler(zustand: Zustand):
                 zustand.ersetzen(geladen, name)
             except OSError:
                 return self._json(HTTPStatus.INTERNAL_SERVER_ERROR,
-                                  {"fehler": "Liste geladen, aber Preisverlauf konnte nicht gespeichert werden"})
+                                  {"fehler": "Liste nicht übernommen: Preisverlauf konnte nicht gespeichert werden"})
             return self._json(HTTPStatus.OK, {"eingelesen": len(geladen.angebote), "ungueltig": geladen.fehler})
 
     return Handler
