@@ -49,6 +49,23 @@
     </div>
   </form>
 
+  <section class="barcode-bereich" aria-label="Gemeldete Ladenpreise">
+    <h2>Ladenpreise per Barcode</h2>
+    <p>Open Prices: freiwillig gemeldete Ladenpreise, nicht garantiert aktuell. Kostenlos,
+    nur nach lokaler Freigabe. Die Ergebnisse bleiben getrennt von deiner Angebotsliste.</p>
+    <form id="barcode-form" class="barcode-form" autocomplete="off">
+      <label for="barcode">Produkt-Barcode</label>
+      <div class="barcode-zeile">
+        <input id="barcode" inputmode="numeric" pattern="[0-9]{8,14}" maxlength="14"
+               placeholder="z. B. 4008400402222" aria-label="Produkt-Barcode" required>
+        <button id="barcode-knopf" type="submit">Ladenpreise suchen</button>
+      </div>
+    </form>
+    <p id="barcode-status" class="status" aria-live="polite">Noch keine Preisabfrage.</p>
+    <ol id="barcode-treffer" class="treffer"></ol>
+    <p id="barcode-lizenz" class="status"></p>
+  </section>
+
   <p id="status" class="status" aria-live="polite">Lade …</p>
   <details id="probleme" class="probleme" hidden>
     <summary id="probleme-titel"></summary>
