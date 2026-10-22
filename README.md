@@ -76,3 +76,13 @@ PYTHONPATH=app python -m schnapper app/beispiele/angebote.csv --suche kopfhoerer
 ```
 
 `app/beispiele/angebote.csv` enthält **ausgedachte Beispieldaten** (`.example`-Adressen), keine echten Angebote. Echte Angebote brauchen eine Datenquelle mit geklärten Nutzungsrechten (z. B. offizieller Partner-Feed). Gescrapt wird nichts.
+
+## Web-Oberfläche
+```
+PYTHONPATH=app python -m schnapper.web app/beispiele/angebote.csv
+```
+Dann im Browser `http://127.0.0.1:8765` öffnen. Suche, Filter, Sortierung und „Eigene Liste“ (CSV/JSON hochladen) funktionieren am Handy wie am PC. Hochgeladene Listen bleiben nur im Arbeitsspeicher.
+Mit `--host 0.0.0.0` ist die Seite im eigenen WLAN erreichbar (ohne Passwort, daher nur im Heimnetz).
+
+## Quellen-Register (`app/schnapper/quellen.py`)
+Angezeigt werden nur Angebote aus freigegebenen Quellen (Plan S-002): `mock` und `eigene` sind erlaubt, `ebay` bleibt gesperrt bis zur Genehmigung, `kleinanzeigen` ist ausgeschlossen und lässt sich nicht freischalten. Zusätzliche Quellen werden in einer `quellen.json` neben der Datei freigegeben, jeweils mit Hinweis zum Nutzungsrecht.

@@ -1,0 +1,204 @@
+"""Web-Oberfläche für SCHNAPPER – nur Python-Standardbibliothek, keine Kosten.
+
+Start (aus dem Repo-Stamm):
+    PYTHONPATH=app python -m schnapper.web app/beispiele/angebote.csv
+Dann im Browser: http://127.0.0.1:8765
+
+Standardmäßig nur auf diesem Gerät erreichbar. Mit --host 0.0.0.0 auch im
+eigenen WLAN (z. B. vom Handy auf den PC) – dann ohne Passwort für alle im
+WLAN sichtbar, daher nur im eigenen Heimnetz verwenden.
+Hochgeladene Listen bleiben nur im Arbeitsspeicher, nichts wird gespeichert.
+"""
+from __future__ import annotations
+
+import argparse
+import json
+import pathlib
+import sys
+import threading
+from decimal import Decimal, InvalidOperation
+from http import HTTPStatus
+from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
+from urllib.parse import parse_qs, urlsplit
+
+from .adapter import finde_in
+from .angebot import ZUSTAENDE, AngebotFehler, geld
+from .einlesen import Importergebnis, lies_datei, lies_text
+from .quellen import QuellenFehler, Register
+from .suche import SORTIERUNGEN, Filter
+
+STATISCH = pathlib.Path(__file__).resolve().parent / "web"
+DATEIEN = {"/": ("index.html", "text/html; charset=utf-8"),
+           "/app.js": ("app.js", "text/javascript; charset=utf-8"),
+           "/app.css": ("app.css", "text/css; charset=utf-8")}
+MAX_UPLOAD = 5 * 1024 * 1024
+SICHERHEIT = {
+    "Content-Security-Policy": "default-src 'none'; script-src 'self'; style-src 'self'; connect-src 'self'; "
+                               "img-src 'self' data:; base-uri 'none'; form-action 'none'; frame-ancestors 'none'",
+    "X-Content-Type-Options": "nosniff",
+    "Referrer-Policy": "no-referrer",
+    "Cache-Control": "no-store",
+}
+
+
+class Zustand:
+    """Aktuell geladene Angebotsliste, threadsicher austauschbar."""
+
+    def __init__(self, register: Register, geladen: Importergebnis, name: str, beispiel: bool):
+        self.register = register
+        self._lock = threading.Lock()
+        self._daten = (geladen, name, beispiel)
+
+    def lesen(self):
+        with self._lock:
+            return self._daten
+
+    def ersetzen(self, geladen: Importergebnis, name: str):
+        with self._lock:
+            self._daten = (geladen, name, False)
+
+
+def filter_aus_query(q: dict) -> tuple[Filter, str]:
+    def eins(name, standard=""):
+        return (q.get(name) or [standard])[0].strip()
+
+    try:
+        max_preis = geld(eins("max_preis")) if eins("max_preis") else None
+        min_rabatt = Decimal(eins("min_rabatt").replace(",", ".")) if eins("min_rabatt") else None
+    except (AngebotFehler, InvalidOperation) as exc:
+        raise ValueError("Höchstpreis oder Mindestrabatt ist keine Zahl") from exc
+    zustand = eins("zustand")
+    if zustand and zustand not in ZUSTAENDE:
+        raise ValueError("Unbekannter Zustand")
+    sortierung = eins("sortierung", "rabatt")
+    if sortierung not in SORTIERUNGEN:
+        raise ValueError("Unbekannte Sortierung")
+    f = Filter(text=eins("text")[:200], max_preis=max_preis, min_rabatt=min_rabatt,
+               zustaende={zustand} if zustand else set(),
+               ohne_veraltet=eins("ohne_veraltet") == "1", ohne_verdacht=eins("mit_verdacht") != "1")
+    return f, sortierung
+
+
+def als_json(ergebnis, name: str, beispiel: bool) -> dict:
+    return {
+        "liste": name, "beispieldaten": beispiel, "eingelesen": ergebnis.eingelesen,
+        "ungueltig": ergebnis.fehler,
+        "dubletten": [{"entfernt": a.id, "behalten": b.id, "titel": a.titel} for a, b in ergebnis.dubletten],
+        "treffer": [{
+            "id": t.angebot.id, "titel": t.angebot.titel, "preis": str(t.angebot.preis),
+            "versand": str(t.angebot.versand), "gesamtpreis": str(t.angebot.gesamtpreis),
+            "referenzpreis": None if t.angebot.referenzpreis is None else str(t.angebot.referenzpreis),
+            "rabatt_prozent": None if t.angebot.rabatt_prozent is None else str(t.angebot.rabatt_prozent),
+            "zustand": t.angebot.zustand, "quelle": t.angebot.quelle, "kategorie": t.angebot.kategorie,
+            "url": t.angebot.url, "erfasst_am": t.angebot.erfasst_am.isoformat(), "warnungen": list(t.warnungen),
+        } for t in ergebnis.treffer],
+    }
+
+
+def baue_handler(zustand: Zustand):
+    class Handler(BaseHTTPRequestHandler):
+        server_version = "SCHNAPPER"
+        sys_version = ""
+
+        def log_message(self, fmt, *args):  # keine Suchbegriffe/IPs ins Protokoll
+            pass
+
+        def _senden(self, status, inhalt: bytes, typ: str):
+            self.send_response(status)
+            self.send_header("Content-Type", typ)
+            self.send_header("Content-Length", str(len(inhalt)))
+            for k, v in SICHERHEIT.items():
+                self.send_header(k, v)
+            self.end_headers()
+            if self.command != "HEAD":
+                self.wfile.write(inhalt)
+
+        def _json(self, status, obj):
+            self._senden(status, json.dumps(obj, ensure_ascii=False).encode("utf-8"), "application/json; charset=utf-8")
+
+        def do_HEAD(self):
+            self.do_GET()
+
+        def do_GET(self):
+            teile = urlsplit(self.path)
+            if teile.path in DATEIEN:
+                datei, typ = DATEIEN[teile.path]
+                return self._senden(HTTPStatus.OK, (STATISCH / datei).read_bytes(), typ)
+            if teile.path == "/api/suche":
+                try:
+                    f, sortierung = filter_aus_query(parse_qs(teile.query))
+                except ValueError as exc:
+                    return self._json(HTTPStatus.BAD_REQUEST, {"fehler": str(exc)})
+                geladen, name, beispiel = zustand.lesen()
+                return self._json(HTTPStatus.OK, als_json(finde_in(geladen, f, sortierung), name, beispiel))
+            if teile.path == "/api/quellen":
+                return self._json(HTTPStatus.OK, {"quellen": [
+                    {"kennung": q.kennung, "name": q.name, "entscheidung": q.entscheidung, "hinweis": q.hinweis}
+                    for q in zustand.register]})
+            return self._json(HTTPStatus.NOT_FOUND, {"fehler": "Nicht gefunden"})
+
+        def do_POST(self):
+            if urlsplit(self.path).path != "/api/import":
+                return self._json(HTTPStatus.NOT_FOUND, {"fehler": "Nicht gefunden"})
+            # Schutz gegen fremde Webseiten, die im Hintergrund Daten hochladen wollen
+            if self.headers.get("X-Schnapper") != "1":
+                return self._json(HTTPStatus.FORBIDDEN, {"fehler": "Anfrage nicht erlaubt"})
+            try:
+                laenge = int(self.headers.get("Content-Length", ""))
+            except ValueError:
+                return self._json(HTTPStatus.LENGTH_REQUIRED, {"fehler": "Länge fehlt"})
+            if laenge <= 0 or laenge > MAX_UPLOAD:
+                return self._json(HTTPStatus.REQUEST_ENTITY_TOO_LARGE, {"fehler": "Datei leer oder größer als 5 MB"})
+            name = pathlib.PurePath(self.headers.get("X-Dateiname", "liste.csv")).name[:100]
+            endung = pathlib.PurePath(name).suffix.lower()
+            if endung not in (".csv", ".json"):
+                return self._json(HTTPStatus.BAD_REQUEST, {"fehler": "Nur .csv oder .json"})
+            try:
+                text = self.rfile.read(laenge).decode("utf-8-sig")
+            except UnicodeDecodeError:
+                return self._json(HTTPStatus.BAD_REQUEST, {"fehler": "Datei ist nicht UTF-8"})
+            geladen = lies_text(text, endung[1:], zustand.register)
+            if not geladen.angebote:
+                return self._json(HTTPStatus.UNPROCESSABLE_ENTITY,
+                                  {"fehler": "Keine gültigen Angebote in der Datei", "ungueltig": geladen.fehler[:50]})
+            zustand.ersetzen(geladen, name)
+            return self._json(HTTPStatus.OK, {"eingelesen": len(geladen.angebote), "ungueltig": geladen.fehler})
+
+    return Handler
+
+
+def erstelle_server(datei, host="127.0.0.1", port=8765, quellen=None) -> ThreadingHTTPServer:
+    datei = pathlib.Path(datei)
+    quellen_datei = pathlib.Path(quellen) if quellen else datei.parent / "quellen.json"
+    register = Register.mit_datei(quellen_datei) if quellen_datei.is_file() else Register()
+    geladen = lies_datei(datei, register)
+    zustand = Zustand(register, geladen, datei.name, beispiel=datei.parent.name == "beispiele")
+    return ThreadingHTTPServer((host, port), baue_handler(zustand))
+
+
+def main(argv=None) -> int:
+    p = argparse.ArgumentParser(prog="schnapper.web", description="SCHNAPPER im Browser")
+    p.add_argument("datei", help="Start-Liste (.csv/.json)")
+    p.add_argument("--host", default="127.0.0.1", help="0.0.0.0 = im eigenen WLAN erreichbar")
+    p.add_argument("--port", type=int, default=8765)
+    p.add_argument("--quellen", help="quellen.json mit zusätzlichen Freigaben")
+    a = p.parse_args(argv)
+    try:
+        server = erstelle_server(a.datei, a.host, a.port, a.quellen)
+    except (OSError, QuellenFehler, ValueError) as exc:
+        print("Start fehlgeschlagen:", exc, file=sys.stderr)
+        return 1
+    if a.host not in ("127.0.0.1", "localhost"):
+        print("Achtung: im Netzwerk ohne Passwort erreichbar – nur im eigenen WLAN nutzen.", file=sys.stderr)
+    print(f"SCHNAPPER läuft: http://{'127.0.0.1' if a.host == '0.0.0.0' else a.host}:{a.port}  (Beenden: Strg+C)")
+    try:
+        server.serve_forever()
+    except KeyboardInterrupt:
+        pass
+    finally:
+        server.server_close()
+    return 0
+
+
+if __name__ == "__main__":
+    sys.exit(main())
