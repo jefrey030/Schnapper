@@ -1,9 +1,9 @@
 """Open-Prices-Adapter (Quelle Q5): echte, von Menschen gemeldete Ladenpreise.
 
 Open Prices ist ein Projekt von Open Food Facts. Die Daten stehen unter der
-Open Database License (ODbL): Quelle nennen; wer sie mit anderen Daten zu einer
-neuen Datenbank verbindet, muss diese ebenfalls offen veröffentlichen.
-SCHNAPPER zeigt die Preise deshalb nur an und speichert sie nicht dauerhaft.
+Open Database License (ODbL): Quellenangabe erforderlich; Share-Alike kann
+bei öffentlicher Nutzung einer angepassten Datenbank greifen.
+SCHNAPPER zeigt die Preise isoliert an und speichert sie nicht dauerhaft.
 
 Kosten: 0 €, kein Konto, kein Schlüssel.
 Netzwerk nur, wenn SCHNAPPER_OPENPRICES_FREIGABE=ja gesetzt ist (Jefreys Entscheidung).
