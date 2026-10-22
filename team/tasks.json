@@ -71,7 +71,7 @@
         "T5: gesamte Test-Suite läuft ohne Netz grün",
         "Keine Zugangsdaten, Schlüssel oder echten Preise im Repo"
       ],
-      "hinweis": "Abgleich 22.10.2026: main erfüllt T4 (EbayAdapter gesperrt, kein Netzaufruf, belegt durch tests/test_abgleich_s004_s005.py) und T5. Offen ist nur T3: ein Mock-Adapter mit erkennbaren TEST-Daten und quelle = 'mock' fehlt auf main (Quelle 'mock' ist im Register erlaubt, aber ohne Adapter). Nachtrag 22.10.2026 09:30 UTC: offener Draft-PR #13 setzt genau T3 um (app/schnapper/adapter.py + tests/test_mock_adapter.py); S-005 braucht daher keinen weiteren Agentenlauf, nur Jefreys Sichtung von #13."
+      "hinweis": "Abgleich 22.10.2026: main erfüllt T4 (EbayAdapter gesperrt, kein Netzaufruf, belegt durch tests/test_abgleich_s004_s005.py) und T5. Offen ist nur T3: ein Mock-Adapter mit erkennbaren TEST-Daten und quelle = 'mock' fehlt auf main (Quelle 'mock' ist im Register erlaubt, aber ohne Adapter). Nachtrag 22.10.2026 09:30 UTC: offener Draft-PR #13 setzt genau T3 um (app/schnapper/adapter.py + tests/test_mock_adapter.py); S-005 braucht daher keinen weiteren Agentenlauf, nur Jefreys Sichtung von #13. Prüfung 22.10.2026 08:40 UTC: Tests in #13 zeitabhängig (JETZT fest 09:00 UTC, Zukunftsprüfung nutzt echte Uhrzeit) – vor 09:05 UTC 2 rot; T3 erst nach Fix als done markieren."
     },
     {
       "id": "S-006",
