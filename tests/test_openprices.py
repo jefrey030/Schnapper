@@ -178,7 +178,7 @@ class AdapterTests(unittest.TestCase):
                 return False
 
         with mock.patch("urllib.request.OpenerDirector.open",
-                        return_value=Antwort(b"\\xff\\xfe")):
+                        return_value=Antwort(b"\xff\xfe")):
             with self.assertRaisesRegex(op.OpenPricesFehler, "UTF-8"):
                 op._abruf(op.anfrage_url(EAN))
 
