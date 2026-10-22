@@ -69,3 +69,26 @@ Bisher entstanden: **0 €**. Kein Punkt in diesem Plan erfordert Geld; A7, A8 u
 - **Nächste Schritte:** vollständige Offline-Tests mit Python ausführen, Barcode live mit
   einer freigegebenen kostenfreien API-Abfrage prüfen, Android-Lauf ohne PC bestätigen,
   Cloudflare-Free-Plan nachweisen; PR erst danach und nach Sichtung mergen.
+
+
+## Nachtrag 22.10.2026 – weiterer Reparatur- und Kontocheck
+- `app/schnapper/web.py`: Filter mit NaN/Infinity oder Rabatten außerhalb 0–100 % liefert 400
+  statt eines potenziellen Fehlers; gleichzeitige Barcode-Abrufe werden auf einen
+  lokalen API-Aufruf begrenzt, weitere Anfragen erhalten 429.
+- `app/schnapper/angebot.py`: extreme Geldbeträge führen zu `AngebotFehler` statt
+  unkontrolliertem Decimal-Overflow.
+- `app/schnapper/openprices.py`: nicht dekodierbare API-Antworten liefern einen
+  kontrollierten Fehler. Regressionstests für die Fälle wurden ergänzt.
+- **Tests noch nicht tatsächlich ausgeführt:** GitHub-Actions-Lauf für das aktuelle
+  Commit steht auf `skipped` (privates Repo, Kostenschutz); keine Aussage
+  „alle grün“ für diesen Stand zulässig.
+- Read-only-Cloudflare-Prüfung: Nur Worker `jerry-al` vorhanden,
+  D1-Datenbankliste leer, `workers/account-settings` zeigt
+  `default_usage_model=standard` (**kein Nachweis für Workers Free**).
+  Abonnement-/Billing-Abfrage scheitert weiterhin mit HTTP 403 (fehlender OAuth-Scope).
+- **0-€-Sperre beibehalten:** Kein neuer Worker, keine D1, kein Cron, keine KI-Inferenz,
+  keine zahlungspflichtige GitHub-Action gestartet.
+- Abnahmereihenfolge: (1) Testsuite in einer kostenlosen Python/Node-Umgebung
+  wirklich ausführen, (2) auf Android manuell prüfen, (3) Open-Prices-API nur
+  nach Freigabe live testen, (4) Workers-Free-Tarif nachweisen und separat
+  Team-Pilot mit zwei echten Stundenprotokollen durchführen.
