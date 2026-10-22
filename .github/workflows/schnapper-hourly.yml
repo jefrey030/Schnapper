@@ -57,6 +57,27 @@ jobs:
       - name: Stundenbericht erstellen
         if: always()
         run: python team/agent.py BERICHT "$LAUF"
+      - name: Sicherheitsabnahme – fehlende oder abgelehnte Ergebnisse machen Lauf rot
+        if: always()
+        shell: bash
+        run: |
+          python - <<'PY'
+          import json
+          import os
+          from pathlib import Path
+          import sys
+          lauf = Path(os.environ.get("LAUF") or "unbekannt")
+          pfad = Path("team/runs") / (lauf.name + ".json")
+          try:
+              bericht = json.loads(pfad.read_text(encoding="utf-8"))
+          except (OSError, ValueError):
+              print("BLOCKIERT: Kein lesbarer echter Stundenbericht.")
+              sys.exit(1)
+          if bericht.get("team_einsatzbereit") is not True:
+              print("BLOCKIERT: Sicherheits- und Agentenprüfung nicht bestanden.")
+              sys.exit(1)
+          print("Technischer Stundenlauf bestanden (KEINE Produktionsfreigabe).")
+          PY
       - name: Berichte speichern
         if: always()
         run: |
