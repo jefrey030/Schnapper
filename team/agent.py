@@ -153,8 +153,13 @@ def geheimnis_scan(zusatztexte=()):
 
 def ki_teil(ki, rolle, nutzertext):
     """Echter KI-Aufruf. Gibt (ergebnis, fehler) zurück – nie beides."""
+    systemtext = GRUNDREGELN + "\n" + ROLLENAUFTRAG[rolle]
+    # Auch Eingaben aus Aufgaben, Status-Dateien und früheren Agenten gelten als
+    # untrusted. Scannen VOR jeder Übermittlung, nicht erst nach KI-Ausgabe.
+    if GEHEIMNIS_MUSTER.search(systemtext + "\n" + str(nutzertext)):
+        return None, "Geheimnisindikator in KI-Eingabe – kein externer Aufruf, Lauf gesperrt."
     try:
-        antwort = ki.frage(GRUNDREGELN + "\n" + ROLLENAUFTRAG[rolle], nutzertext)
+        antwort = ki.frage(systemtext, nutzertext)
     except KINichtVerfuegbar as exc:
         return None, str(exc)
     # Vor Weitergabe an die nächste Rolle sperren, nicht erst vor Git-Speicherung.
@@ -415,7 +420,7 @@ def main(argv):
     # diesem Fall müssen Folgerollen stoppen (nicht nur bei schreibseitigem Fund).
     # Ein gewöhnlicher Rollenfehler wird weiterhin im Gesamtbericht protokolliert.
     sicherheitsfehler = bool(erg.get("geheimnis_redigiert")) or str(erg.get("fehler") or "").startswith(
-        "Geheimnisindikator in KI-Antwort"
+        ("Geheimnisindikator in KI-Antwort", "Geheimnisindikator in KI-Eingabe")
     )
     return 1 if sicherheitsfehler else 0
 
