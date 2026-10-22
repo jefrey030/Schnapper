@@ -7,7 +7,7 @@ name: SCHNAPPER Stundenlauf
 # KOSTENSCHUTZ: Der Job startet nur, wenn das Repository ÖFFENTLICH ist
 # (dort sind Standard-Runner kostenlos). Bei einem privaten Repo wird er
 # übersprungen und verbraucht keine Minuten – auch wenn ein Budget existiert.
-# Fail-Closed: Kein Job bei privat oder fehlender Repository-Sichtbarkeitsangabe.
+# Fail-Closed: Fehlende Sichtbarkeit darf nicht per GitHub-Typumwandlung\n# als false gelten; toJSON() unterscheidet null von false.\n# Kein Job bei privat oder fehlender Repository-Sichtbarkeitsangabe.
 # Zusätzlich ist die ausdrückliche Freischaltung SCHNAPPER_OEFFENTLICH=true
 # nötig. Ein gesetztes Flag allein darf die Privat-Repo-Sperre nie umgehen.
 # Der erste Runner-Schritt prüft die Sichtbarkeit noch einmal unabhängig.
@@ -29,7 +29,7 @@ jobs:
     if: >-
       github.repository == 'jefrey030/schnapper' && vars.SCHNAPPER_PAUSE != 'true' &&
       vars.SCHNAPPER_OEFFENTLICH == 'true' &&
-      github.event.repository.private == false
+      toJSON(github.event.repository.private) == 'false'
     runs-on: ubuntu-latest
     timeout-minutes: 10
     env:
