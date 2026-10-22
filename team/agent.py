@@ -74,8 +74,8 @@ def schreibe(ordner, rolle, daten):
     ordner.mkdir(parents=True, exist_ok=True)
     roh = json.dumps(daten, ensure_ascii=False, indent=2)
     if GEHEIMNIS_MUSTER.search(roh):
-        daten = {**daten, "status": "FEHLER", "geheimnis_redigiert": True,
-                 "fehler": "Geheimnisindikator entdeckt: Inhalt redigiert und Agent gesperrt."}
+        daten.update(status="FEHLER", geheimnis_redigiert=True,
+                     fehler="Geheimnisindikator entdeckt: Inhalt redigiert und Agent gesperrt.")
         roh = json.dumps(daten, ensure_ascii=False, indent=2)
         roh = GEHEIMNIS_MUSTER.sub("[REDACTED]", roh)
     (ordner / f"{rolle}.json").write_text(roh + "\n", encoding="utf-8")
@@ -389,8 +389,9 @@ def main(argv):
     if erg.get("ki"):
         # Sicherheitsregel: Kein ungefilterter KI-Rohtext in den Workflow-Logs.
         print(f"[{rolle}] KI-Antwort gespeichert; Rohtext im Konsolenlog unterdrückt.")
-    # Nicht abbrechen: COMMAND/BERICHT sollen auch Fehlschläge dokumentieren.
-    return 0
+    # Bei einem gefundenen Geheimnis nachfolgende Rollen nicht mehr starten.
+    # Ein gewöhnlicher Rollenfehler wird weiterhin im Gesamtbericht protokolliert.
+    return 1 if erg.get("geheimnis_redigiert") else 0
 
 
 if __name__ == "__main__":
