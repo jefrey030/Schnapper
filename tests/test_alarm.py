@@ -46,6 +46,10 @@ class WunschEinlesen(unittest.TestCase):
                             ({"suche": "x", "max_preis": "abc"}, "Höchstpreis"),
                             ({"suche": "x", "max_preis": "0"}, "größer als 0"),
                             ({"suche": "x", "min_rabatt": "120"}, "zwischen 0 und 100"),
+                            ({"suche": "x", "min_rabatt": "NaN"}, "zwischen 0 und 100"),
+                            ({"suche": "x", "min_rabatt": "sNaN"}, "zwischen 0 und 100"),
+                            ({"suche": "x", "min_rabatt": "Infinity"}, "zwischen 0 und 100"),
+                            ({"suche": "x", "min_rabatt": "-Infinity"}, "zwischen 0 und 100"),
                             ({"suche": "x", "max_preis": "5", "zustaende": ["kaputt"]}, "Zustand")):
             with self.subTest(daten=daten), self.assertRaisesRegex(WunschFehler, text):
                 Wunsch.aus_dict(daten)
@@ -54,6 +58,15 @@ class WunschEinlesen(unittest.TestCase):
         liste = lies_wuensche(json.dumps({"wuensche": [{"suche": "a", "max_preis": "5"}, {"suche": "b"}]}))
         self.assertEqual(len(liste.wuensche), 1)
         self.assertIn("Wunsch 2", liste.fehler[0])
+
+    def test_nicht_endlicher_rabatt_blockiert_nicht_gueltige_wuensche(self):
+        liste = lies_wuensche(json.dumps({"wuensche": [
+            {"suche": "ungueltig", "min_rabatt": "NaN"},
+            {"suche": "gueltig", "max_preis": "20"}
+        ]}))
+        self.assertEqual([w.suche for w in liste.wuensche], ["gueltig"])
+        self.assertEqual(len(liste.fehler), 1)
+        self.assertIn("Wunsch 1", liste.fehler[0])
 
     def test_kaputtes_json(self):
         liste = lies_wuensche("{nicht json")
