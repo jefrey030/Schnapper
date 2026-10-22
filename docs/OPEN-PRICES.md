@@ -29,5 +29,5 @@ SCHNAPPER_OPENPRICES_FREIGABE=ja PYTHONPATH=app python -m schnapper --openprices
 ```
 Ohne Schalter: Meldung „Freigabeschalter … fehlt“, kein Netzwerkaufruf.
 
-Tests: `tests/test_openprices.py` (20 Fälle, ohne Netz, Antwortstruktur laut
+Tests: `tests/test_openprices.py` (19 Fälle, ohne Netz, Antwortstruktur laut
 [API-Dokumentation](https://openfoodfacts.github.io/documentation/docs/Open-prices/prices/prices_list/)).
