@@ -78,6 +78,10 @@ class TestDienst(unittest.TestCase):
             if rolle in rollen:
                 (lauf / (rolle + ".json")).write_text(
                     json.dumps({"rolle": rolle}), encoding="utf-8")
+            if rolle == "BRAIN":
+                p = self.team / "proposals" / "fake.md"
+                p.parent.mkdir(parents=True, exist_ok=True)
+                p.write_text("Nur simuliertes Testartefakt", encoding="utf-8")
             if rolle == "BERICHT":
                 p = self.team / "runs" / (lauf.name + ".json")
                 p.parent.mkdir(parents=True, exist_ok=True)
@@ -86,14 +90,23 @@ class TestDienst(unittest.TestCase):
                     "team_einsatzbereit": True,
                     "agenten_mit_echter_ki": list(rollen),
                     "ki_aufrufe": 4,
+                    "aufgabe": "S-000",
+                    "check_urteil": "bestanden",
                     "tests_ok": True,
                     "tests_anzahl": 3,
                     "agenten": {
-                        r: {"status": "OK", "ki_echt": True,
+                        r: {
+                            "status": "OK", "ki_echt": True,
+                            "plan": {"aufgabe_id": "S-000"} if r == "LEAD" else None,
+                            "vorschlag_datei": "team/proposals/fake.md" if r == "BRAIN" else None,
+                            "protokoll": {"freigabe": "nein",
+                                          "naechster_schritt": "manuell pruefen"}
+                                          if r == "COMMAND" else None,
                             "ki": {"laufzeit": "Ollama lokal (keine bezahlte KI-API)",
                                    "modell": "qwen2.5:1.5b",
                                    "text": "simulierte Antwort (nur im Unit Test)",
-                                   "antwort_id": "lokal-" + r.lower()}}
+                                   "antwort_id": "lokal-" + r.lower()},
+                        }
                         for r in rollen
                     },
                 }), encoding="utf-8")
