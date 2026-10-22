@@ -30,7 +30,7 @@ API = f"https://{HOST}/api/v1/prices"
 FREIGABE_VARIABLE = "SCHNAPPER_OPENPRICES_FREIGABE"
 USER_AGENT = "SCHNAPPER/0.1 (privates Testprojekt; github.com/jefrey030)"
 LIZENZ = "Preise: Open Prices (Open Food Facts), Lizenz ODbL – prices.openfoodfacts.org"
-EAN = re.compile(r"^\d{8,14}$")
+EAN = re.compile(r"^[0-9]{8,14}$")
 MAX_ERGEBNISSE = 50
 
 
