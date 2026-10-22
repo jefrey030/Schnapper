@@ -17,6 +17,7 @@ sys.path.insert(0, str(ROOT / "app"))
 from schnapper.einlesen import lies_datei  # noqa: E402
 from schnapper.web import erstelle_server  # noqa: E402
 from schnapper import openprices as op  # noqa: E402
+from schnapper.angebot import AngebotFehler, geld  # noqa: E402
 
 VORLAGE = ROOT / "app" / "vorlagen" / "meine-angebote.csv"
 WEB = ROOT / "app" / "schnapper" / "web"
@@ -84,6 +85,12 @@ class Startbildschirm(unittest.TestCase):
             server.shutdown()
             server.server_close()
 
+
+
+class Preisvalidierung(unittest.TestCase):
+    def test_extrem_grosse_geldbetraege_erzeugen_kontrollierten_fehler(self):
+        with self.assertRaises(AngebotFehler):
+            geld("1e10000")
 
 
 class BarcodeWeb(unittest.TestCase):
