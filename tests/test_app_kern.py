@@ -14,6 +14,7 @@ sys.path.insert(0, str(ROOT / "app"))
 from schnapper import Angebot, AngebotFehler, Filter, entferne_dubletten, lies_text, suche, warnungen  # noqa: E402
 from schnapper.__main__ import main  # noqa: E402
 from schnapper.angebot import geld, normalisiere_url  # noqa: E402
+from schnapper.quellen import Register  # noqa: E402
 
 JETZT = dt.datetime(2026, 10, 21, 21, 0, tzinfo=dt.timezone.utc)
 
@@ -138,7 +139,9 @@ class Suche(unittest.TestCase):
 class Import(unittest.TestCase):
     def test_json_mit_fehlern_bricht_nicht_ab(self):
         text = json.dumps({"angebote": [roh(id="a"), roh(id="b", preis="x"), roh(id="a")]})
-        e = lies_text(text, "json")
+        reg = Register()
+        reg.erlaube("shop", "Test-Shop", "erfundene Testquelle")
+        e = lies_text(text, "json", reg)
         self.assertEqual([a.id for a in e.angebote], ["a"])
         self.assertEqual(len(e.fehler), 2)
 
