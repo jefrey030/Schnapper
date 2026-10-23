@@ -1,0 +1,47 @@
+name: SCHNAPPER ONE – Viererteam (nur manuell)
+# Kein Cron. Vor Freigabe niemals echte Modellaufrufe starten.
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  models: read
+
+concurrency:
+  group: schnapper-one-team
+  cancel-in-progress: false
+
+jobs:
+  viererteam:
+    # Kosten-/Freigabe-Sperre: standardmaessig 0 Laufzeit.
+    if: github.event.repository.private == false && vars.SCHNAPPER_ONE_KI_ENABLED == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    env:
+      GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      SCHNAPPER_ONE_KI_ENABLED: 'true'
+      SCHNAPPER_ONE_MODELL: ${{ vars.SCHNAPPER_ONE_MODELL }}
+      SCHNAPPER_ONE_MAX_AUFRUFE: '4'
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Laufordner definieren
+        run: echo "LAUF=schnapper_one/team/work/run-${{ github.run_id }}" >> "$GITHUB_ENV"
+      - name: LEAD – priorisiert
+        run: python schnapper_one/team/agent.py LEAD "$LAUF"
+      - name: BRAIN – plant
+        run: python schnapper_one/team/agent.py BRAIN "$LAUF"
+      - name: CHECK – prüft
+        run: python schnapper_one/team/agent.py CHECK "$LAUF"
+      - name: COMMAND – protokolliert
+        run: python schnapper_one/team/agent.py COMMAND "$LAUF"
+      - name: Nachweis schreiben (auch wenn vorheriger Schritt scheitert)
+        if: always()
+        run: |
+          if [ -n "${LAUF:-}" ]; then
+            python schnapper_one/team/agent.py BERICHT "$LAUF"
+            cat schnapper_one/team/STATUS.md >> "$GITHUB_STEP_SUMMARY"
+          fi
+      # Keine Push-, Deploy-, Kauf- oder Zahlungs-Berechtigung.

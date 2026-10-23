@@ -1,0 +1,67 @@
+{
+  "project": "SCHNAPPER ONE",
+  "version": 1,
+  "scope": "separates KI-Produkt (noch kein eigenständiges GitHub-Repo)",
+  "tasks": [
+    {
+      "id": "ONE-001",
+      "priority": 1,
+      "status": "open",
+      "title": "Alltags-KI-Chat: sichere Architektur und Demo-Ablauf",
+      "acceptance": [
+        "Chat-Ein-/Ausgabe, Verlauf, Löschoptionen und Modell-Grenzen dokumentiert",
+        "Keine fremden Konten oder persönlichen Daten ohne Zustimmung nutzen",
+        "Konkreter Testplan mit fehlender KI-Antwort, Limits und Fehlermeldungen",
+        "Nur Vorschläge, keine Änderungen am SCHNAPPER-Produktivsystem"
+      ]
+    },
+    {
+      "id": "ONE-002",
+      "priority": 2,
+      "status": "open",
+      "title": "Spar-Agent: zulässige Quellen und sichere Preisbelege",
+      "acceptance": [
+        "Datenrechte, Aktualität, Quellennachweis und Verdachtswarnungen planen",
+        "Keine erfundenen Preise oder automatischen Käufe",
+        "Nur klar freigegebene externe Quellen, keine verdeckten Live-Abfragen",
+        "Kostenlimite und Warnungen unabhängig von Premium erhalten"
+      ]
+    },
+    {
+      "id": "ONE-003",
+      "priority": 3,
+      "status": "open",
+      "title": "Kaufprüfer: Vergleich und Betrugswarnungen",
+      "acceptance": [
+        "Warnregeln für alte/verdächtige Preise und Versandkosten",
+        "Keine abschließende Betrugsgarantie ausgeben",
+        "Begründete Einschätzung mit überprüfbaren Produktdaten",
+        "Tests für unbekannten Preis und fehlende Quelle beschreiben"
+      ]
+    },
+    {
+      "id": "ONE-004",
+      "priority": 4,
+      "status": "open",
+      "title": "Verkaufs-KI: Beschreibung, Preis-Spanne und Freigabe",
+      "acceptance": [
+        "Produktfoto/Details nur mit Zustimmung verarbeiten",
+        "Keine automatischen Anzeigen veröffentlichen, keine Käufer kontaktieren",
+        "Marktpreis nur mit belastbaren Vergleichsdaten behaupten",
+        "Nutzer kontrolliert und bestätigt jede Veröffentlichung"
+      ]
+    },
+    {
+      "id": "ONE-005",
+      "priority": 5,
+      "status": "open",
+      "title": "KI-Alltagsabo 9,99 EUR, Trial mit 5 Ausführungen, Gesamtpaket",
+      "acceptance": [
+        "Bestehende SCHNAPPER-Vorgaben: Premium 4,99, Alltags-KI 9,99, Komplett 12,99 als Vorschlag",
+        "Einmalig 5 kostenlose gemeinsame KI-Ausführungen, keine Autoumwandlung",
+        "Kosten je KI-Nachricht und Missbrauchsschutz planen",
+        "Keinen echten Kauf- oder Bezahlvorgang auslösen"
+      ]
+    }
+  ]
+}
