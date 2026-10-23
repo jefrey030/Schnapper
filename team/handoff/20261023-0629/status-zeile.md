@@ -1,0 +1,2 @@
+## Lauf 20261023-0629 (Bericht `team/runs/20261023-0629-master.md`)
+- F3 / PR #40: Browsertest findet Chromium automatisch statt fest `chromium-1194` (Commit f0cc84c, Fast-Forward-Push, kein Force). Tests 226 OK, Modul 10/10 ohne Skip, Cloudflare 10/10. CHECK bestanden. #40 bleibt Draft, Kopf f0cc84c. `team/tasks.json` ist unverändert (S-010 bleibt `review`). Merge-Entscheidung bei Jefrey, eBay-Sandbox-Schlüssel fehlen weiter.

@@ -143,3 +143,6 @@ Hinweis: `team/tasks.json` wurde nicht separat geändert; die tasks.json-Änderu
 | Tests (Branch F1) | 216/216 OK, Cloudflare 10/10, JSON gültig, Secret-Scan ohne Treffer | `team/runs/20261023-0529-master.md` |
 | Blocker | Merge-Entscheidung über #36, #39, #40, #41, #44, #45 liegt bei Jefrey. #39/#40/#41 ändern dieselben Stellen in `app.js`/`index.html` (Folgekonflikte erwartet). Titel von #36 nennt noch „S-009–S-013 open“ (bewusst nicht geändert). `tests/test_app_sicherung_s010.py` (#40) verweist weiter auf `chromium-1194`. eBay-Sandbox-Client-ID/-Secret fehlen | – |
 | Nächster Schritt | Dieselbe Chromium-Suche (`_finde_chromium()`) in `tests/test_app_sicherung_s010.py` auf PR #40 übernehmen | – |
+
+## Lauf 20261023-0629 (Bericht `team/runs/20261023-0629-master.md`)
+- F3 / PR #40: Browsertest findet Chromium automatisch statt fest `chromium-1194` (Commit f0cc84c, Fast-Forward-Push, kein Force). Tests 226 OK, Modul 10/10 ohne Skip, Cloudflare 10/10. CHECK bestanden. #40 bleibt Draft, Kopf f0cc84c. `team/tasks.json` ist unverändert (S-010 bleibt `review`). Merge-Entscheidung bei Jefrey, eBay-Sandbox-Schlüssel fehlen weiter.
