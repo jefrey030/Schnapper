@@ -82,11 +82,11 @@ class TeamTests(unittest.TestCase):
                 agent.bericht(work)
             data = json.loads((team / "runs" / "probe.json").read_text(encoding="utf-8"))
             self.assertEqual(len(fake.calls), 4)
-            self.assertTrue(data["team_einsatzbereit"])
-            self.assertTrue(data["antwort_ids_eindeutig"])
+            self.assertFalse(data["team_einsatzbereit"])  # Simulation ist kein echter KI-Lauf
+            self.assertFalse(data["antwort_ids_eindeutig"])
             self.assertEqual(data["aufgabe"], "ONE-001")
             self.assertEqual(data["check_urteil"], "bestanden")
-            self.assertEqual(data["modelle"], ["TEST-SIMULATOR"])
+            self.assertEqual(data["modelle"], [])
 
     def test_kein_kostenpflichtiger_live_aufruf_bei_gesperrtem_gate(self):
         with tempfile.TemporaryDirectory() as d:
