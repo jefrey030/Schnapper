@@ -268,7 +268,11 @@ def blocker_ermitteln(alle):
 def bericht(ordner):
     """Deterministisch (Werkzeug, keine KI): Stundenbericht, STATUS.md und Zustand speichern."""
     alle = {r: lies(ordner, r) or {"status": "FEHLT", "ki_echt": False} for r in ROLES}
-    echt = [r for r in ROLES if alle[r].get("ki_echt")]
+    # Ein KI-Testdoppel darf nie als echter Modellbetrieb gewertet werden.
+    echt = [r for r in ROLES if alle[r].get("ki_echt")
+            and ((alle[r].get("ki") or {}).get("laufzeit")
+                 == "GitHub Models (kostenloses Kontingent)")
+            and not str((alle[r].get("ki") or {}).get("antwort_id") or "").startswith("mock-")]
     lead_plan = alle["LEAD"].get("plan") or {}
     urteil = (alle["CHECK"].get("urteil") or {}).get("urteil")
     tests = (alle["CHECK"].get("werkzeug") or {}).get("tests") or {}
@@ -284,6 +288,7 @@ def bericht(ordner):
         all(isinstance(a, str) and bool(a.strip()) for a in antwort_ids)
         and len(set(antwort_ids)) == 4
         and ki_aufrufe >= 4
+        and len(echt) == 4
     )
     einsatzbereit = (
         len(echt) == 4
