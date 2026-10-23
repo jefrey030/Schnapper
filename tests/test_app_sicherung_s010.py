@@ -60,6 +60,12 @@ class Statisch(unittest.TestCase):
         funktion = js[start:js.index("\n}\n", start)]
         self.assertNotIn("fetch(", funktion)
 
+    def test_alarmpruefung_wie_server(self):
+        js = (WEB / "app.js").read_text(encoding="utf-8")
+        self.assertFalse("zahlText" in js, "alte Prüfung zahlText noch vorhanden")
+        self.assertIn("/^[0-9]{1,9}(?:[.,][0-9]{1,2})?$/.test(x) && zahlWert(x) > 0", js)
+        self.assertIn("/^[0-9]{1,3}(?:[.,][0-9]{1,2})?$/.test(x) && zahlWert(x) >= 0 && zahlWert(x) <= 100", js)
+
     def test_ak9_csp_unveraendert(self):
         self.assertEqual(SICHERHEIT["Content-Security-Policy"], CSP)
 
@@ -246,6 +252,56 @@ class Browser(unittest.TestCase):
         self.assertEqual(self.seite.locator("img").count(), 0)
         self.assertIsNone(self.seite.evaluate("window.__xss"))
         self.assertEqual(self.seite.locator("#merk-liste .link").count(), 2)
+
+    def test_alarmgrenzen_wie_server(self):
+        """Nur Alarme übernehmen, die /api/suche auch akzeptiert (max_preis > 0, 2 Nachkommastellen, Rabatt 0–100)."""
+        self.seite.click('[data-ansicht="alarme"]')
+        datei = sicherung(alarme=[
+            alarm("Rad", max_preis="12,50"),
+            alarm("Säge", max_preis="0"),
+            alarm("Tisch", max_preis="1,234"),
+            alarm("Lampe", max_preis="", min_rabatt="150"),
+            alarm("Bohrer", max_preis="", min_rabatt="100"),
+        ])
+        meldung = self.lade(datei)
+        self.assertIn("Wiederhergestellt: 0 gemerkt, 2 Alarme; 3 ungültige Einträge übersprungen", meldung)
+        fehler = self.fehlerliste()
+        self.assertEqual(len(fehler), 3)
+        for teil in ("Eintrag 2 ungültig (max_preis)", "Eintrag 3 ungültig (max_preis)", "Eintrag 4 ungültig (min_rabatt)"):
+            self.assertTrue(any(teil in f for f in fehler), teil)
+        _, a = self.stand()
+        self.assertEqual([x["text"] for x in a], ["Rad", "Bohrer"])
+        # Jeder übernommene Alarm wird vom Server akzeptiert: keine Karte zeigt „Eingabe ungültig“.
+        self.warte("document.querySelectorAll('#alarm-liste > li').length === 2 && "
+                   "[...document.querySelectorAll('#alarm-liste .ausgeloest')].every((e) => e.textContent.length > 0)")
+        marken = self.seite.locator("#alarm-liste .ausgeloest").all_text_contents()
+        self.assertEqual(len(marken), 2)
+        self.assertFalse(any("Eingabe ungültig" in m for m in marken), marken)
+
+        # Grenzfälle direkt an der reinen Prüffunktion (AK4/AK5).
+        def pruefe(feld, wert):
+            w = alarm("X", max_preis="", min_rabatt="")
+            w[feld] = wert
+            if feld == "min_rabatt" and wert == "":
+                w["max_preis"] = "5"
+            return self.seite.evaluate("(o) => sicherungPruefen(o)", sicherung(alarme=[w]))
+
+        for feld, wert in (("max_preis", "0"), ("max_preis", "0,00"), ("max_preis", "1,234"), ("max_preis", "1.2345"),
+                           ("max_preis", "10€"), ("max_preis", "-5"), ("min_rabatt", "150"), ("min_rabatt", "100,5")):
+            with self.subTest(abgewiesen=(feld, wert)):
+                r = pruefe(feld, wert)
+                self.assertEqual(r["alarme"], [])
+                self.assertEqual(r["fehler"], [f"Alarme: Eintrag 1 ungültig ({feld})"])
+        for feld, wert in (("max_preis", "100"), ("max_preis", "12,50"), ("max_preis", "99.9"), ("max_preis", "12.50"),
+                           ("min_rabatt", "0"), ("min_rabatt", "20,5"), ("min_rabatt", "100")):
+            with self.subTest(gueltig=(feld, wert)):
+                r = pruefe(feld, wert)
+                self.assertEqual(r["fehler"], [])
+                self.assertEqual(r["alarme"][0][feld], wert)
+                # Gegenprobe am Server: dieselbe Grenze wird von /api/suche angenommen.
+                status = self.seite.evaluate(
+                    "async (q) => (await fetch('/api/suche?' + new URLSearchParams(q))).status", {feld: wert, "text": "X"})
+                self.assertEqual(status, 200)
 
 
 if __name__ == "__main__":

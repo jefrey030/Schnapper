@@ -414,15 +414,21 @@ function sicherungPruefen(obj) {
     merk[id] = neu;
   }
 
-  const zahlText = (x) => typeof x === "string" && x.length <= 20 && (x === "" || /^[0-9]+(?:[.,][0-9]+)?$/.test(x));
+  // Wie der Server (/api/suche): Höchstpreis > 0 mit höchstens 2 Nachkommastellen
+  // (kein mehrdeutiges "1,234"), Mindestrabatt 0–100. Komma gilt als Dezimaltrenner.
+  const zahlWert = (x) => Number(x.replace(",", "."));
+  const maxPreisOk = (x) => typeof x === "string" &&
+    (x === "" || (/^[0-9]{1,9}(?:[.,][0-9]{1,2})?$/.test(x) && zahlWert(x) > 0));
+  const minRabattOk = (x) => typeof x === "string" &&
+    (x === "" || (/^[0-9]{1,3}(?:[.,][0-9]{1,2})?$/.test(x) && zahlWert(x) >= 0 && zahlWert(x) <= 100));
   const alarmListe = [];
   const gesehen = new Set();
   obj.alarme.forEach((w, i) => {
     let falsch = null;
     if (!istObjekt(w)) falsch = "kein Objekt";
     else if (typeof w.text !== "string" || !w.text.trim() || w.text.length > 200) falsch = "text";
-    else if (!zahlText(w.max_preis)) falsch = "max_preis";
-    else if (!zahlText(w.min_rabatt)) falsch = "min_rabatt";
+    else if (!maxPreisOk(w.max_preis)) falsch = "max_preis";
+    else if (!minRabattOk(w.min_rabatt)) falsch = "min_rabatt";
     else if (!w.max_preis && !w.min_rabatt) falsch = "max_preis/min_rabatt";
     else if (typeof w.zustand !== "string" || !(w.zustand === "" || Object.hasOwn(ZUSTAND, w.zustand))) falsch = "zustand";
     else if (w.angelegt_am !== undefined && typeof w.angelegt_am !== "string") falsch = "angelegt_am";
