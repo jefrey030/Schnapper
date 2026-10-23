@@ -133,3 +133,13 @@ Hinweis: `team/tasks.json` wurde nicht separat geändert; die tasks.json-Änderu
 | Tests (Branch F4) | 227/227 OK (216 main + 11 S-011, 0 skipped; Browsertests mit und ohne `PLAYWRIGHT_BROWSERS_PATH` ausgeführt), Cloudflare 10/10 | `team/runs/20261023-0429-master.md` |
 | Blocker | Merge-Entscheidung über #36, #39, #40, #41, #44, #45 liegt bei Jefrey. #39/#40/#41 ändern dieselben Stellen in `app.js`/`index.html` (Folgekonflikte erwartet). `tests/test_app_sicherung_s010.py` (#40) verweist weiter auf `chromium-1194`. eBay-Sandbox-Client-ID/-Secret fehlen | – |
 | Nächster Schritt | Dieselbe Chromium-Suche in `tests/test_app_sicherung_s010.py` auf PR #40 übernehmen | – |
+
+## SCHNAPPER MASTER – letzter Lauf (23.10.2026, 05:29 UTC, Lauf 20261023-0529)
+| Aufgabe | Zustand | Beleg |
+| --- | --- | --- |
+| F1 auf main-Stand bringen und aktualisieren | **Draft-PR #36** (Branch `agent/master/20261022-20` @ 8d4e90b) per Merge von main @ 6dbe114 aktualisiert (Merge-Commit 2a43d86, kein Rebase/Force-Push; Push Fast-Forward 4d48068..8d4e90b). Abschnitt B im Masterplan auf Live-Stand 23.10. 05:30 UTC (Offen 15, Gemergt 19, Geschlossen 9; #4/#38 Issues). S-009–S-013 in `team/tasks.json` auf **review** statt open (offen benannte Abweichung von der Arbeitsliste: offene Draft-PRs existieren, verhindert Doppelvergabe durch `team/agent.py`). CHECK bestanden (AK 1–12; AK 13 durch COMMAND belegt: head.sha 8d4e90b, draft true), wartet auf Jefrey | https://github.com/jefrey030/schnapper/pull/36, `team/runs/20261023-0529-master.md` |
+| F2–F6 | **Draft-PRs #39, #40, #41, #44, #45** unverändert, alle enthalten main 6dbe114, warten auf Jefrey | `team/runs/20261023-0529-master.md` |
+| tasks.json | Auf main unverändert (S-009–S-013 existieren dort erst nach Merge von #36). In #36 jetzt S-009–S-013 **review** mit Hinweis auf PR #39/#40/#41/#44/#45 – deckungsgleich mit dem Report-Branch | – |
+| Tests (Branch F1) | 216/216 OK, Cloudflare 10/10, JSON gültig, Secret-Scan ohne Treffer | `team/runs/20261023-0529-master.md` |
+| Blocker | Merge-Entscheidung über #36, #39, #40, #41, #44, #45 liegt bei Jefrey. #39/#40/#41 ändern dieselben Stellen in `app.js`/`index.html` (Folgekonflikte erwartet). Titel von #36 nennt noch „S-009–S-013 open“ (bewusst nicht geändert). `tests/test_app_sicherung_s010.py` (#40) verweist weiter auf `chromium-1194`. eBay-Sandbox-Client-ID/-Secret fehlen | – |
+| Nächster Schritt | Dieselbe Chromium-Suche (`_finde_chromium()`) in `tests/test_app_sicherung_s010.py` auf PR #40 übernehmen | – |

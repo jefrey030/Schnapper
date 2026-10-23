@@ -9,3 +9,4 @@
 | 20261023-0229 | PR #39 (F2/S-009) auf main 6dbe114 gebracht, hinzufuegen atomar mit _import_lock/Rollback | bestanden (Runde 1) | Python 231/231, Cloudflare 10/10 | #39 (Draft, aktualisiert) | ja |
 | 20261023-0329 | PR #40 (F3/S-010) per Merge auf main 6dbe114 gebracht, Alarm-Prüfung beim Wiederherstellen an Server-Regeln angeglichen | bestanden (Runde 1) | Python 224/224, Cloudflare 10/10, S-010-Browsertests 4/4 | #40 (Draft, aktualisiert) | ja |
 | 20261023-0429 | PR #41 (F4/S-011) per Merge auf main 6dbe114 gebracht, Chromium-Pfad in Browsertests automatisch gesucht | bestanden (Runde 1) | Python 227/227 (0 Skips), Kamera-Browsertests 11/11, Cloudflare 10/10 | #41 (Draft, aktualisiert) | ja |
+| 20261023-0529 | PR #36 (F1) per Merge auf main 6dbe114 gebracht, PR-Tabelle Abschnitt B auf Live-Stand, S-009–S-013 auf review | bestanden (Runde 1) | Python 216/216, Cloudflare 10/10 | #36 (Draft, aktualisiert) | ja |
