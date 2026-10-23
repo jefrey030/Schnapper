@@ -43,9 +43,28 @@ class KINichtVerfuegbar(RuntimeError):
 
 
 def _pruefe_url(url):
-    host = urllib.parse.urlparse(url).hostname
-    if host != ERLAUBTER_HOST:
-        raise KINichtVerfuegbar(f"Host {host!r} ist nicht erlaubt (nur {ERLAUBTER_HOST}).")
+    """Bearer-Token dürfen ausschließlich per HTTPS an den erwarteten Host."""
+    try:
+        adresse = urllib.parse.urlsplit(url)
+        port = adresse.port
+    except (TypeError, ValueError) as exc:
+        raise KINichtVerfuegbar("Ungültige KI-API-URL.") from exc
+    if (adresse.scheme != "https"
+            or adresse.hostname != ERLAUBTER_HOST
+            or port not in (None, 443)
+            or adresse.username is not None
+            or adresse.password is not None
+            or adresse.fragment):
+        raise KINichtVerfuegbar(
+            f"KI-API nur über HTTPS bei {ERLAUBTER_HOST}:443 ohne URL-Zugangsdaten erlaubt."
+        )
+
+
+class _KeineWeiterleitung(urllib.request.HTTPRedirectHandler):
+    """GitHub-Tokens niemals an Redirect-Ziele weiterreichen."""
+
+    def redirect_request(self, req, fp, code, msg, headers, newurl):
+        raise KINichtVerfuegbar("KI-API-Redirect blockiert; Token wird nicht weitergegeben.")
 
 
 def _token():
@@ -64,8 +83,11 @@ def _http(url, token, body=None, timeout=60):
         "Content-Type": "application/json",
         "X-GitHub-Api-Version": "2022-11-28",
     })
+    # urlopen() folgt standardmäßig Redirects und könnte dabei Authorization
+    # weiterreichen. Der eigene Handler verweigert sämtliche Umleitungen.
+    opener = urllib.request.build_opener(_KeineWeiterleitung())
     try:
-        with urllib.request.urlopen(req, timeout=timeout) as resp:
+        with opener.open(req, timeout=timeout) as resp:
             return json.loads(resp.read().decode("utf-8"))
     except urllib.error.HTTPError as exc:
         detail = exc.read().decode("utf-8", "replace")[:300]
