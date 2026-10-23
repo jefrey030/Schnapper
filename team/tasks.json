@@ -85,6 +85,29 @@
         "Branches ohne PR, die vollständig in main enthalten sind, werden als Löschkandidaten belegt (tests/test_branches_s006.py) – Löschen nur durch Jefrey"
       ],
       "hinweis": "Abgleich 22.10.2026 07:28 UTC: vier Branches ohne offenen PR sind inhaltlich vollständig in main enthalten (git diff --shortstat leer): fix/schnapper-web-main-20261022 und feature/schnapper-web-quellen-20261022 (Baum = main 7a0b83e), feature/schnapper-angebotskern-20261021 (Baum = 5343009), fix/schnapper-hourly-rotation-20261021 (0 Commits vor main). Empfehlung: Jefrey kann sie löschen – Agenten löschen keine Branches."
+    },
+    {
+      "id": "S-014",
+      "priority": 14,
+      "status": "open",
+      "title": "Vier-KI-Master 23.10.2026: GitHub-Models-Blocker diagnostizieren, sicheren Fix planen und unabhängige Abnahme dokumentieren",
+      "voraussetzung": "Keine F2–F6-Doppelarbeit; Sicherheits-/Kostenprüfung hat Vorrang; keine Live- oder Produktivfreigabe",
+      "master": "team/masters/S-014-viererteam-20261023.md",
+      "rollen": {
+        "LEAD": "Master #46: echte Priorisierung und Vergabe mit Nachweisen; PR-Überschneidungen vermeiden",
+        "BRAIN": "Master #47: Nicht-JSON/Model-API-Fehler mit Offline-Tests und sicherem Fix-Vorschlag diagnostizieren",
+        "CHECK": "Master #48: tatsächliche Testläufe, Geheimnis-/Kostenscan und unabhängige Prüfung der KI-Antworten",
+        "COMMAND": "Master #49: belastbares Go/No-Go-Protokoll und konkreter nächster Schritt"
+      },
+      "acceptance": [
+        "LEAD: validierter strukturierter Auftrag mit genau einer priorisierten S-014-Aufgabe und klaren Kriterien; Issue https://github.com/jefrey030/Schnapper/issues/46",
+        "BRAIN: reproduzierbarer, fail-closed Diagnose-/Reparaturvorschlag für GitHub Models, keine Codeänderung als ausgeführt erfinden; Issue https://github.com/jefrey030/Schnapper/issues/47",
+        "CHECK: echte Python- und Cloudflare-Tests soweit vorhanden, Secret-Scan, unabhängige negative Abnahme bei Modellfehler; Issue https://github.com/jefrey030/Schnapper/issues/48",
+        "COMMAND: vier eindeutige echte Modellantwort-IDs und bestandene CHECK-Gates vor Freigabe; sonst NO-GO mit Run-ID, Fehlerursache und Folgeschritt; Issue https://github.com/jefrey030/Schnapper/issues/49",
+        "0 € Zusatzkosten, keine Budget- oder Sichtbarkeitsänderung, kein Merge, kein Produktiv-Deployment",
+        "Berichte eindeutig Vorschlag/Testausgabe versus tatsächlich in GitHub geänderten Code unterscheiden"
+      ],
+      "hinweis": "Dieser open-Status aktiviert erst nach geprüftem Merge auf main die taskbasierte Stunden-Pipeline. Kein Beweis für Start, erfolgreiche GitHub-Models-Antwort oder erledigte Arbeit."
     }
   ]
 }
