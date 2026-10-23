@@ -111,6 +111,22 @@
       "hinweis": "Abgleich 22.10.2026 16:29 UTC: 14 Remote-Branches haben einen Baum aus der main-Historie bzw. 0 Commits vor main; Liste im Bericht team/runs/20261022-1629-master.md."
     },
     {
+      "id": "S-009",
+      "priority": 9,
+      "status": "review",
+      "title": "F2 Angebot direkt in der App erfassen (Formular, POST-Endpunkt, CSV-Download)",
+      "acceptance": [
+        "Formular in der Web-App erfasst Titel, Preis, Zustand, Quelle und Link eines eigenen Angebots",
+        "POST-Endpunkt nimmt Angebote nur mit Header X-Schnapper an; ohne Header Ablehnung (403), Test belegt",
+        "Größenlimit für den Request-Body; zu große Anfrage wird abgewiesen (413), Test belegt",
+        "Eingaben laufen durch die bestehende Prüfung (Preis, URL, Quellen-Register); ungültige Angebote werden abgewiesen",
+        "Erfasste Angebote werden in der Oberfläche nur per textContent angezeigt (kein innerHTML); Test/Prüfung belegt",
+        "Erfasste Angebote als CSV im Format von app/vorlagen/meine-angebote.csv herunterladbar",
+        "Kein Netzwerkzugriff nach außen, alle Tests grün"
+      ],
+      "hinweis": "Freigegeben von Jefrey am 22.10.2026 als F2 (Lauf 20261022-2029 eingetragen). | Lauf 20261022-2128: umgesetzt in Draft-PR #39 (Branch agent/master/20261022-21 @ 6dbeb82), CHECK bestanden, 202/202 Tests OK. | Lauf 20261023-0229: PR #39 per Merge von main @ 6dbe114 aktualisiert (kein Rebase/Force-Push); Zustand.hinzufuegen atomar unter _import_lock mit Verlauf-Rollback, 3 neue Tests; jetzt @ 1833417, 231/231 Tests OK, Cloudflare 10/10, CHECK bestanden. Wartet auf Jefrey; Eintrag stammt aus PR #36 (dort 'open'), fehlte bisher auf dem Report-Branch."
+    },
+    {
       "id": "S-010",
       "priority": 10,
       "status": "review",

@@ -103,3 +103,13 @@ Hinweis: `team/tasks.json` wurde nicht separat geändert; die tasks.json-Änderu
 | Tests (Branch F6) | 250/250 OK (216 main + 34 neu, 0 skipped), Cloudflare 10/10 | `team/runs/20261023-0128-master.md` |
 | Blocker | Die Merge-Entscheidung über #36, #39, #40, #41, #44 und #45 liegt bei Jefrey. Es fehlen eBay-Sandbox-Client-ID und -Secret; Jefrey legt sie gemäß `docs/EBAY.md` als Umgebungsvariablen an, nie im Repo. Für die Produktivnutzung braucht es eine Genehmigung von eBay (Entscheidung Jefrey) | – |
 | Nächster Schritt | Jefrey sichtet und mergt #36 (macht tasks.json auf main aktuell). Danach den Platzhalter `adapter.EbayAdapter` auf `ebay.EbayAdapter` umleiten (Folgepunkt aus #45) | – |
+
+## SCHNAPPER MASTER – letzter Lauf (23.10.2026, 02:29 UTC, Lauf 20261023-0229)
+| Aufgabe | Zustand | Beleg |
+| --- | --- | --- |
+| F2 = S-009 auf main-Stand bringen | **Draft-PR #39** (Branch `agent/master/20261022-21` @ 1833417) per Merge von main @ 6dbe114 aktualisiert (Merge-Commit 2a3ae8e, kein Rebase/Force-Push). `Zustand.hinzufuegen` atomar unter `_import_lock` mit Verlauf-Rollback (OSError → 500 „Angebot nicht übernommen …“), 3 neue Tests. CHECK bestanden (AK 1–13), wartet auf Jefrey | https://github.com/jefrey030/Schnapper/pull/39, `team/runs/20261023-0229-master.md` |
+| F1, F3–F6 | **Draft-PRs #36, #40, #41, #44, #45** unverändert, warten auf Jefrey. #36/#40/#41 liegen 4 Commits hinter main (konfliktfrei laut merge-tree) | `team/runs/20261023-0229-master.md` |
+| tasks.json | Auf main unverändert. Auf dem Report-Branch fehlte S-009 bisher; jetzt aus #36 übernommen und als **review** mit Hinweis auf PR #39 eingetragen | – |
+| Tests (Branch F2) | 231/231 OK (216 main + 15 S-009, Browsertest ausgeführt), Cloudflare 10/10 | `team/runs/20261023-0229-master.md` |
+| Blocker | Merge-Entscheidung über #36, #39, #40, #41, #44, #45 liegt bei Jefrey. #40/#41 ändern dieselben Stellen in `app.js`/`index.html` wie #39 (Folgekonflikte erwartet). eBay-Sandbox-Client-ID/-Secret fehlen | – |
+| Nächster Schritt | #40 (F3) per Merge von main aktualisieren, danach #41 | – |
