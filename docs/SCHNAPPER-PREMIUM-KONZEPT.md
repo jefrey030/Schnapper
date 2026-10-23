@@ -9,7 +9,7 @@ Die vorhandenen Preisalarme prüfen nur die geladene Liste beim Öffnen: keine
 Hintergrundsuche, keine Push-Nachrichten, keine Live-Angebotsgarantie.
 
 ## Kandidat für den ersten Premium-Tarif
-**Arbeitspreis:** 3,99 EUR pro Monat inkl. gesetzlicher Umsatzsteuer (nur
+**Arbeitspreis:** 4,99 EUR pro Monat inkl. gesetzlicher Umsatzsteuer (nur
 Hypothese; erst mit Nutzertests und Kostenmessung validieren). Monatlich
 kündbar, Preis und Vertragsbedingungen vor Vertragsschluss klar angeben.
 Keine echte Kasse, keine Abo-Aktivierung und keine automatische Abbuchung
@@ -53,6 +53,51 @@ Zwei Credits wurden erwogen, aber fünf ermöglichen mehrere sinnvolle Vergleich
 
 **Sicherheitsfunktionen niemals hinter Bezahlschranke verstecken:**
 Verdachtswarnungen, fragwürdige Referenzpreise, alte Daten und Quellenhinweise.
+
+## SCHNAPPER KI – Alltagsassistent (geplante zweite Produktsäule)
+SCHNAPPER soll zugleich als allgemeiner KI-Assistent für Alltagsthemen dienen,
+zum Beispiel Texte, E-Mails, Bewerbungen, Lernen, Ideen, Rezepte, Organisation,
+Fragen und Erklärungen. Ein eigener, klar gekennzeichneter Chat-Bereich ist
+vorgesehen. Es handelt sich noch **nicht um eine implementierte Funktion** und
+nicht um ChatGPT selbst. Ein geeignetes KI-Modell kann später über eine
+kontrollierte Schnittstelle angebunden werden.
+
+### Navigation und Abos – gewünschte monatliche Arbeitspreise
+| Plan | Monatspreis | Inhalt |
+| --- | ---: | --- |
+| Free | 0 EUR | Bestehende Gratis-Suche und 5 gemeinsame KI-Probeausführungen |
+| SCHNAPPER Premium | 4,99 EUR | Geplanter KI-Schnäppchen-Autopilot |
+| SCHNAPPER KI | 9,99 EUR | Geplanter allgemeiner Alltagsassistent |
+| SCHNAPPER Komplett | 12,99 EUR | Beide Abos zusammen; Bündelpreis als Vorschlag |
+
+Der Nutzer hat **4,99 EUR für Premium und 9,99 EUR für SCHNAPPER KI**
+gewählt. Die 12,99 EUR für Komplett sind noch ein unverbindlicher Vorschlag.
+Alle Preise sind nur für die Produktplanung: vor Aktivierung reale laufende
+Modellkosten, Zahlungsgebühren, Datenschutz, rechtliche Anforderungen und
+Nachfrage prüfen. Keine unbeschränkte KI-Nutzung versprechen.
+
+### Gemeinsamer kostenloser KI-Test
+Ein neu registriertes Konto bekommt einmalig **5 kostenlose KI-Ausführungen
+insgesamt**, nicht fünf je Produkt. Ein erfolgreicher, vom Nutzer ausgelöster
+KI-Chat-Auftrag oder KI-Produktcheck verbraucht einen Credit. Technische Fehler
+verbrauchen keinen Credit, normale kostenlose Suche und Sicherheitswarnungen
+ebenfalls nicht. Monitoring und Benachrichtigungen bekommen gesonderte
+Kosten-/Nutzungslimits. Es gibt nach den 5 Ausführungen **keine automatische
+Abo-Umwandlung oder Abbuchung**.
+
+### Voraussetzungen vor jeglichem Livegang
+- Authentifizierung und serverseitig manipulationsgeschützte Credits,
+  idempotente Abzüge, Abo-Rechte und fair-use-Limits implementieren und testen.
+- Sichere Modell-Schnittstelle mit hartem Kostenbudget, Missbrauchsschutz,
+  Fehlerbehandlung und expliziten Ausführungsgrenzen entwickeln.
+- Datenschutzhinweise, Löschoptionen und Umgang mit Chatinhalten klar regeln;
+  keine automatische Weitergabe privater Chatinhalte an Händler.
+- Produktbezogene Live-Suche nur über genehmigte, echte und aktuell geprüfte
+  Datenquellen. Keine erfundenen Angebote und keine selbstständigen Käufe.
+- Zahlungsflüsse nur im Testmodus entwickeln; Abo, Kündigung, Erstattung und
+  Rechtewechsel unabhängig prüfen, bevor irgendetwas öffentlich buchbar wird.
+- Getrennte Produktnutzungsdaten und Deckungsbeiträge je Tarif messen.
+- Bestehende Gratisfunktionen und Schutzwarnungen nicht einschränken.
 
 ## Zusätzliche Einnahmen (getrennt messen)
 1. Affiliate-Erlöse aus zulässigen Partnerprogrammen; offenlegen, klar markierte
@@ -104,8 +149,8 @@ in der neutralen Schnäppchen-Sortierung.
   technisch abgenommen.
 
 ## Beispielrechnung (keine Prognose)
-3.000 durchschnittlich monatlich aktive Nutzer x 5 % Premium x 3,99 EUR
-x 12 Monate = **7.182 EUR jährlicher Abo-Bruttoumsatz** vor Steuerabzug,
+3.000 durchschnittlich monatlich aktive Nutzer x 5 % Premium x 4,99 EUR
+x 12 Monate = **8.982 EUR jährlicher Abo-Bruttoumsatz** vor Steuerabzug,
 Gebühren, Erstattungen, Betriebskosten und Nutzerabgängen.
 Das setzt einen stabilen Durchschnitt von 150 zahlenden Abonnenten voraus.
 
