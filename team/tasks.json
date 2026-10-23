@@ -89,7 +89,7 @@
     {
       "id": "S-009",
       "priority": 9,
-      "status": "open",
+      "status": "review",
       "title": "F2 Angebot direkt in der App erfassen (Formular, POST-Endpunkt, CSV-Download)",
       "acceptance": [
         "Formular in der Web-App erfasst Titel, Preis, Zustand, Quelle und Link eines eigenen Angebots",
@@ -100,12 +100,12 @@
         "Erfasste Angebote als CSV im Format von app/vorlagen/meine-angebote.csv herunterladbar",
         "Kein Netzwerkzugriff nach außen, alle Tests grün"
       ],
-      "hinweis": "Freigegeben von Jefrey am 22.10.2026 als F2 (Lauf 20261022-2029 eingetragen)."
+      "hinweis": "Freigegeben von Jefrey am 22.10.2026 als F2 (Lauf 20261022-2029 eingetragen). | Lauf 20261023-0529: Umsetzung in Draft-PR #39 (Branch agent/master/20261022-21), wartet auf Jefrey."
     },
     {
       "id": "S-010",
       "priority": 10,
-      "status": "open",
+      "status": "review",
       "title": "F3 Merkliste und Preisalarme als JSON sichern und wiederherstellen",
       "acceptance": [
         "Export erzeugt eine JSON-Datei mit Merkliste und Preisalarmen inkl. Formatversion",
@@ -114,12 +114,12 @@
         "Import beachtet die Obergrenzen MAX_MERK (200) und MAX_ALARME (50) aus app/schnapper/web/app.js; Überschreitung wird mit Hinweis abgewiesen, Test belegt",
         "Keine Daten verlassen das Gerät, alle Tests grün"
       ],
-      "hinweis": "Freigegeben von Jefrey am 22.10.2026 als F3 (Lauf 20261022-2029 eingetragen)."
+      "hinweis": "Freigegeben von Jefrey am 22.10.2026 als F3 (Lauf 20261022-2029 eingetragen). | Lauf 20261023-0529: Umsetzung in Draft-PR #40 (Branch agent/master/20261022-22), wartet auf Jefrey."
     },
     {
       "id": "S-011",
       "priority": 11,
-      "status": "open",
+      "status": "review",
       "title": "F4 Barcode per Kamera scannen (BarcodeDetector)",
       "acceptance": [
         "Kamera-Knopf nutzt die Browser-API BarcodeDetector (EAN-13/EAN-8/UPC) und übernimmt den erkannten Code in die Barcode-Suche",
@@ -127,12 +127,12 @@
         "Kein Bild wird gespeichert oder hochgeladen; keine externe Bibliothek",
         "Alle Tests grün"
       ],
-      "hinweis": "Freigegeben von Jefrey am 22.10.2026 als F4 (Lauf 20261022-2029 eingetragen)."
+      "hinweis": "Freigegeben von Jefrey am 22.10.2026 als F4 (Lauf 20261022-2029 eingetragen). | Lauf 20261023-0529: Umsetzung in Draft-PR #41 (Branch agent/master/20261022-2238), wartet auf Jefrey."
     },
     {
       "id": "S-012",
       "priority": 12,
-      "status": "open",
+      "status": "review",
       "title": "F5 Ein-Befehl-Start für Android/Termux (start-schnapper.sh, docs/HANDY-START.md)",
       "acceptance": [
         "start-schnapper.sh startet die App mit einem Befehl unter Termux (prüft python3, startet Server nur auf 127.0.0.1, nennt die URL)",
@@ -140,12 +140,12 @@
         "Skript lädt nichts aus dem Internet nach und braucht keine Zugangsdaten; Test prüft Skript auf diese Regeln",
         "Solange nicht auf echtem Android/Termux-Gerät geprüft, steht in start-schnapper.sh und docs/HANDY-START.md deutlich der Hinweis „auf echtem Gerät ungetestet“; alle Tests grün"
       ],
-      "hinweis": "Freigegeben von Jefrey am 22.10.2026 als F5 (Lauf 20261022-2029 eingetragen)."
+      "hinweis": "Freigegeben von Jefrey am 22.10.2026 als F5 (Lauf 20261022-2029 eingetragen). | Lauf 20261023-0529: Umsetzung in Draft-PR #44 (Branch agent/master/20261022-23), wartet auf Jefrey."
     },
     {
       "id": "S-013",
       "priority": 13,
-      "status": "open",
+      "status": "review",
       "title": "F6 eBay vorbereiten (app/schnapper/ebay.py, Sandbox standard, Quelle gesperrt, docs/EBAY.md)",
       "acceptance": [
         "app/schnapper/ebay.py nutzt standardmäßig die eBay-Sandbox; Produktivbetrieb nur mit zusätzlichem Schalter (Name wird in S-013 festgelegt)",
@@ -154,7 +154,7 @@
         "docs/EBAY.md erklärt Entwicklerkonto, Sandbox, Produktivfreigabe und Env-Variablen",
         "Alle Tests grün"
       ],
-      "hinweis": "Freigegeben von Jefrey am 22.10.2026 als F6 (Lauf 20261022-2029 eingetragen)."
+      "hinweis": "Freigegeben von Jefrey am 22.10.2026 als F6 (Lauf 20261022-2029 eingetragen). | Lauf 20261023-0529: Umsetzung in Draft-PR #45 (Branch agent/master/20261023-01), wartet auf Jefrey."
     }
   ]
 }

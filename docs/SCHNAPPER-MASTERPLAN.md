@@ -22,19 +22,22 @@ Stand: 22.10.2026, 10:50 (Berlin) · Basis: `main` @ 4bc37e7 · Erstellt nach ec
 
 ## B. Pull Requests (echter GitHub-Stand)
 
-Stand: 22.10.2026, ca. 20:30 UTC · Basis `main` @ e134cd0 · ermittelt per GitHub-REST `pulls?state=all`. #4 ist ein Issue, kein PR.
+Stand: 23.10.2026, ca. 05:30 UTC · Basis `main` @ 6dbe114 · ermittelt per GitHub-REST `pulls?state=all`. #4 und #38 sind Issues, keine PRs.
 Der frühere Abschnitt (Empfehlung #6 → #12 → #7 → #8) ist überholt: Diese PRs sind gemergt bzw. geschlossen.
 
-### Offen (12)
+### Offen (15)
 
 | PR | Titel | Branch | Status | Draft |
 | --- | --- | --- | --- | --- |
+| #45 | SCHNAPPER MASTER: F6 eBay vorbereiten – Browse-API-Adapter, gesperrt ohne Schlüssel (S-013) | agent/master/20261023-01 | offen | ja |
+| #44 | SCHNAPPER MASTER: F5 Ein-Befehl-Start für Android/Termux (S-012) | agent/master/20261022-23 | offen | ja |
+| #41 | SCHNAPPER MASTER: F4 Barcode per Kamera scannen (S-011) | agent/master/20261022-2238 | offen | ja |
+| #40 | SCHNAPPER MASTER: F3 Merkliste und Preisalarme sichern und wiederherstellen (S-010) | agent/master/20261022-22 | offen | ja |
+| #39 | SCHNAPPER MASTER: F2 Angebot direkt in der App erfassen (S-009) | agent/master/20261022-21 | offen | ja |
+| #36 | SCHNAPPER MASTER: F1 Aufräumen – tasks.json (S-004–S-006 done, S-009–S-013 open) und PR-Tabelle | agent/master/20261022-20 | offen | ja |
 | #35 | security: privaten SCHNAPPER-Stundenlauf fail-closed sperren (aktuelle main-Basis) | fix/guard-private-runner-20261022-current | offen | ja |
-| #34 | fix(SCHNAPPER): Websuche weist Null- und Negativ-Höchstpreise ab | fix/web-maxpreis-positiv-20261022 | offen | ja |
 | #33 | fix(team): offene QA-Aufgabe + fehlerresistente Stundenrotation | fix/schnapper-open-qa-task-20261022 | offen | ja |
-| #31 | security(SCHNAPPER): KI-Token nur über HTTPS und ohne Redirect übertragen | security/schnapper-ki-token-transport-20261022 | offen | ja |
 | #30 | fix(SCHNAPPER): Preisalarm-Import gegen ungültige Eingaben absichern | fix/schnapper-alarm-nonfinite-20261022 | offen | ja |
-| #29 | fix: SCHNAPPER-Preise, URLs und Preisalarm zusammen sicher korrigieren | fix/schnapper-guardrails-konsolidiert-20261022 | offen | ja |
 | #28 | fix: SCHNAPPER-Preisalarm bei defekten Wunschlisten robust machen | fix/alarm-input-validation-20261022 | offen | ja |
 | #27 | fix(preise): DE/EN-Tausenderformate korrekt und sicher einlesen | fix/preisformate-gemischt-20261022 | offen | ja |
 | #26 | fix(SCHNAPPER): Preise im deutschen UND englischen Zahlenformat korrekt erkennen | fix/preisformate-englisch-20261022 | offen | nein |
@@ -42,12 +45,16 @@ Der frühere Abschnitt (Empfehlung #6 → #12 → #7 → #8) ist überholt: Dies
 | #23 | fix: Robuster Angebotsimport bei kaputten URLs und korrekte Port-Dubletten | fix/schnapper-url-validierung-20261022 | offen | ja |
 | #21 | Security: Fail-Closed-Abnahme, Not-Aus und getrennte Release-Gates | security/schnapper-failclosed-20261022 | offen | ja |
 
-Hinweis: #25, #26, #27 (Preisformate) und #28, #29, #30 (Preisalarm) überschneiden sich thematisch; #29 bündelt laut Titel mehrere davon. Entscheidung bleibt bei Jefrey.
+Hinweis: #29 ist geschlossen. Überschneidungen bestehen noch bei #25, #26, #27 (Preisformate) und #28, #30 (Preisalarm). Neu: #39, #40 und #41 ändern dieselben Stellen in `app/schnapper/web/app.js` und `index.html`; nach dem Merge eines davon sind in den anderen Konflikte zu erwarten. Entscheidung bleibt bei Jefrey.
 
-### Gemergt (15)
+### Gemergt (19)
 
 | PR | Titel | Branch | Status | Draft |
 | --- | --- | --- | --- | --- |
+| #43 | security(SCHNAPPER): GitHub-KI-Token nur via HTTPS ohne Redirects | security/ki-token-https-main-20261023 | gemergt 22.10. 23:25 UTC | nein |
+| #42 | fix(SCHNAPPER): sichere Preis-, URL- und Preisalarm-Prüfung auf aktuellem main | fix/guardrails-main-20261023 | gemergt 22.10. 23:22 UTC | nein |
+| #37 | fix(SCHNAPPER): Fehlgeschlagener Verlaufsimport darf Liste nicht aktivieren | fix/import-state-after-history-20261022 | gemergt 22.10. 23:03 UTC | nein |
+| #34 | fix(SCHNAPPER): Websuche weist Null- und Negativ-Höchstpreise ab | fix/web-maxpreis-positiv-20261022 | gemergt 22.10. 23:06 UTC | nein |
 | #32 | QA: kostenfreie Offline-Testabnahme mit unverfälschbaren FAIL-Gates | qa/offline-abnahme-kostenfrei-20261022 | gemergt 22.10. 18:39 UTC | nein |
 | #20 | fix(openprices): „Zum Angebot“ öffnet lesbare Preisseite statt JSON + Abnahme main | fix/openprices-link-webseite-20261022 | gemergt 22.10. 18:01 UTC | nein |
 | #19 | Preisverlauf: Tiefstpreise und geschönte Statt-Preise erkennen | feature/preisverlauf-20261022 | gemergt 22.10. 18:02 UTC | nein |
@@ -64,10 +71,12 @@ Hinweis: #25, #26, #27 (Preisformate) und #28, #29, #30 (Preisalarm) überschnei
 | #3 | SCHNAPPER: vier echte KI-Agenten über GitHub Models (0 €), Regelmodus entfernt | fix/ki-team-github-models-20261021 | gemergt 21.10. 20:15 UTC | nein |
 | #1 | SCHNAPPER: sichere Aufgabenrotation, Tests und Modus ohne KI-API-Kosten | fix/schnapper-hourly-rotation-20261021 | gemergt 21.10. 20:15 UTC | nein |
 
-### Geschlossen ohne Merge (7)
+### Geschlossen ohne Merge (9)
 
 | PR | Titel | Branch | Status | Draft |
 | --- | --- | --- | --- | --- |
+| #31 | security(SCHNAPPER): KI-Token nur über HTTPS und ohne Redirect übertragen | security/schnapper-ki-token-transport-20261022 | geschlossen | ja |
+| #29 | fix: SCHNAPPER-Preise, URLs und Preisalarm zusammen sicher korrigieren | fix/schnapper-guardrails-konsolidiert-20261022 | geschlossen | ja |
 | #24 | fix(SCHNAPPER): Preisalarm vor ungültigen Rabatten und Zustandsfiltern schützen | fix/alarm-nonfinite-input-20261022 | geschlossen | ja |
 | #22 | SCHNAPPER: Stundenlauf nur bei eindeutig öffentlichem Repo aktivieren | fix/schnapper-stundenlauf-failclosed-20261022 | geschlossen | ja |
 | #16 | SCHNAPPER: Preisquellen sichern und Testangebote eindeutig markieren | fix/schnapper-price-source-integrity-20261022 | geschlossen | ja |
