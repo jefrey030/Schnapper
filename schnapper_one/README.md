@@ -45,17 +45,22 @@ GitHub-Models-Backend aus dem SCHNAPPER-Team technisch geklont, aber
 `SCHNAPPER_ONE_KI_ENABLED` fehlt standardmäßig und verhindert alle
 Modellanfragen. Ein `GITHUB_TOKEN` allein reicht nicht zur Aktivierung.
 Es gibt **keinen stündlichen automatischen Workflow** für SCHNAPPER ONE.
-Der Workflow `.github/workflows/schnapper-one-agents.yml` erlaubt nur einen
-manuellen Lauf bei bewusst aktivierter Gate-Variable im **öffentlichen**
-Repository und mit getrennten vier Aufrufschritten. Es werden keine
+Der Workflow `.github/workflows/schnapper-one-agents.yml` ist als manueller
+Workflow vorbereitet, wird aber erst nach Übernahme in den Default-Branch
+eines eigenen Repositories oder nach gesonderter Freigabe des Haupt-Repositories
+über die GitHub-Oberfläche tatsächlich startbar. Standardmäßig bleibt das
+Gate deaktiviert. Es werden keine
 Produktionsdaten, keine Zahlungen und keine Deployments ausgelöst.
 
 Nach ausdrücklicher Freigabe und Kostenprüfung:
 - Variable `SCHNAPPER_ONE_KI_ENABLED=true`
-- Manuellen GitHub-Workflow auf dem Projekt-Branch starten
+- Eigenes Repository einrichten und den Workflow erst dort auf dem Default-Branch freigeben
 - Vier eindeutige echte Modell-Antwort-IDs, grüner CHECK-Test und
   positiver COMMAND-Bericht sind vor Einsatzbereitschaft erforderlich
-- Alle Berichte und Vorschläge werden nur als Workflow-Artefakt
-  für die anschließende unabhängige Sichtung aufbewahrt
+- Protokolle erscheinen beim Testlauf in der GitHub-Actions-Zusammenfassung;
+  dauerhafte separate Artefakt-Ablage ist noch nicht umgesetzt
+
+**CI vom 23.10.2026:** sechs Offline-/Simulations-Tests bestanden; siehe [Testlauf](https://github.com/jefrey030/Schnapper/actions/runs/39978983667).
+Dies beweist noch keinen echten Modellbetrieb.
 
 **Kein echter vierfacher Modelltest bisher nachgewiesen.**
