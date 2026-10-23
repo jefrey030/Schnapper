@@ -1,7 +1,12 @@
+# Entwicklungsdateien / niemals Zugangsdaten einchecken
 __pycache__/
-*.py[cod]
-.env
+*.pyc
 .venv/
-secrets.*
-!secrets.example
+venv/
+.env
+.env.*
+!.env.example
 team/work/
+team/runs/*.json
+team/runs/*.md
+team/proposals/

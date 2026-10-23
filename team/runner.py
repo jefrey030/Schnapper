@@ -1,4 +1,4 @@
-"""SCHNAPPER: Aufgabenverwaltung (Laden, Rotation) für das Vier-Agenten-Team.
+"""SCHNAPPER ONE ONE: Aufgabenverwaltung (Laden, Rotation) für das Vier-Agenten-Team.
 
 Die Agenten selbst laufen in team/agent.py. Dieses Modul enthält bewusst
 keinen Regelmodus mehr, der sich als KI ausgeben könnte."""

@@ -1,4 +1,4 @@
-"""SCHNAPPER: Zugang zu einer echten, kostenlosen KI-Laufzeit.
+"""SCHNAPPER ONE: separat abschaltbarer GitHub-Models-Zugang.
 
 Einzige erlaubte Laufzeit: GitHub Models (https://models.github.ai), aufgerufen
 mit dem automatischen GITHUB_TOKEN eines GitHub-Actions-Laufs
@@ -34,7 +34,7 @@ OPEN_WEIGHT_BEVORZUGT = (
     "mistral-ai/Ministral-3B",
 )
 OPEN_WEIGHT_ANBIETER = ("meta", "mistral-ai", "microsoft", "deepseek", "ai21-labs", "cohere")
-MAX_AUFRUFE = int(os.getenv("SCHNAPPER_MAX_AUFRUFE", "6"))
+MAX_AUFRUFE = int(os.getenv("SCHNAPPER_ONE_MAX_AUFRUFE", "6"))
 MAX_TOKENS = 700
 
 
@@ -68,6 +68,9 @@ class _KeineWeiterleitung(urllib.request.HTTPRedirectHandler):
 
 
 def _token():
+    # Explizite Freigabe notwendig; ein vorhandener GitHub-Token reicht nie.
+    if os.getenv("SCHNAPPER_ONE_KI_ENABLED", "").strip() != "true":
+        raise KINichtVerfuegbar("SCHNAPPER ONE ist standardmäßig pausiert (SCHNAPPER_ONE_KI_ENABLED != true).")
     token = os.getenv("GITHUB_TOKEN", "").strip()
     if not token:
         raise KINichtVerfuegbar("Kein GITHUB_TOKEN vorhanden – KI läuft nur in GitHub Actions mit 'models: read'.")
@@ -119,7 +122,7 @@ class KI:
         self.zaehler = pathlib.Path(zaehler_datei)
         self.inferenz_url = inferenz_url
         self.katalog_url = katalog_url
-        self._wunsch = modell or os.getenv("SCHNAPPER_MODELL", "").strip() or None
+        self._wunsch = modell or os.getenv("SCHNAPPER_ONE_MODELL", "").strip() or None
         self._modell = None
 
     def modell(self):

@@ -1,90 +1,67 @@
 {
-  "project": "SCHNAPPER",
+  "project": "SCHNAPPER ONE",
   "version": 1,
+  "scope": "separates KI-Produkt (noch kein eigenständiges GitHub-Repo)",
   "tasks": [
     {
-      "id": "S-000",
-      "priority": 0,
-      "status": "review",
-      "title": "Vier-Agenten-Probelauf: prüfbares Konzept für die erste SCHNAPPER-Suche nach günstigen Gebrauchtartikeln erstellen",
-      "acceptance": [
-        "LEAD: exakt 3 priorisierte MVP-Funktionen nennen, inklusive klarer Auswahlbegründung",
-        "BRAIN: einen konkreten Eingabe-Ausgabe-Ablauf und ein minimales Datenfeld-Schema für ein Inserat beschreiben; keine existierende Integration behaupten",
-        "CHECK: mindestens 3 konkrete Fehlerszenarien nennen, darunter veralteter Preis, doppeltes Inserat und fehlende Nutzungsrechte; jeweils mit passendem Test",
-        "COMMAND: kompaktes Ergebnis mit Fertig/nicht-fertig, Belegen aus den anderen Agentenantworten und genau einem nächsten Schritt dokumentieren",
-        "Kein Code ändern, nichts veröffentlichen, keine kostenpflichtigen API-Aufrufe ohne vorhandene Konfiguration"
-      ]
-    },
-    {
-      "id": "S-001",
+      "id": "ONE-001",
       "priority": 1,
-      "status": "review",
-      "title": "SCHNAPPER-Bestandsaufnahme: vorhandene App-Bausteine und fehlende Schnittstellen dokumentieren",
+      "status": "open",
+      "title": "Alltags-KI-Chat: sichere Architektur und Demo-Ablauf",
       "acceptance": [
-        "Vorhandene Dateien und Funktionen belegbar auflisten",
-        "Fehlende Abhängigkeiten dokumentieren"
+        "Chat-Ein-/Ausgabe, Verlauf, Löschoptionen und Modell-Grenzen dokumentiert",
+        "Keine fremden Konten oder persönlichen Daten ohne Zustimmung nutzen",
+        "Konkreter Testplan mit fehlender KI-Antwort, Limits und Fehlermeldungen",
+        "Nur Vorschläge, keine Änderungen am SCHNAPPER-Produktivsystem"
       ]
     },
     {
-      "id": "S-002",
+      "id": "ONE-002",
       "priority": 2,
-      "status": "review",
-      "title": "Sicheren technischen Plan für Preisvergleich und Schnäppchen-Suche erstellen",
+      "status": "open",
+      "title": "Spar-Agent: zulässige Quellen und sichere Preisbelege",
       "acceptance": [
-        "Datenquellen und Nutzungsrechte klären",
-        "Mindestfunktionen und Testfälle entwerfen"
+        "Datenrechte, Aktualität, Quellennachweis und Verdachtswarnungen planen",
+        "Keine erfundenen Preise oder automatischen Käufe",
+        "Nur klar freigegebene externe Quellen, keine verdeckten Live-Abfragen",
+        "Kostenlimite und Warnungen unabhängig von Premium erhalten"
       ]
     },
     {
-      "id": "S-003",
+      "id": "ONE-003",
       "priority": 3,
-      "status": "review",
-      "title": "Stundenlauf, Agentenrollen und Prüfprotokolle validieren",
+      "status": "open",
+      "title": "Kaufprüfer: Vergleich und Betrugswarnungen",
       "acceptance": [
-        "Jeder der vier Agenten schreibt einen Bericht",
-        "Fehlende API-Anbindung korrekt als Blocker markieren"
+        "Warnregeln für alte/verdächtige Preise und Versandkosten",
+        "Keine abschließende Betrugsgarantie ausgeben",
+        "Begründete Einschätzung mit überprüfbaren Produktdaten",
+        "Tests für unbekannten Preis und fehlende Quelle beschreiben"
       ]
     },
     {
-      "id": "S-004",
+      "id": "ONE-004",
       "priority": 4,
-      "status": "proposed",
-      "title": "MF1 Quellen-Register: nur freigegebene Quellen (eigene Daten, Mock) zulassen",
-      "voraussetzung": "erfüllt: App-Kern (PR #5) und Quellen-Register (PR #10) sind seit 5343009/7a0b83e auf main",
+      "status": "open",
+      "title": "Verkaufs-KI: Beschreibung, Preis-Spanne und Freigabe",
       "acceptance": [
-        "Register mit Kennung und Entscheidung je Quelle (erlaubt/ausgeschlossen/später) aus team/konzept/S-002-datenquellen-plan.md",
-        "T1: Angebot aus Quelle 'kleinanzeigen' wird abgewiesen, Hinweis 'Quelle ausgeschlossen'",
-        "T2: Angebot aus unbekannter Quelle wird abgewiesen, Hinweis 'Quelle nicht freigegeben'",
-        "Kein Netzwerkzugriff, alle Tests grün"
-      ],
-      "hinweis": "Abgleich 22.10.2026: main (7a0b83e) erfüllt T1 und T2 bereits (app/schnapper/quellen.py, belegt durch tests/test_abgleich_s004_s005.py). Vorschlag: S-004 nach Sichtung auf 'done' setzen statt neu umzusetzen."
+        "Produktfoto/Details nur mit Zustimmung verarbeiten",
+        "Keine automatischen Anzeigen veröffentlichen, keine Käufer kontaktieren",
+        "Marktpreis nur mit belastbaren Vergleichsdaten behaupten",
+        "Nutzer kontrolliert und bestätigt jede Veröffentlichung"
+      ]
     },
     {
-      "id": "S-005",
+      "id": "ONE-005",
       "priority": 5,
-      "status": "proposed",
-      "title": "MF2 Adapter-Schnittstelle suche(anfrage) mit Mock-Adapter; eBay-Adapter nur als gesperrte Hülle",
-      "voraussetzung": "S-004 erledigt",
+      "status": "open",
+      "title": "KI-Alltagsabo 9,99 EUR, Trial mit 5 Ausführungen, Gesamtpaket",
       "acceptance": [
-        "T3: Mock-Adapter liefert erkennbare Testdaten (TEST-…), Treffer tragen quelle = 'mock'",
-        "T4: eBay-Adapter ohne Freigabeschalter und Zugangsdaten aus der Umgebung wird nicht aktiviert, kein Netzwerkaufruf (per Test belegt)",
-        "T5: gesamte Test-Suite läuft ohne Netz grün",
-        "Keine Zugangsdaten, Schlüssel oder echten Preise im Repo"
-      ],
-      "hinweis": "Abgleich 22.10.2026: main erfüllt T4 (EbayAdapter gesperrt, kein Netzaufruf, belegt durch tests/test_abgleich_s004_s005.py) und T5. Offen ist nur T3: ein Mock-Adapter mit erkennbaren TEST-Daten und quelle = 'mock' fehlt auf main (Quelle 'mock' ist im Register erlaubt, aber ohne Adapter)."
-    },
-    {
-      "id": "S-006",
-      "priority": 6,
-      "status": "proposed",
-      "title": "Entscheidungsvorlage: überlappende Draft-PRs #2, #6, #7, #8, #9 ordnen (PR #5 und #10 sind inzwischen auf main übernommen)",
-      "acceptance": [
-        "Je PR: Zweck, geänderte Dateien, Überschneidungen und Konflikte mit main belegt (git diff --stat)",
-        "Empfehlung je PR (übernehmen/zusammenführen/schließen) mit Begründung – Entscheidung bleibt bei Jefrey",
-        "Kein Merge, kein Schließen von PRs durch Agenten",
-        "Branches ohne PR, die vollständig in main enthalten sind, werden als Löschkandidaten belegt (tests/test_branches_s006.py) – Löschen nur durch Jefrey"
-      ],
-      "hinweis": "Abgleich 22.10.2026 07:28 UTC: vier Branches ohne offenen PR sind inhaltlich vollständig in main enthalten (git diff --shortstat leer): fix/schnapper-web-main-20261022 und feature/schnapper-web-quellen-20261022 (Baum = main 7a0b83e), feature/schnapper-angebotskern-20261021 (Baum = 5343009), fix/schnapper-hourly-rotation-20261021 (0 Commits vor main). Empfehlung: Jefrey kann sie löschen – Agenten löschen keine Branches."
+        "Bestehende SCHNAPPER-Vorgaben: Premium 4,99, Alltags-KI 9,99, Komplett 12,99 als Vorschlag",
+        "Einmalig 5 kostenlose gemeinsame KI-Ausführungen, keine Autoumwandlung",
+        "Kosten je KI-Nachricht und Missbrauchsschutz planen",
+        "Keinen echten Kauf- oder Bezahlvorgang auslösen"
+      ]
     }
   ]
 }

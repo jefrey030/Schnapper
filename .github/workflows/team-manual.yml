@@ -1,0 +1,56 @@
+name: SCHNAPPER ONE – Viererteam Pilot (manuell, gesperrt)
+# Dieser Workflow wird NIE stündlich gestartet.
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  models: read
+
+concurrency:
+  group: schnapper-one-manual-only
+  cancel-in-progress: false
+
+jobs:
+  viererteam:
+    if: github.event.repository.private == false && vars.SCHNAPPER_ONE_KI_ENABLED == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    env:
+      GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      SCHNAPPER_ONE_KI_ENABLED: 'true'
+      SCHNAPPER_ONE_MODELL: ${{ vars.SCHNAPPER_ONE_MODELL }}
+      SCHNAPPER_ONE_MAX_AUFRUFE: '4'
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Laufordner anlegen
+        run: echo "LAUF=team/work/run-${{ github.run_id }}" >> "$GITHUB_ENV"
+      - name: Agent LEAD
+        run: python team/agent.py LEAD "$LAUF"
+      - name: Agent BRAIN
+        run: python team/agent.py BRAIN "$LAUF"
+      - name: Agent CHECK
+        run: python team/agent.py CHECK "$LAUF"
+      - name: Agent COMMAND
+        run: python team/agent.py COMMAND "$LAUF"
+      - name: Protokoll abschließen
+        if: always()
+        run: |
+          if [ -n "${LAUF:-}" ]; then
+            python team/agent.py BERICHT "$LAUF"
+            cat team/STATUS.md >> "$GITHUB_STEP_SUMMARY"
+          fi
+      - name: Prüfprotokolle als Artefakt sichern
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: schnapper-one-protokolle-${{ github.run_id }}
+          path: |
+            team/runs/
+            team/STATUS.md
+            team/proposals/
+          if-no-files-found: warn
+          retention-days: 7
