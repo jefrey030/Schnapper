@@ -15,6 +15,31 @@ kündbar, Preis und Vertragsbedingungen vor Vertragsschluss klar angeben.
 Keine echte Kasse, keine Abo-Aktivierung und keine automatische Abbuchung
 durch dieses Konzept.
 
+### Kostenlose Premium-Probe: 5 Ausführungen (geplanter Startwert)
+Jedes neu registrierte Konto erhält **einmalig 5 kostenlose Premium-Credits**
+insgesamt, nicht 5 je Funktion. Das ist ein Vorschlag für den Produktstart,
+vor Freigabe durch Messung realer Kosten pro Ausführung zu validieren.
+Zwei Credits wurden erwogen, aber fünf ermöglichen mehrere sinnvolle Vergleiche.
+
+- **1 Credit** gilt für eine ausdrücklich durch Nutzer gestartete,
+  erfolgreich beantwortete KI-Schnäppchenanalyse oder einen Produktvergleich.
+  Technische Fehler und abgelehnte Anfragen verbrauchen keinen Credit.
+- **0 Credits** für die bereits kostenlosen Kernfunktionen, Sicherheits-
+  und Betrugswarnungen. Keine nachträgliche Bezahlschranke.
+- Kostenintensives **Dauer-Monitoring, Hintergrundsuche und Push** zählen
+  nicht als unbegrenzte Einzel-Ausführung: dafür später ein ausdrücklich
+  definiertes, hart limitiertes separates Testkontingent.
+- Der Rest wird transparent angezeigt: `Noch 5 / 4 / ... / 0 kostenlose
+  Premium-Ausführungen`. Bei 0: optionales Premium-Angebot, **keine
+  automatische Verlängerung, Abbuchung oder Abo-Buchung**.
+- Zähler und Rechte serverseitig, atomar und idempotent je Ausführung;
+  erneuter Login, Gerätewechsel oder Browserdaten-Löschung setzen sie
+  nicht zurück. Test gegen doppelte Requests, parallele Aufrufe und
+  missbräuchliche Mehrfachkonten. Datensparsamkeit beachten.
+- Solange Authentifizierung, freigegebene Live-Datenquellen, Kostenschutz
+  und Premium-Funktionen fehlen, ist **nur dieser Entwurf** vorhanden.
+  Vor Livegang Maximalaufwand pro Trial-Nutzer und Budgetgrenze messen.
+
 ### Free / Premium — geplante Unterschiede
 | Funktion | Free (Bestand) | Premium (erst nach Umsetzung) |
 | --- | --- | --- |
