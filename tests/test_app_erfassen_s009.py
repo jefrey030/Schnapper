@@ -20,7 +20,23 @@ from schnapper.web import MAX_ANGEBOT, erstelle_server  # noqa: E402
 
 BEISPIEL = ROOT / "app" / "beispiele" / "angebote.csv"
 VORLAGE = ROOT / "app" / "vorlagen" / "meine-angebote.csv"
-CHROMIUM = pathlib.Path("/opt/pw-browsers/chromium-1194/chrome-linux/chrome")
+
+
+def _finde_chromium(basis=None):
+    """Sucht das installierte Chromium (höchste Versionsnummer) statt eines fest verdrahteten Pfads."""
+    if basis is None:
+        basis = os.environ.get("PLAYWRIGHT_BROWSERS_PATH") or "/opt/pw-browsers"
+    beste, beste_nr = None, -1
+    for kandidat in pathlib.Path(basis).glob("chromium-*/chrome-linux*/chrome"):
+        nummer = kandidat.parent.parent.name[len("chromium-"):]
+        if not nummer.isdigit() or not kandidat.is_file():
+            continue
+        if int(nummer) > beste_nr:
+            beste, beste_nr = kandidat, int(nummer)
+    return beste
+
+
+CHROMIUM = _finde_chromium()
 
 try:
     from playwright.sync_api import sync_playwright
@@ -172,6 +188,19 @@ class Oberflaeche(ServerTest):
         self.assertNotIn("innerHTML", code)
         self.assertIn('$("angebot-form").addEventListener("submit", angebotSpeichern)', js)
 
+    def test_chromium_suche_leer(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            self.assertIsNone(_finde_chromium(tmp))
+
+    def test_chromium_suche_hoechste_nummer(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            for teil in ("chromium-999/chrome-linux", "chromium-1243/chrome-linux64",
+                         "chromium_headless_shell-2000/chrome-linux"):
+                ordner = pathlib.Path(tmp, teil)
+                ordner.mkdir(parents=True)
+                (ordner / "chrome").write_text("", encoding="utf-8")
+            self.assertEqual(_finde_chromium(tmp), pathlib.Path(tmp, "chromium-1243", "chrome-linux64", "chrome"))
+
 
 class ErfassenAtomar(ServerTest):
     """Nach dem Merge von main (#37, #42): Erfassen folgt dem atomaren Import-/Verlaufsmodell."""
@@ -235,13 +264,13 @@ class ErfassenAtomar(ServerTest):
         self.assertEqual(self.suche(), vorher)
 
 
-@unittest.skipUnless(sync_playwright is not None and (CHROMIUM.is_file() or os.environ.get("PLAYWRIGHT_BROWSERS_PATH")),
+@unittest.skipUnless(sync_playwright is not None and (CHROMIUM is not None or os.environ.get("PLAYWRIGHT_BROWSERS_PATH")),
                      "Playwright oder Chromium fehlt")
 class Browser(ServerTest):
     def test_ak8_erfassen_und_csv_im_browser(self):
         meldungen = []
         with sync_playwright() as p:
-            kw = {"executable_path": str(CHROMIUM)} if CHROMIUM.is_file() else {}
+            kw = {"executable_path": str(CHROMIUM)} if CHROMIUM else {}
             browser = p.chromium.launch(**kw)
             try:
                 kontext = browser.new_context(viewport={"width": 390, "height": 844}, accept_downloads=True)
