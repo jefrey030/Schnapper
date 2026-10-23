@@ -92,3 +92,14 @@ Hinweis: `team/tasks.json` wurde nicht separat geändert; die tasks.json-Änderu
 | Tests (Branch F4) | 200/200 OK (davon 10 neu, darunter 7 Playwright-Browsertests mit 390x844), Cloudflare 10/10. CSP unverändert | `team/runs/20261022-2238-master.md` |
 | Blocker | PR-Check python-tests lief auf #40 grün (Actions-Billing-Blocker für PR-Checks überholt; Stundenlauf ungeprüft). Die Merge-Entscheidung über #36, #39, #40 und #41 liegt bei Jefrey. Mögliche Konflikte mit #28/#29/#30 sowie #36/#39/#40 (`app/schnapper/web*`). Der `gh`-Token ist ungültig, PR über GitHub-MCP angelegt. eBay-Sandbox-Schlüssel für F6 fehlt | – |
 | Nächster Schritt | F5 = S-012 Ein-Befehl-Start unter Termux | – |
+
+## SCHNAPPER MASTER – letzter Lauf (23.10.2026, 01:28 UTC, Lauf 20261023-0128)
+| Aufgabe | Zustand | Beleg |
+| --- | --- | --- |
+| F1 bis F4 | **Draft-PRs #36, #39, #40, #41**, warten auf Jefrey | frühere Laufberichte |
+| F5 = S-012 Ein-Befehl-Start Termux | **Draft-PR #44** (Branch `agent/master/20261022-23` @ a584774), CHECK bestanden, auf echtem Gerät ungetestet. Wird hier nachgetragen, weil STATUS im Lauf 20261022-2328 nur im Übergabeordner lag | `team/runs/20261022-2328-master.md` |
+| F6 = S-013 eBay vorbereiten (Browse-API-Adapter, Sandbox als Standard, gesperrt ohne Schalter und Schlüssel) | **Draft-PR #45** (Branch `agent/master/20261023-01` @ ecad218), CHECK bestanden (AK 1–23 erfüllt), wartet auf Jefrey. **Mit echten eBay-Sandbox-Schlüsseln ungetestet** | https://github.com/jefrey030/Schnapper/pull/45, `app/schnapper/ebay.py`, `tests/test_ebay.py`, `docs/EBAY.md` |
+| tasks.json | Auf main unverändert. Auf dem Report-Branch sind S-012 (PR #44) und S-013 (PR #45) als **review** eingetragen; die Einträge stammen aus #36. Im Feature-Branch wurde tasks.json nicht geändert | – |
+| Tests (Branch F6) | 250/250 OK (216 main + 34 neu, 0 skipped), Cloudflare 10/10 | `team/runs/20261023-0128-master.md` |
+| Blocker | Die Merge-Entscheidung über #36, #39, #40, #41, #44 und #45 liegt bei Jefrey. Es fehlen eBay-Sandbox-Client-ID und -Secret; Jefrey legt sie gemäß `docs/EBAY.md` als Umgebungsvariablen an, nie im Repo. Für die Produktivnutzung braucht es eine Genehmigung von eBay (Entscheidung Jefrey) | – |
+| Nächster Schritt | Jefrey sichtet und mergt #36 (macht tasks.json auf main aktuell). Danach den Platzhalter `adapter.EbayAdapter` auf `ebay.EbayAdapter` umleiten (Folgepunkt aus #45) | – |
