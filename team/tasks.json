@@ -151,7 +151,7 @@
         "Kein Bild wird gespeichert oder hochgeladen; keine externe Bibliothek",
         "Alle Tests grün"
       ],
-      "hinweis": "Freigegeben von Jefrey am 22.10.2026 als F4 (Lauf 20261022-2029 eingetragen). | Lauf 20261022-2238: umgesetzt in Draft-PR #41 (Branch agent/master/20261022-2238 @ 38a469e), CHECK bestanden, 200/200 Tests OK, Cloudflare 10/10. Wartet auf Jefrey; Eintrag stammt aus PR #36 (dort 'open')."
+      "hinweis": "Freigegeben von Jefrey am 22.10.2026 als F4 (Lauf 20261022-2029 eingetragen). | Lauf 20261022-2238: umgesetzt in Draft-PR #41 (Branch agent/master/20261022-2238 @ 38a469e), CHECK bestanden, 200/200 Tests OK, Cloudflare 10/10. Wartet auf Jefrey; Eintrag stammt aus PR #36 (dort 'open'). | Lauf 20261023-0429: PR #41 auf main 6dbe114 gebracht (Merge 9d3982e, kein Rebase/Force-Push), Browsertests finden installiertes Chromium automatisch statt fest chromium-1194 (a3fcfab), Branch @ a3fcfab, CHECK bestanden, 227/227 Tests OK, Cloudflare 10/10, PR-Check python-tests grün."
     },
     {
       "id": "S-012",

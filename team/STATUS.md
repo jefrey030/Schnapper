@@ -123,3 +123,13 @@ Hinweis: `team/tasks.json` wurde nicht separat geändert; die tasks.json-Änderu
 | Tests (Branch F3) | 224/224 OK (216 main + 8 S-010, Browsertests ausgeführt), Cloudflare 10/10 | `team/runs/20261023-0329-master.md` |
 | Blocker | Merge-Entscheidung über #36, #39, #40, #41, #44, #45 liegt bei Jefrey. #39/#40/#41 ändern dieselben Stellen in `app.js`/`index.html` (Folgekonflikte erwartet). Testdateien verweisen auf `chromium-1194` (installiert: 1243), Browsertests laufen nur mit `PLAYWRIGHT_BROWSERS_PATH`. eBay-Sandbox-Client-ID/-Secret fehlen | – |
 | Nächster Schritt | #41 (F4) per Merge von main aktualisieren; danach Chromium-Pfad in den Testdateien robust machen | – |
+
+## SCHNAPPER MASTER – letzter Lauf (23.10.2026, 04:29 UTC, Lauf 20261023-0429)
+| Aufgabe | Zustand | Beleg |
+| --- | --- | --- |
+| F4 = S-011 auf main-Stand bringen | **Draft-PR #41** (Branch `agent/master/20261022-2238` @ a3fcfab) per Merge von main @ 6dbe114 aktualisiert (Merge-Commit 9d3982e, kein Rebase/Force-Push). `tests/test_app_kamera_s011.py` findet das installierte Chromium jetzt automatisch (`_finde_chromium()`, statt fest `chromium-1194`), 1 neuer statischer Test. CHECK bestanden (AK 1–13), PR-Check python-tests grün, wartet auf Jefrey | https://github.com/jefrey030/Schnapper/pull/41, `team/runs/20261023-0429-master.md` |
+| F1–F3, F5, F6 | **Draft-PRs #36, #39, #40, #44, #45** unverändert, warten auf Jefrey. #36 liegt 4 Commits hinter main (konfliktfrei laut merge-tree) | `team/runs/20261023-0429-master.md` |
+| tasks.json | Auf main unverändert. Auf dem Report-Branch bleibt S-011 **review**, Hinweis „PR #41 auf main 6dbe114 gebracht, Lauf 20261023-0429“ ergänzt | – |
+| Tests (Branch F4) | 227/227 OK (216 main + 11 S-011, 0 skipped; Browsertests mit und ohne `PLAYWRIGHT_BROWSERS_PATH` ausgeführt), Cloudflare 10/10 | `team/runs/20261023-0429-master.md` |
+| Blocker | Merge-Entscheidung über #36, #39, #40, #41, #44, #45 liegt bei Jefrey. #39/#40/#41 ändern dieselben Stellen in `app.js`/`index.html` (Folgekonflikte erwartet). `tests/test_app_sicherung_s010.py` (#40) verweist weiter auf `chromium-1194`. eBay-Sandbox-Client-ID/-Secret fehlen | – |
+| Nächster Schritt | Dieselbe Chromium-Suche in `tests/test_app_sicherung_s010.py` auf PR #40 übernehmen | – |

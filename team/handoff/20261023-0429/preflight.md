@@ -1,0 +1,16 @@
+# Preflight 20261023-0429 (UTC)
+- Start: 2026-10-23 04:29 UTC, Orchestrator.
+- Klon: /home/claude/schnapper, origin/main = 6dbe114 ("security(SCHNAPPER): token only via HTTPS, block redirects (#43)").
+- Tests auf main: Python `python3 -m unittest discover -s tests` → 216 Tests OK; Cloudflare `node --test test/*.test.mjs` → 10/10 pass.
+- Secret-Scan (sk-ant-, ghp_, github_pat_, AKIA, PRIVATE KEY, Passwort-Zuweisungen): keine Treffer außer den Erkennungsmustern in team/agent.py (Zeilen 59–60, Regex, kein Secret).
+- Offene Team-Draft-PRs (alle mergeable=true, clean):
+  - #36 F1 agent/master/20261022-20 – Basis e134cd0 (hinter main)
+  - #39 F2 agent/master/20261022-21 – Basis 6dbe114 (aktuell)
+  - #40 F3 agent/master/20261022-22 – Basis 6dbe114 (aktuell)
+  - #41 F4 agent/master/20261022-2238 – Basis e134cd0 (hinter main)
+  - #44 F5 agent/master/20261022-23 – Basis 6dbe114 (aktuell)
+  - #45 F6 agent/master/20261023-01 – Basis 6dbe114 (aktuell)
+- F1–F6 sind damit alle durch offene Team-Draft-PRs abgedeckt.
+- Letzter Bericht (agent/master/reports, 20261023-0329) nennt als nächsten kleinsten Schritt: PR #41 (F4) per Merge von origin/main aktualisieren (kein Rebase/Force-Push), danach Chromium-Pfad in Browsertests robust machen.
+- Fremde offene PRs (nicht ändern): #35, #33, #30, #28, #27, #26, #25, #23, #21.
+- Ergebnis: main grün, kein Secret → Lauf darf fortgesetzt werden.
