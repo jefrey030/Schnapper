@@ -224,6 +224,88 @@ async function barcodeSuchen(ev) {
   }
 }
 
+// ---------- Kamera-Scan (S-011) ----------
+// Läuft komplett im Browser: Bilder werden weder gespeichert noch hochgeladen.
+const KAMERA_FORMATE = ["ean_13", "ean_8", "upc_a"];
+const KAMERA_ZEITLIMIT = 20000;
+const kamera = { stream: null, timer: null, frist: null, laeuft: false };
+
+async function kameraFormate() {
+  try {
+    if (typeof BarcodeDetector.getSupportedFormats !== "function") return KAMERA_FORMATE;
+    const da = await BarcodeDetector.getSupportedFormats();
+    return KAMERA_FORMATE.filter((f) => da.includes(f));
+  } catch { return []; }
+}
+
+async function kameraVerfuegbar() {
+  if (!("BarcodeDetector" in window) || !window.isSecureContext) return false;
+  if (typeof navigator.mediaDevices?.getUserMedia !== "function") return false;
+  return (await kameraFormate()).length > 0;
+}
+
+function kameraStoppen(meldung) {
+  clearTimeout(kamera.timer);
+  clearTimeout(kamera.frist);
+  kamera.timer = kamera.frist = null;
+  kamera.laeuft = false;
+  if (kamera.stream) kamera.stream.getTracks().forEach((t) => t.stop());
+  kamera.stream = null;
+  $("kamera-bild").srcObject = null;
+  $("kamera-bereich").hidden = true;
+  $("kamera-knopf").disabled = false;
+  if (meldung !== undefined) $("kamera-status").textContent = meldung;
+}
+
+function kameraFehler(err) {
+  if (err?.name === "NotAllowedError" || err?.name === "SecurityError") return "Kamerazugriff verweigert – Barcode bitte eintippen.";
+  if (err?.name === "NotFoundError" || err?.name === "OverconstrainedError") return "Keine Kamera gefunden – Barcode bitte eintippen.";
+  return "Kamera konnte nicht gestartet werden – Barcode bitte eintippen.";
+}
+
+async function kameraScannen() {
+  if (kamera.laeuft) return;
+  kamera.laeuft = true;
+  $("kamera-knopf").disabled = true;
+  $("kamera-status").textContent = "Kamera wird gestartet …";
+  let stream;
+  try {
+    stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment" }, audio: false });
+  } catch (err) {
+    kameraStoppen(kameraFehler(err));
+    return;
+  }
+  if (!kamera.laeuft) { stream.getTracks().forEach((t) => t.stop()); return; }  // inzwischen abgebrochen
+  kamera.stream = stream;
+  const video = $("kamera-bild");
+  try {
+    const detektor = new BarcodeDetector({ formats: await kameraFormate() });
+    video.srcObject = stream;
+    $("kamera-bereich").hidden = false;
+    await video.play();
+    if (kamera.stream !== stream) return;
+    $("kamera-status").textContent = "Barcode vor die Kamera halten …";
+    kamera.frist = setTimeout(() => kameraStoppen("Kein Barcode erkannt – bitte erneut versuchen oder eintippen."), KAMERA_ZEITLIMIT);
+    const runde = async () => {
+      if (kamera.stream !== stream) return;
+      let codes = [];
+      try { codes = await detektor.detect(video); } catch { codes = []; }
+      if (kamera.stream !== stream) return;
+      const treffer = codes.map((c) => String(c.rawValue || "").trim()).find((c) => /^[0-9]{8,14}$/.test(c));
+      if (treffer) {
+        $("barcode").value = treffer;
+        kameraStoppen(`Barcode erkannt: ${treffer}`);
+        $("barcode-form").requestSubmit();
+        return;
+      }
+      kamera.timer = setTimeout(runde, 200);
+    };
+    runde();
+  } catch (err) {
+    if (kamera.stream === stream) kameraStoppen(kameraFehler(err));
+  }
+}
+
 // ---------- Preisalarm ----------
 function aktuellerWunsch() {
   const f = new FormData($("filter"));
@@ -377,6 +459,14 @@ document.addEventListener("DOMContentLoaded", () => {
   $("filter").addEventListener("submit", (e) => { e.preventDefault(); suchen(); });
   $("datei").addEventListener("change", hochladen);
   $("alarm-anlegen").addEventListener("click", alarmAnlegen);
+  $("kamera-knopf").addEventListener("click", kameraScannen);
+  $("kamera-abbrechen").addEventListener("click", () => kameraStoppen("Kamera-Scan abgebrochen."));
+  document.addEventListener("visibilitychange", () => { if (document.visibilityState === "hidden" && kamera.laeuft) kameraStoppen("Kamera-Scan beendet."); });
+  window.addEventListener("pagehide", () => { if (kamera.laeuft) kameraStoppen(); });
+  kameraVerfuegbar().then((ok) => {
+    if (ok) $("kamera-knopf").disabled = false;
+    else $("kamera-status").textContent = "Kamera-Scan wird von diesem Browser nicht unterstützt – bitte Barcode eintippen.";
+  }, () => { $("kamera-status").textContent = "Kamera-Scan wird von diesem Browser nicht unterstützt – bitte Barcode eintippen."; });
   for (const knopf of document.querySelectorAll(".ansichten button")) {
     knopf.addEventListener("click", () => zeige(knopf.dataset.ansicht));
   }
