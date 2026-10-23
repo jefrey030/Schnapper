@@ -4,6 +4,7 @@ import os
 import pathlib
 import re
 import sys
+import tempfile
 import threading
 import time
 import unittest
@@ -15,14 +16,30 @@ from schnapper.web import SICHERHEIT, erstelle_server  # noqa: E402
 
 BEISPIEL = ROOT / "app" / "beispiele" / "angebote.csv"
 WEB = ROOT / "app" / "schnapper" / "web"
-CHROMIUM = pathlib.Path("/opt/pw-browsers/chromium-1194/chrome-linux/chrome")
+
+
+def _finde_chromium(basis=None):
+    """Sucht das installierte Chromium (höchste Versionsnummer) statt eines fest verdrahteten Pfads."""
+    if basis is None:
+        basis = os.environ.get("PLAYWRIGHT_BROWSERS_PATH") or "/opt/pw-browsers"
+    beste, beste_nr = None, -1
+    for kandidat in pathlib.Path(basis).glob("chromium-*/chrome-linux*/chrome"):
+        nummer = kandidat.parent.parent.name[len("chromium-"):]
+        if not nummer.isdigit() or not kandidat.is_file():
+            continue
+        if int(nummer) > beste_nr:
+            beste, beste_nr = kandidat, int(nummer)
+    return beste
+
+
+CHROMIUM = _finde_chromium()
 
 try:
     from playwright.sync_api import sync_playwright
 except ImportError:  # pragma: no cover - nur ohne Playwright
     sync_playwright = None
 
-# Stand von main (e134cd0): die CSP bleibt für S-011 unverändert.
+# Stand von main (6dbe114): die CSP bleibt für S-011 unverändert.
 CSP = ("default-src 'none'; script-src 'self'; style-src 'self'; connect-src 'self'; "
        "img-src 'self' data:; manifest-src 'self'; base-uri 'none'; form-action 'none'; frame-ancestors 'none'")
 
@@ -102,14 +119,25 @@ class Statisch(unittest.TestCase):
         self.assertEqual(SICHERHEIT["Content-Security-Policy"], CSP)
         self.assertNotIn("Permissions-Policy", SICHERHEIT)
 
+    def test_chromium_suche(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            basis = pathlib.Path(tmp)
+            self.assertIsNone(_finde_chromium(basis))
+            for teil in ("chromium-999/chrome-linux/chrome", "chromium-1243/chrome-linux64/chrome",
+                         "chromium_headless_shell-2000/chrome-linux/chrome"):
+                datei = basis / teil
+                datei.parent.mkdir(parents=True)
+                datei.write_text("", encoding="utf-8")
+            self.assertEqual(_finde_chromium(basis), basis / "chromium-1243/chrome-linux64/chrome")
 
-@unittest.skipUnless(sync_playwright is not None and (CHROMIUM.is_file() or os.environ.get("PLAYWRIGHT_BROWSERS_PATH")),
+
+@unittest.skipUnless(sync_playwright is not None and (CHROMIUM is not None or os.environ.get("PLAYWRIGHT_BROWSERS_PATH")),
                      "Playwright oder Chromium fehlt")
 class Browser(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
         cls.pw = sync_playwright().start()
-        kw = {"executable_path": str(CHROMIUM)} if CHROMIUM.is_file() else {}
+        kw = {"executable_path": str(CHROMIUM)} if CHROMIUM else {}
         cls.browser = cls.pw.chromium.launch(**kw)
 
     @classmethod
