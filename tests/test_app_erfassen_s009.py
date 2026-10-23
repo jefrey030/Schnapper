@@ -4,8 +4,10 @@ import os
 import pathlib
 import re
 import sys
+import tempfile
 import threading
 import unittest
+from unittest import mock
 import urllib.error
 import urllib.request
 
@@ -13,6 +15,7 @@ ROOT = pathlib.Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / "app"))
 
 from schnapper.einlesen import lies_text  # noqa: E402
+from schnapper.verlauf import Verlauf, normalisiere_url  # noqa: E402
 from schnapper.web import MAX_ANGEBOT, erstelle_server  # noqa: E402
 
 BEISPIEL = ROOT / "app" / "beispiele" / "angebote.csv"
@@ -168,6 +171,68 @@ class Oberflaeche(ServerTest):
         code = "\n".join(re.sub(r"//.*$", "", z) for z in js.splitlines())
         self.assertNotIn("innerHTML", code)
         self.assertIn('$("angebot-form").addEventListener("submit", angebotSpeichern)', js)
+
+
+class ErfassenAtomar(ServerTest):
+    """Nach dem Merge von main (#37, #42): Erfassen folgt dem atomaren Import-/Verlaufsmodell."""
+
+    def setUp(self):
+        self._tmp = tempfile.TemporaryDirectory()
+        self.verlauf_pfad = pathlib.Path(self._tmp.name, "verlauf.json")
+        self.verlaeufe = []
+        original = Verlauf.laden.__func__
+
+        def fang(cls, pfad):
+            v = original(cls, pfad)
+            self.verlaeufe.append(v)
+            return v
+
+        with mock.patch.object(Verlauf, "laden", classmethod(fang)):
+            self.server = erstelle_server(BEISPIEL, port=0, verlauf=self.verlauf_pfad)
+        self.verlauf = self.verlaeufe[0]
+        self.basis = f"http://127.0.0.1:{self.server.server_address[1]}"
+        self.thread = threading.Thread(target=self.server.serve_forever, daemon=True)
+        self.thread.start()
+        self.opener = urllib.request.build_opener(urllib.request.ProxyHandler({}))
+
+    def tearDown(self):
+        super().tearDown()
+        self._tmp.cleanup()
+
+    def test_speicherfehler_500_liste_und_verlauf_unveraendert(self):
+        vorher = self.suche()
+        datei_vorher = self.verlauf_pfad.read_bytes()
+        schluessel = normalisiere_url(GUELTIG["url"])
+        self.assertNotIn(schluessel, self.verlauf._daten)
+        with mock.patch.object(Verlauf, "speichern", side_effect=OSError("Datenträger voll")):
+            status, antwort = self.erfasse(GUELTIG)
+        self.assertEqual(status, 500)
+        self.assertTrue(antwort["fehler"].startswith("Angebot nicht übernommen"))
+        self.assertEqual(self.suche(), vorher)
+        self.assertTrue(self.suche()["beispieldaten"])
+        self.assertNotIn(schluessel, self.verlauf._daten)  # Rollback im RAM
+        self.assertEqual(self.verlauf_pfad.read_bytes(), datei_vorher)
+        # Danach klappt derselbe Vorgang wieder – und landet dann auch im Verlauf.
+        status, antwort = self.erfasse(GUELTIG)
+        self.assertEqual((status, antwort["anzahl"]), (201, 1))
+        self.assertEqual(len(self.verlauf._daten[schluessel]), 1)
+        self.assertIn(schluessel, self.verlauf_pfad.read_text(encoding="utf-8"))
+
+    def test_mehrdeutiger_preis_422_liste_unveraendert(self):
+        vorher = self.suche()
+        datei_vorher = self.verlauf_pfad.read_bytes()
+        status, antwort = self.erfasse({**GUELTIG, "preis": "1,234"})
+        self.assertEqual(status, 422)
+        self.assertIn("fehler", antwort)
+        self.assertEqual(self.suche(), vorher)
+        self.assertEqual(self.verlauf_pfad.read_bytes(), datei_vorher)
+
+    def test_url_mit_zugangsdaten_422(self):
+        vorher = self.suche()
+        status, antwort = self.erfasse({**GUELTIG, "url": "https://nutzer:pw@shop.example/x"})
+        self.assertEqual(status, 422)
+        self.assertIn("fehler", antwort)
+        self.assertEqual(self.suche(), vorher)
 
 
 @unittest.skipUnless(sync_playwright is not None and (CHROMIUM.is_file() or os.environ.get("PLAYWRIGHT_BROWSERS_PATH")),

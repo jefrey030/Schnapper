@@ -83,17 +83,19 @@ class Zustand:
     def hinzufuegen(self, angebot: Angebot) -> int:
         """Hängt ein selbst erfasstes Angebot an; die Beispielliste wird dabei verworfen
         (keine ausgedachten Daten mit eigenen mischen). Gibt die neue Anzahl zurück."""
-        with self._lock:
-            alt, name, beispiel = self._daten
-            if beispiel:
-                neu = Importergebnis(angebote=[angebot], fehler=[])
-                name = "Eigene Angebote"
-            else:
-                neu = Importergebnis(angebote=[*alt.angebote, angebot], fehler=list(alt.fehler))
-            self._daten = (neu, name, False)
-            anzahl = len(neu.angebote)
-        self.preise_merken(Importergebnis([angebot]))
-        return anzahl
+        # Wie ersetzen(): erst den Verlauf atomar schreiben, dann aktivieren. Bei einem
+        # Speicherfehler (OSError) bleibt die bisherige Liste unverändert.
+        with self._import_lock:
+            self.preise_merken(Importergebnis(angebote=[angebot], fehler=[]))
+            with self._lock:
+                alt, name, beispiel = self._daten
+                if beispiel:
+                    neu = Importergebnis(angebote=[angebot], fehler=[])
+                    name = "Eigene Angebote"
+                else:
+                    neu = Importergebnis(angebote=[*alt.angebote, angebot], fehler=list(alt.fehler))
+                self._daten = (neu, name, False)
+                return len(neu.angebote)
 
     def preise_merken(self, geladen: Importergebnis):
         if self.verlauf is not None:
@@ -317,7 +319,7 @@ def baue_handler(zustand: Zustand):
                 anzahl = zustand.hinzufuegen(angebot)
             except OSError:
                 return self._json(HTTPStatus.INTERNAL_SERVER_ERROR,
-                                  {"fehler": "Angebot gespeichert, aber Preisverlauf konnte nicht gespeichert werden"})
+                                  {"fehler": "Angebot nicht übernommen: Preisverlauf konnte nicht gespeichert werden"})
             return self._json(HTTPStatus.CREATED, {"id": angebot.id, "anzahl": anzahl})
 
     return Handler
