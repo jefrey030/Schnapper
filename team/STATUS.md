@@ -113,3 +113,13 @@ Hinweis: `team/tasks.json` wurde nicht separat geändert; die tasks.json-Änderu
 | Tests (Branch F2) | 231/231 OK (216 main + 15 S-009, Browsertest ausgeführt), Cloudflare 10/10 | `team/runs/20261023-0229-master.md` |
 | Blocker | Merge-Entscheidung über #36, #39, #40, #41, #44, #45 liegt bei Jefrey. #40/#41 ändern dieselben Stellen in `app.js`/`index.html` wie #39 (Folgekonflikte erwartet). eBay-Sandbox-Client-ID/-Secret fehlen | – |
 | Nächster Schritt | #40 (F3) per Merge von main aktualisieren, danach #41 | – |
+
+## SCHNAPPER MASTER – letzter Lauf (23.10.2026, 03:29 UTC, Lauf 20261023-0329)
+| Aufgabe | Zustand | Beleg |
+| --- | --- | --- |
+| F3 = S-010 auf main-Stand bringen | **Draft-PR #40** (Branch `agent/master/20261022-22` @ 1adad0c) per Merge von main @ 6dbe114 aktualisiert (Merge-Commit 2697c30, kein Rebase/Force-Push). Alarm-Prüfung in `sicherungPruefen` an die Server-Regeln angeglichen (`max_preis` > 0 und höchstens 2 Nachkommastellen, `min_rabatt` 0–100), 2 neue Tests. CHECK bestanden (AK 1–12), PR-Check python-tests grün, mergeable clean, wartet auf Jefrey | https://github.com/jefrey030/Schnapper/pull/40, `team/runs/20261023-0329-master.md` |
+| F1, F2, F4–F6 | **Draft-PRs #36, #39, #41, #44, #45** unverändert, warten auf Jefrey. #36/#41 liegen 4 Commits hinter main (konfliktfrei laut merge-tree) | `team/runs/20261023-0329-master.md` |
+| tasks.json | Auf main unverändert. Auf dem Report-Branch bleibt S-010 **review**, Hinweis „PR #40 auf main 6dbe114 gebracht, Lauf 20261023-0329“ ergänzt | – |
+| Tests (Branch F3) | 224/224 OK (216 main + 8 S-010, Browsertests ausgeführt), Cloudflare 10/10 | `team/runs/20261023-0329-master.md` |
+| Blocker | Merge-Entscheidung über #36, #39, #40, #41, #44, #45 liegt bei Jefrey. #39/#40/#41 ändern dieselben Stellen in `app.js`/`index.html` (Folgekonflikte erwartet). Testdateien verweisen auf `chromium-1194` (installiert: 1243), Browsertests laufen nur mit `PLAYWRIGHT_BROWSERS_PATH`. eBay-Sandbox-Client-ID/-Secret fehlen | – |
+| Nächster Schritt | #41 (F4) per Merge von main aktualisieren; danach Chromium-Pfad in den Testdateien robust machen | – |

@@ -138,7 +138,7 @@
         "Import beachtet die Obergrenzen MAX_MERK (200) und MAX_ALARME (50) aus app/schnapper/web/app.js; Überschreitung wird mit Hinweis abgewiesen, Test belegt",
         "Keine Daten verlassen das Gerät, alle Tests grün"
       ],
-      "hinweis": "Freigegeben von Jefrey am 22.10.2026 als F3 (Lauf 20261022-2029 eingetragen). | Lauf 20261022-2228: umgesetzt in Draft-PR #40 (Branch agent/master/20261022-22 @ 3ab36fa), CHECK bestanden, 196/196 Tests OK, Cloudflare 10/10. Wartet auf Jefrey; Eintrag stammt aus PR #36 (dort 'open')."
+      "hinweis": "Freigegeben von Jefrey am 22.10.2026 als F3 (Lauf 20261022-2029 eingetragen). | Lauf 20261022-2228: umgesetzt in Draft-PR #40 (Branch agent/master/20261022-22 @ 3ab36fa), CHECK bestanden, 196/196 Tests OK, Cloudflare 10/10. Wartet auf Jefrey; Eintrag stammt aus PR #36 (dort 'open'). | Lauf 20261023-0329: PR #40 auf main 6dbe114 gebracht (Merge 2697c30), Alarm-Prüfung beim Wiederherstellen an Server-Regeln angeglichen (1adad0c), Branch @ 1adad0c, CHECK bestanden, 224/224 Tests OK, Cloudflare 10/10."
     },
     {
       "id": "S-011",
