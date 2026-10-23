@@ -63,6 +63,7 @@ class Zustand:
         self.register = register
         self.verlauf = verlauf
         self._lock = threading.Lock()
+        self._import_lock = threading.Lock()  # komplette Import-/Verlaufstransaktion serialisieren
         self._openprices_lock = threading.Lock()  # höchstens ein externer API-Abruf gleichzeitig
         self._daten = (geladen, name, beispiel)
 
@@ -71,9 +72,13 @@ class Zustand:
             return self._daten
 
     def ersetzen(self, geladen: Importergebnis, name: str):
-        with self._lock:
-            self._daten = (geladen, name, False)
-        self.preise_merken(geladen)
+        # Immer nur ein Import zur Zeit: Ein langsamer Verlaufsschreibvorgang darf
+        # nicht von einem zweiten Import überholt werden.
+        with self._import_lock:
+            # Bei einem Speicherfehler bleibt die bislang aktive Liste unverändert.
+            self.preise_merken(geladen)
+            with self._lock:
+                self._daten = (geladen, name, False)
 
     def hinzufuegen(self, angebot: Angebot) -> int:
         """Hängt ein selbst erfasstes Angebot an; die Beispielliste wird dabei verworfen
@@ -91,8 +96,10 @@ class Zustand:
         return anzahl
 
     def preise_merken(self, geladen: Importergebnis):
-        if self.verlauf is not None and self.verlauf.aufzeichnen(geladen.angebote):
-            self.verlauf.speichern()
+        if self.verlauf is not None:
+            # Atomarer Verlauf: keine ungespeicherten/verworfenen Beobachtungen
+            # im RAM belassen; das Angebot wird erst danach aktiviert.
+            self.verlauf.importiere(geladen.angebote)
 
 
 def filter_aus_query(q: dict) -> tuple[Filter, str]:
@@ -101,6 +108,8 @@ def filter_aus_query(q: dict) -> tuple[Filter, str]:
 
     try:
         max_preis = geld(eins("max_preis")) if eins("max_preis") else None
+        if max_preis is not None and max_preis <= 0:
+            raise ValueError("Höchstpreis muss größer als 0 sein")
         min_rabatt = Decimal(eins("min_rabatt").replace(",", ".")) if eins("min_rabatt") else None
         if min_rabatt is not None and (not min_rabatt.is_finite() or not 0 <= min_rabatt <= 100):
             raise ValueError("Mindestrabatt muss zwischen 0 und 100 Prozent liegen")
@@ -278,7 +287,7 @@ def baue_handler(zustand: Zustand):
                 zustand.ersetzen(geladen, name)
             except OSError:
                 return self._json(HTTPStatus.INTERNAL_SERVER_ERROR,
-                                  {"fehler": "Liste geladen, aber Preisverlauf konnte nicht gespeichert werden"})
+                                  {"fehler": "Liste nicht übernommen: Preisverlauf konnte nicht gespeichert werden"})
             return self._json(HTTPStatus.OK, {"eingelesen": len(geladen.angebote), "ungueltig": geladen.fehler})
 
         def _angebot_erfassen(self):
