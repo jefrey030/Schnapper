@@ -7,7 +7,7 @@ on:
   workflow_dispatch:
 
 permissions:
-  contents: write   # nur zum Speichern der Berichte unter team/
+  contents: read    # Stillgelegt: kein Schreibrecht für den Stundenjob
 
 concurrency:
   group: schnapper-hourly
