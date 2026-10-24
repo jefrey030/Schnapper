@@ -15,8 +15,9 @@ concurrency:
 
 jobs:
   ki-team:
+    # Fail-closed: niemals starten, auch nicht bei manuellem Dispatch.
     if: >-
-      false && # GitHub Models stillgelegt; erst nach eigenständiger Alternativ-Abnahme ändern
+      false &&
       github.repository == 'jefrey030/schnapper' && vars.SCHNAPPER_PAUSE != 'true' &&
       (github.event.repository.private == false ||
        (github.event_name == 'schedule' && vars.SCHNAPPER_OEFFENTLICH == 'true'))
