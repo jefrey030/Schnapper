@@ -137,7 +137,9 @@ class TestKostenbremsen(unittest.TestCase):
 
     def test_workflow_minimale_rechte(self):
         wf = (ROOT / ".github/workflows/schnapper-hourly.yml").read_text(encoding="utf-8")
-        self.assertIn("models: read", wf)
+        self.assertNotIn("models: read", wf)
+        self.assertNotIn("schedule:", wf)
+        self.assertIn("false &&", wf)
         self.assertIn("timeout-minutes: 10", wf)
         self.assertIn("SCHNAPPER_PAUSE", wf)
         self.assertNotIn("secrets.ANTHROPIC", wf)
@@ -160,6 +162,16 @@ class TestKostenbremsen(unittest.TestCase):
                 k._zaehle()
                 with self.assertRaises(ki.KINichtVerfuegbar):
                     k._zaehle()
+
+    def test_abgeschaltete_github_models_wird_nicht_kontaktiert(self):
+        with tempfile.TemporaryDirectory() as d:
+            zaehler = pathlib.Path(d) / "calls.txt"
+            with mock.patch.dict(os.environ, {"GITHUB_TOKEN": "test-only"}), \
+                 mock.patch.object(ki, "_http") as http:
+                with self.assertRaisesRegex(ki.KINichtVerfuegbar, "eingestellt"):
+                    ki.KI(zaehler).frage("s", "n")
+                http.assert_not_called()
+            self.assertFalse(zaehler.exists())
 
     def test_modellwahl_bevorzugt_open_weight(self):
         kat = [{"id": "openai/gpt-4o-mini", "rate_limit_tier": "low"},
@@ -239,6 +251,7 @@ class TestAgenten(unittest.TestCase):
                  mock.patch.object(ki, "_pruefe_url", return_value=None), \
                  mock.patch.object(ki, "INFERENZ_URL", basis_url + "/inference"), \
                  mock.patch.object(ki, "KATALOG_URL", basis_url + "/catalog"), \
+                 mock.patch.object(ki.KI, "modell", return_value="meta/Llama-3.3-70B-Instruct"), \
                  mock.patch.object(ki.KI.__init__, "__defaults__", (None, basis_url + "/inference", basis_url + "/catalog")), \
                  mock.patch.object(agent, "tests_ausfuehren", return_value={"ok": True, "anzahl": 3, "ausgabe_ende": ""}):
                 bericht = self.alle()

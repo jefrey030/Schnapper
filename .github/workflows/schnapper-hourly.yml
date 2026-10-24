@@ -1,23 +1,13 @@
 name: SCHNAPPER Stundenlauf
-# Vier getrennte KI-Agenten (LEAD, BRAIN, CHECK, COMMAND), jeder als eigener
-# Schritt/Prozess mit eigener Anfrage an GitHub Models (kostenloses Kontingent).
-# Kostenbremsen: ein Job pro Stunde, Zeitlimit 10 Min., max. 6 KI-Aufrufe pro
-# Lauf, kein Geheimnis/API-Schlüssel nötig, Not-Aus über Repo-Variable
-# SCHNAPPER_PAUSE=true (Settings > Secrets and variables > Actions > Variables).
-# KOSTENSCHUTZ: Der Job startet nur, wenn das Repository ÖFFENTLICH ist
-# (dort sind Standard-Runner kostenlos). Bei einem privaten Repo wird er
-# übersprungen und verbraucht keine Minuten – auch wenn ein Budget existiert.
-# Zeitgesteuerte Läufe brauchen zusätzlich die Variable SCHNAPPER_OEFFENTLICH=true,
-# weil GitHub bei Zeitplänen die Sichtbarkeit nicht mitliefert; der erste Schritt
-# prüft die Sichtbarkeit trotzdem noch einmal und bricht bei privat sofort ab.
+# DEAKTIVIERT: GitHub Models wurde am 30.07.2026 eingestellt.
+# GitHub-hosted Runner können die lokale Ollama-Instanz nicht erreichen.
+# Keine stündlichen Fake-Erfolge, keine kostenpflichtigen Ersatz-Anbieter.
+# Der Workflow bleibt nur zur Nachverfolgung und kann keine Agenten starten.
 on:
-  schedule:
-    - cron: '17 * * * *'
   workflow_dispatch:
 
 permissions:
-  contents: write   # nur zum Speichern der Berichte unter team/
-  models: read      # GitHub Models mit dem automatischen GITHUB_TOKEN
+  contents: read    # Stillgelegt: kein Schreibrecht für den Stundenjob
 
 concurrency:
   group: schnapper-hourly
@@ -25,7 +15,9 @@ concurrency:
 
 jobs:
   ki-team:
+    # Fail-closed: niemals starten, auch nicht bei manuellem Dispatch.
     if: >-
+      false &&
       github.repository == 'jefrey030/schnapper' && vars.SCHNAPPER_PAUSE != 'true' &&
       (github.event.repository.private == false ||
        (github.event_name == 'schedule' && vars.SCHNAPPER_OEFFENTLICH == 'true'))
