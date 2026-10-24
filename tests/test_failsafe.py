@@ -121,5 +121,134 @@ class TestFailClosedAgentReports(unittest.TestCase):
         self.assertFalse(bericht["team_einsatzbereit"])
 
 
+    def test_rejected_or_revision_check_is_not_ready(self):
+        for verdict in ("abgelehnt", "nachbessern"):
+            self._gueltige_antworten()
+            self._schreibe("CHECK", ki={"antwort_id": "check-3"},
+                           urteil={"urteil": verdict},
+                           werkzeug={"tests": {"ok": True, "anzahl": 2},
+                                      "geheimnis_funde": []})
+            (self.lauf / "ki_aufrufe.txt").write_text("4", encoding="utf-8")
+            bericht = self._bereit()
+            self.assertFalse(bericht["team_einsatzbereit"], verdict)
+
+    def test_secret_in_command_or_lead_reply_blocks_readiness(self):
+        for rolle in ("LEAD", "COMMAND", "CHECK"):
+            self._gueltige_antworten()
+            self._schreibe(
+                rolle,
+                ki={"antwort_id": rolle.lower() + "-response", "text": "ghp_" + "A" * 25},
+                **({"plan": {"aufgabe_id": "S-000"}} if rolle == "LEAD" else {}),
+                **({"urteil": {"urteil": "bestanden"},
+                    "werkzeug": {"tests": {"ok": True, "anzahl": 2},
+                                 "geheimnis_funde": []}} if rolle == "CHECK" else {}),
+                **({"protokoll": {"freigabe": "ja", "naechster_schritt": "Prüfen"}}
+                   if rolle == "COMMAND" else {}),
+            )
+            (self.lauf / "ki_aufrufe.txt").write_text("4", encoding="utf-8")
+            gespeichert = (self.lauf / (rolle + ".json")).read_text(encoding="utf-8")
+            self.assertNotIn("ghp_" + "A" * 25, gespeichert)
+            self.assertTrue(json.loads(gespeichert)["geheimnis_redigiert"])
+            self.assertEqual(json.loads(gespeichert)["status"], "FEHLER")
+            bericht = self._bereit()
+            self.assertFalse(bericht["team_einsatzbereit"], rolle)
+            self.assertIn(rolle, bericht["ki_geheimnis_rollen"])
+
+    def test_git_scan_ausfall_muss_blockieren(self):
+        from types import SimpleNamespace
+        with mock.patch.object(agent.subprocess, "run",
+                               return_value=SimpleNamespace(stdout="", returncode=1)):
+            self.assertEqual(agent.geheimnis_scan(), ["git_scan_fehlgeschlagen"])
+        with mock.patch.object(agent.subprocess, "run", side_effect=FileNotFoundError()):
+            self.assertEqual(agent.geheimnis_scan(), ["git_scan_nicht_verfuegbar"])
+
+    def test_git_scan_erfasst_dateinamen_mit_leerzeichen(self):
+        with tempfile.TemporaryDirectory() as d:
+            root = pathlib.Path(d)
+            filename = "datei mit leerzeichen.txt"
+            (root / filename).write_text("ghp_" + "A" * 25, encoding="utf-8")
+            from types import SimpleNamespace
+            with mock.patch.object(agent, "ROOT", root), mock.patch.object(
+                agent.subprocess, "run",
+                return_value=SimpleNamespace(stdout=filename + "\0", returncode=0),
+            ):
+                self.assertEqual(agent.geheimnis_scan(), [filename])
+
+    def test_ki_antwort_mit_token_wird_vor_weitergabe_verworfen(self):
+        fake = mock.Mock()
+        fake.frage.return_value = {
+            "text": '{"aufgabe_id":"S-000"}',
+            "modell": "ghp_" + "A" * 25,
+            "antwort_id": "test-id",
+        }
+        antwort, fehler = agent.ki_teil(fake, "LEAD", "Testauftrag")
+        self.assertIsNone(antwort)
+        self.assertIn("Geheimnisindikator", fehler)
+        self.assertNotIn("ghp_" + "A" * 25, fehler)
+
+    def test_ki_eingabe_mit_token_wird_niemals_an_modell_gesendet(self):
+        fake = mock.Mock()
+        secret = "ghp_" + "A" * 25
+        antwort, fehler = agent.ki_teil(fake, "LEAD", "Auftrag: " + secret)
+        self.assertIsNone(antwort)
+        self.assertIn("KI-Eingabe", fehler)
+        self.assertNotIn(secret, fehler)
+        fake.frage.assert_not_called()
+
+    def test_ki_geheimnis_fund_macht_rollenprozess_rot(self):
+        # Der API-Adapter wirft die verdächtige Antwort vor schreibe() weg.
+        # Auch dann muss der Prozess non-zero zurückgeben.
+        fake = mock.Mock()
+        fake.frage.return_value = {
+            "text": '{"aufgabe_id":"S-000"}',
+            "modell": "ghp_" + "A" * 25,
+            "antwort_id": "test-id",
+        }
+        class FakeKI:
+            def __init__(self, _zaehler):
+                self.frage = fake.frage
+
+        with mock.patch.object(agent, "KI", FakeKI), mock.patch.object(
+            agent, "load_tasks",
+            return_value=[{"id": "S-000", "status": "open"}]
+        ), mock.patch.object(agent, "choose_task", return_value={"id":"S-000"}), mock.patch.object(
+            agent, "previous_task_id", return_value=None
+        ):
+            self.assertEqual(agent.main(["agent.py", "LEAD", str(self.lauf)]), 1)
+        gespeichert = json.loads((self.lauf / "LEAD.json").read_text(encoding="utf-8"))
+        self.assertEqual(gespeichert["status"], "NICHT EINSATZBEREIT")
+        self.assertNotIn("ghp_" + "A" * 25, json.dumps(gespeichert))
+
+    def test_git_scan_lesefehler_verhindert_positive_abnahme(self):
+        from types import SimpleNamespace
+        with tempfile.TemporaryDirectory() as d:
+            root = pathlib.Path(d)
+            with mock.patch.object(agent, "ROOT", root), mock.patch.object(
+                agent.subprocess, "run",
+                return_value=SimpleNamespace(stdout="fehlt.txt\0", returncode=0),
+            ):
+                self.assertEqual(agent.geheimnis_scan(), ["datei_fehlt:fehlt.txt"])
+
+    def test_command_denial_blocks_readiness(self):
+        self._gueltige_antworten()
+        self._schreibe("COMMAND", ki={"antwort_id": "command-4"},
+                       protokoll={"freigabe": "nein", "naechster_schritt": "Prüfen"})
+        (self.lauf / "ki_aufrufe.txt").write_text("4", encoding="utf-8")
+        self.assertFalse(self._bereit()["team_einsatzbereit"])
+
+    def test_missing_or_positive_secret_scan_blocks_readiness(self):
+        self._gueltige_antworten()
+        (self.lauf / "ki_aufrufe.txt").write_text("4", encoding="utf-8")
+        self._schreibe("CHECK", ki={"antwort_id": "check-3"},
+                       urteil={"urteil": "bestanden"},
+                       werkzeug={"tests": {"ok": True, "anzahl": 2}})
+        self.assertFalse(self._bereit()["team_einsatzbereit"])
+        self._schreibe("CHECK", ki={"antwort_id": "check-3"},
+                       urteil={"urteil": "bestanden"},
+                       werkzeug={"tests": {"ok": True, "anzahl": 2},
+                                  "geheimnis_funde": ["agentenausgabe[0]"]})
+        self.assertFalse(self._bereit()["team_einsatzbereit"])
+
+
 if __name__ == "__main__":
     unittest.main()

@@ -19,3 +19,17 @@ CREATE TABLE IF NOT EXISTS schnapper_reports (
  FOREIGN KEY(slot) REFERENCES schnapper_runs(slot)
 );
 CREATE INDEX IF NOT EXISTS schnapper_runs_recent ON schnapper_runs(started_utc DESC);
+
+
+-- Fail-closed persistent Not-Aus. Jede neue Umgebung startet gesperrt.
+-- Aktivierung (paused=0) erst nach separater Betreiberfreigabe in Staging.
+-- Sofortiger STOPP über D1-Konsole:
+-- UPDATE schnapper_control SET paused=1, reason='Not-Aus manuell', updated_utc=datetime('now') WHERE id=1;
+CREATE TABLE IF NOT EXISTS schnapper_control (
+ id INTEGER PRIMARY KEY CHECK(id=1),
+ paused INTEGER NOT NULL DEFAULT 1 CHECK(paused IN (0,1)),
+ updated_utc TEXT NOT NULL,
+ reason TEXT NOT NULL DEFAULT ''
+);
+INSERT OR IGNORE INTO schnapper_control(id,paused,updated_utc,reason)
+ VALUES(1,1,datetime('now'),'Default STOP – keine Freigabe');
