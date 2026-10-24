@@ -75,7 +75,9 @@ Stilllegung haben Priorität vor einer neuen autonomen KI-Konfiguration.
 
 ## Dateien
 - `team/agent.py` – die vier Agenten + Stundenbericht
-- `team/ki.py` – Zugang zu GitHub Models mit Kostenbremsen
+- `team/ki.py` – gesperrter Legacy-GitHub-Models-Adapter; kein produktiver Netzaufruf
+- `team/local_ollama.py` – ausschließlich optionales Modell auf eigenem Rechner
+- `team/diagnose_local.py` – read-only Systemprüfung ohne KI-Aufruf
 - `team/runner.py` – Aufgaben laden und rotieren
 - `team/tasks.json` – Aufgabenbestand
 - `team/runs/` – Stundenberichte (`.md` + Rohdaten `.json`), `team/proposals/` – BRAIN-Vorschläge
