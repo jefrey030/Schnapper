@@ -110,12 +110,23 @@ class TestDienst(unittest.TestCase):
                         for r in rollen
                     },
                 }), encoding="utf-8")
-                # Positive Fixture: On-disk role files must match the aggregate
-                # report; stand-in process logs alone are insufficient.
-                belege = json.loads(p.read_text(encoding="utf-8"))["agenten"]
+                # Positive Fixture: Nur MOCK-Daten; keine Modellantwort.
+                # Der lokale Abschlusspruefer verlangt auch CHECK-Tests,
+                # leeren Geheimnisscan und separaten persistenten Zaehler.
+                gesamt = json.loads(p.read_text(encoding="utf-8"))
+                belege = gesamt["agenten"]
                 for r in rollen:
+                    belege[r]["rolle"] = r
+                    if r == "CHECK":
+                        belege[r]["urteil"] = {"urteil": "bestanden"}
+                        belege[r]["werkzeug"] = {
+                            "tests": {"ok": True, "anzahl": 3},
+                            "geheimnis_funde": [],
+                        }
                     (lauf / (r + ".json")).write_text(
                         json.dumps(belege[r]), encoding="utf-8")
+                (lauf / "ki_aufrufe.txt").write_text("4", encoding="utf-8")
+                p.write_text(json.dumps(gesamt), encoding="utf-8")
             return SimpleNamespace(returncode=0, stdout="", stderr="")
 
         with mock.patch.object(dienst.subprocess, "run", side_effect=fake):
