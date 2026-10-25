@@ -45,8 +45,8 @@ class OfflineDownload(unittest.TestCase):
         self.assertEqual(headers["Content-Disposition"],
                          'attachment; filename="schnapper-treffer.csv"')
         self.assertEqual(headers["Cache-Control"], "no-store")
-        self.assertTrue(data.startswith(b"\\xef\\xbb\\xbf"))
-        self.assertIn(b"\\r\\n", data)
+        self.assertTrue(data.startswith(b"\xef\xbb\xbf"))
+        self.assertIn(b"\r\n", data)
         felder = list(csv.DictReader(io.StringIO(data.decode("utf-8-sig")), delimiter=";"))
         self.assertTrue(felder)
         self.assertEqual(tuple(felder[0]), CSV_FELDER)
@@ -107,7 +107,7 @@ class OfflineDownload(unittest.TestCase):
 class CsvInjectionSchutz(unittest.TestCase):
     def test_formelzellen_werden_zu_text_statt_ausfuehrbar(self):
         beispiele = ["=SUM(1,2)", "+cmd", "-1+2", "@beispiel",
-                     "  =HYPERLINK()", "\\t=FORMEL()"]
+                     "  =HYPERLINK()", "\t=FORMEL()"]
         for titel in beispiele:
             with self.subTest(titel=titel):
                 treffer = {"id": "1", "titel": titel, "gesamtpreis": "10.00",
@@ -119,17 +119,17 @@ class CsvInjectionSchutz(unittest.TestCase):
                 zeilen = list(csv.DictReader(
                     io.StringIO(raw.decode("utf-8-sig")), delimiter=";"))
                 self.assertTrue(zeilen[0]["titel"].startswith("'"))
-                self.assertNotIn("\\t", zeilen[0]["titel"])
+                self.assertNotIn("\t", zeilen[0]["titel"])
 
     def test_benutzertext_kann_keine_zusaetzlichen_csv_zeilen_ausloesen(self):
-        treffer = {"id": "1", "titel": "Hallo\\r\\n=ANGRIFF()",
-                   "quelle": "eigene", "warnungen": ["Achtung\\n=TEST()"]}
+        treffer = {"id": "1", "titel": "Hallo\r\n=ANGRIFF()",
+                   "quelle": "eigene", "warnungen": ["Achtung\n=TEST()"]}
         raw = exportiere_csv({"treffer": [treffer]})
         zeilen = list(csv.DictReader(
             io.StringIO(raw.decode("utf-8-sig")), delimiter=";"))
         self.assertEqual(len(zeilen), 1)
-        self.assertNotIn("\\n", zeilen[0]["titel"])
-        self.assertNotIn("\\r", zeilen[0]["titel"])
+        self.assertNotIn("\n", zeilen[0]["titel"])
+        self.assertNotIn("\r", zeilen[0]["titel"])
 
 
 if __name__ == "__main__":
