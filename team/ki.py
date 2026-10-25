@@ -1,17 +1,11 @@
-"""SCHNAPPER: Zugang zu einer echten, kostenlosen KI-Laufzeit.
+"""Historischer GitHub-Models-Adapter (seit 30.07.2026 außer Betrieb).
 
-Einzige erlaubte Laufzeit: GitHub Models (https://models.github.ai), aufgerufen
-mit dem automatischen GITHUB_TOKEN eines GitHub-Actions-Laufs
-(Workflow-Berechtigung `models: read`). Für persönliche Konten ist das
-ratenbegrenzt kostenlos; kostenpflichtig wird es nur, wenn der Kontoinhaber
-bezahlte Nutzung ausdrücklich einschaltet. Ohne diese Freigabe wird nach
-Erreichen des Freikontingents blockiert statt abgerechnet.
-
-Kostenbremsen in diesem Modul:
-- Nur der Host models.github.ai ist erlaubt (fest verdrahtet, keine Umgehung).
-- Höchstens MAX_AUFRUFE Inferenz-Aufrufe pro Stundenlauf (gezählt in einer Datei).
-- Kurze Antworten (max_tokens begrenzt).
-- Bevorzugt Open-Weight-Modelle der niedrigen Ratenstufe (150 Anfragen/Tag frei).
+GitHub hat GitHub Models mit Katalog und Inferenz-API vollständig eingestellt.
+Dieser Adapter bleibt für alte Offline-Vertragstests erhalten, darf im echten
+Agentenlauf aber niemals einen Netzwerkaufruf zum eingestellten Dienst auslösen.
+Als bereits implementierte Alternative existiert team/local_ollama.py:
+nur auf einem selbst betriebenen lokalen Host und nur bei explizitem
+SCHNAPPER_KI_BACKEND=ollama. Keine Cloud- oder Bezahl-Fallbacks.
 """
 import json
 import os
@@ -123,11 +117,12 @@ class KI:
         self._modell = None
 
     def modell(self):
-        """Modell aus dem echten Katalog bestimmen (auch ein Wunschmodell muss dort existieren)."""
-        if not self._modell:
-            katalog = _http(self.katalog_url, _token())
-            self._modell = waehle_modell(katalog if isinstance(katalog, list) else [], self._wunsch)
-        return self._modell
+        """Fail-closed: der eingestellte GitHub-Models-Dienst darf nicht aufgerufen werden."""
+        raise KINichtVerfuegbar(
+            "GitHub Models ist seit 30.07.2026 eingestellt. "
+            "SCHNAPPER-KI nur auf eigenem lokalen Host mit explizit "
+            "SCHNAPPER_KI_BACKEND=ollama und bereits installiertem Modell nutzbar."
+        )
 
     def _zaehle(self):
         bisher = int(self.zaehler.read_text() or 0) if self.zaehler.exists() else 0
