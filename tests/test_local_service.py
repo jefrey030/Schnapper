@@ -113,6 +113,11 @@ class TestDienst(unittest.TestCase):
                 # Die positiven Artefakte werden ausdrücklich als MOCK erzeugt.
                 # Der Prüfer muss ihre Inhalte mit dem Bericht vergleichen.
                 agenten = json.loads(p.read_text(encoding="utf-8"))["agenten"]
+                agenten["CHECK"]["urteil"] = {"urteil": "bestanden"}
+                agenten["CHECK"]["werkzeug"] = {
+                    "tests": {"ok": True, "anzahl": 3},
+                    "geheimnis_funde": [],
+                }
                 for r in rollen:
                     (lauf / (r + ".json")).write_text(
                         json.dumps({"rolle": r, **agenten[r]}), encoding="utf-8")
@@ -144,6 +149,11 @@ class TestDienst(unittest.TestCase):
                 "rolle": r, "status": "OK", "ki_echt": True,
                 "plan": {"aufgabe_id": "S-000"} if r == "LEAD" else None,
                 "vorschlag_datei": "team/proposals/fake.md" if r == "BRAIN" else None,
+                "urteil": {"urteil": "bestanden"} if r == "CHECK" else None,
+                "werkzeug": {
+                    "tests": {"ok": True, "anzahl": 3},
+                    "geheimnis_funde": [],
+                } if r == "CHECK" else {},
                 "protokoll": {"freigabe": "ja", "naechster_schritt": "Manuell prüfen"}
                     if r == "COMMAND" else None,
                 "ki": {"laufzeit": "Ollama lokal (keine bezahlte KI-API)",
@@ -176,6 +186,23 @@ class TestDienst(unittest.TestCase):
         fehler = dienst.pruefe_nachweise(bericht, lauf, schritte)
         self.assertTrue(any("Abweichung zwischen Bericht und Agentendatei" in f
                             for f in fehler))
+
+    def test_check_darf_nicht_nur_im_gesamtbericht_bestanden_sein(self):
+        lauf, bericht, schritte = self._konsistenter_mock_nachweis()
+        self.assertEqual(dienst.pruefe_nachweise(bericht, lauf, schritte), [])
+        # Manipulierter Gesamtbericht behauptet trotz CHECK-Ablehnung PASS.
+        bericht["agenten"]["CHECK"]["urteil"]["urteil"] = "abgelehnt"
+        (lauf / "CHECK.json").write_text(
+            json.dumps(bericht["agenten"]["CHECK"]), encoding="utf-8")
+        fehler = dienst.pruefe_nachweise(bericht, lauf, schritte)
+        self.assertTrue(any("CHECK hat nicht bestanden" in f for f in fehler))
+        # Auch fehlender Scannachweis darf nicht unbemerkt bleiben.
+        bericht["agenten"]["CHECK"]["urteil"]["urteil"] = "bestanden"
+        bericht["agenten"]["CHECK"]["werkzeug"].pop("geheimnis_funde")
+        (lauf / "CHECK.json").write_text(
+            json.dumps(bericht["agenten"]["CHECK"]), encoding="utf-8")
+        fehler = dienst.pruefe_nachweise(bericht, lauf, schritte)
+        self.assertTrue(any("CHECK-Geheimnisscan fehlt" in f for f in fehler))
 
     def test_beschaedigte_rollendatei_blockiert(self):
         lauf, bericht, schritte = self._konsistenter_mock_nachweis()
