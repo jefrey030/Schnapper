@@ -247,7 +247,9 @@ def check(ordner, ki):
     tests = tests_ausfuehren()
     b = lies(ordner, "BRAIN")
     l = lies(ordner, "LEAD")
-    funde = geheimnis_scan([((b or {}).get("ki") or {}).get("text", "")])
+    b_ki = (b or {}).get("ki")
+    b_text = b_ki.get("text", "") if isinstance(b_ki, dict) else ""
+    funde = geheimnis_scan([b_text])
     erg["werkzeug"] = {"tests": tests, "geheimnis_funde": funde}
     if not b or b.get("status") != "OK":
         erg.update(status="ÜBERSPRUNGEN", fehler="Kein BRAIN-Vorschlag zum Prüfen (Tests wurden trotzdem ausgeführt).")
