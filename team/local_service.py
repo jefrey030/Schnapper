@@ -229,6 +229,11 @@ def einmal():
     # Beleg-Hashes erlauben die spätere Prüfung der tatsächlich erzeugten Dateien.
     dateien = [report_path, lauf / "prozesse.json"]
     dateien += [lauf / (rolle + ".json") for rolle in ROLES if (lauf / (rolle + ".json")).exists()]
+    # Den separaten Zaehler als Manifest-Artefakt aufnehmen, sofern lesbar.
+    # SHA256 zeigt nachtraegliche Veraenderungen, beweist aber KEINE reale KI.
+    zaehler = lauf / "ki_aufrufe.txt"
+    if zaehler.is_file() and not zaehler.is_symlink():
+        dateien.append(zaehler)
     manifest = {
         "lauf": lauf.name, "zeit_utc": dt.datetime.now(dt.timezone.utc).isoformat(),
         "dateien": {str(p.relative_to(ROOT)): hashlib.sha256(p.read_bytes()).hexdigest()
