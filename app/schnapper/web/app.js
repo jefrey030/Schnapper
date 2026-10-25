@@ -51,6 +51,12 @@ function query() {
   return p.toString();
 }
 
+function exportLinksAktualisieren() {
+  const qs = query();
+  $("export-csv").href = "/api/export.csv?" + qs;
+  $("export-json").href = "/api/export.json?" + qs;
+}
+
 function warnText(w) {
   if (w.startsWith("veraltet")) return { text: "Preis evtl. veraltet", gefahr: false, titel: w };
   if (w.startsWith("betrugsverdacht")) return { text: "Vorsicht: zu billig für Neuware", gefahr: true, titel: w };
@@ -157,7 +163,11 @@ async function suchen() {
   }
 }
 
-function spaeter() { clearTimeout(timer); timer = setTimeout(suchen, 250); }
+function spaeter() {
+  exportLinksAktualisieren();
+  clearTimeout(timer);
+  timer = setTimeout(suchen, 250);
+}
 
 async function hochladen(ev) {
   const datei = ev.target.files[0];
@@ -180,6 +190,46 @@ async function hochladen(ev) {
     await suchen();
     alarmePruefen();
   } catch { $("status").textContent = "Hochladen fehlgeschlagen."; }
+}
+
+// ---------- Eigene Angebote ohne Datei erfassen ----------
+async function eigenesAngebotErfassen(ev) {
+  ev.preventDefault();
+  const form = $("eintrag-form");
+  const knopf = $("eintrag-senden");
+  const status = $("eintrag-status");
+  const f = new FormData(form);
+  const daten = {
+    titel: String(f.get("titel") || "").trim(),
+    preis: String(f.get("preis") || "").trim(),
+    versand: String(f.get("versand") || "").trim(),
+    referenzpreis: String(f.get("referenzpreis") || "").trim(),
+    zustand: String(f.get("zustand") || "gebraucht"),
+    kategorie: String(f.get("kategorie") || "").trim(),
+    url: String(f.get("url") || "").trim(),
+  };
+  knopf.disabled = true;
+  status.textContent = "Prüfe das Angebot …";
+  try {
+    const antwort = await fetch("/api/eigenes-angebot", {
+      method: "POST",
+      headers: { "X-Schnapper": "1", "Content-Type": "application/json" },
+      body: JSON.stringify(daten),
+    });
+    const ergebnis = await antwort.json();
+    if (!antwort.ok) {
+      status.textContent = ergebnis.fehler || "Eintrag konnte nicht übernommen werden.";
+      return;
+    }
+    form.reset();
+    await suchen();
+    await alarmePruefen();
+    status.textContent = "Eigenes Angebot ergänzt. Bitte bei Bedarf die Liste als CSV sichern. Aktive Suchfilter können es ausblenden.";
+  } catch {
+    status.textContent = "Server nicht erreichbar. Eintrag nicht bestätigt.";
+  } finally {
+    knopf.disabled = false;
+  }
 }
 
 async function barcodeSuchen(ev) {
@@ -228,7 +278,8 @@ async function barcodeSuchen(ev) {
 function aktuellerWunsch() {
   const f = new FormData($("filter"));
   const w = { text: String(f.get("text") || "").trim(), max_preis: String(f.get("max_preis") || "").trim(),
-              min_rabatt: String(f.get("min_rabatt") || "").trim(), zustand: String(f.get("zustand") || "") };
+              min_rabatt: String(f.get("min_rabatt") || "").trim(), zustand: String(f.get("zustand") || ""),
+              quelle: String(f.get("quelle") || "").trim(), kategorie: String(f.get("kategorie") || "").trim() };
   return w.text && (w.max_preis || w.min_rabatt) ? w : null;
 }
 
@@ -243,6 +294,8 @@ function wunschText(w, mitText = true) {
   if (w.max_preis) teile.push(`bis ${w.max_preis} €`);
   if (w.min_rabatt) teile.push(`ab ${w.min_rabatt} % billiger`);
   if (w.zustand) teile.push(ZUSTAND[w.zustand] || w.zustand);
+  if (w.quelle) teile.push(`Quelle: ${w.quelle}`);
+  if (w.kategorie) teile.push(`Kategorie: ${w.kategorie}`);
   return teile.join(" · ");
 }
 
@@ -266,6 +319,8 @@ function alarmQuery(w) {
   if (w.max_preis) p.set("max_preis", w.max_preis);
   if (w.min_rabatt) p.set("min_rabatt", w.min_rabatt);
   if (w.zustand) p.set("zustand", w.zustand);
+  if (w.quelle) p.set("quelle", w.quelle);
+  if (w.kategorie) p.set("kategorie", w.kategorie);
   return p.toString();
 }
 
@@ -372,6 +427,7 @@ function zeige(ansicht) {
 }
 
 document.addEventListener("DOMContentLoaded", () => {
+  $("eintrag-form").addEventListener("submit", eigenesAngebotErfassen);
   $("barcode-form").addEventListener("submit", barcodeSuchen);
   $("filter").addEventListener("input", spaeter);
   $("filter").addEventListener("submit", (e) => { e.preventDefault(); suchen(); });
@@ -382,6 +438,7 @@ document.addEventListener("DOMContentLoaded", () => {
   }
   try { window.localStorage.getItem("schnapper.test"); } catch { $("speicher-hinweis").hidden = false; }
   zaehler();
+  exportLinksAktualisieren();
   suchen();
   alarmePruefen();
 });

@@ -135,22 +135,33 @@ class TestKostenbremsen(unittest.TestCase):
             for verboten in ("api.anthropic.com", "ANTHROPIC_API_KEY", "api.openai.com", "OPENAI_API_KEY"):
                 self.assertNotIn(verboten, text, f"{verboten} in {datei}")
 
-    def test_workflow_minimale_rechte(self):
+    def test_workflow_ist_unbedingt_stillgelegt(self):
         wf = (ROOT / ".github/workflows/schnapper-hourly.yml").read_text(encoding="utf-8")
-        self.assertIn("models: read", wf)
-        self.assertIn("timeout-minutes: 10", wf)
-        self.assertIn("SCHNAPPER_PAUSE", wf)
-        self.assertNotIn("secrets.ANTHROPIC", wf)
-        for rolle in ("LEAD", "BRAIN", "CHECK", "COMMAND"):
-            self.assertIn(f"team/agent.py {rolle}", wf)
+        self.assertIn("workflow_dispatch:", wf)
+        self.assertNotIn("schedule:", wf)
+        self.assertNotIn("cron:", wf)
+        self.assertNotIn("models: read", wf)
+        self.assertNotIn("contents: write", wf)
+        self.assertIn("contents: read", wf)
+        self.assertIn("if: ${{ false }}", wf)
+        self.assertNotIn("team/agent.py LEAD", wf)
+        self.assertNotIn("python team/agent.py", wf)
+        self.assertNotIn("curl ", wf)
 
-    def test_kostenschutz_nur_oeffentlich(self):
-        wf = (ROOT / ".github/workflows/schnapper-hourly.yml").read_text(encoding="utf-8")
-        self.assertIn("github.event.repository.private == false", wf)
-        self.assertIn("vars.SCHNAPPER_OEFFENTLICH == 'true'", wf)
-        self.assertIn("Repository ist privat", wf)
+    def test_tests_nur_im_oeffentlichen_repo(self):
         tests_wf = (ROOT / ".github/workflows/tests.yml").read_text(encoding="utf-8")
         self.assertIn("github.event.repository.private == false", tests_wf)
+        self.assertIn("cloudflare-tests:", tests_wf)
+
+    def test_abgeschaltete_github_models_wird_nicht_kontaktiert(self):
+        with tempfile.TemporaryDirectory() as d:
+            counter = pathlib.Path(d) / "calls.txt"
+            with mock.patch.dict(os.environ, {"GITHUB_TOKEN": "test-only"}), \
+                 mock.patch.object(ki, "_http") as http:
+                with self.assertRaisesRegex(ki.KINichtVerfuegbar, "eingestellt"):
+                    ki.KI(counter).frage("system", "frage")
+                http.assert_not_called()
+            self.assertFalse(counter.exists())
 
     def test_aufrufbudget(self):
         with tempfile.TemporaryDirectory() as d:
@@ -196,15 +207,18 @@ class TestAgenten(unittest.TestCase):
         self.p.stop()
         self.tmp.cleanup()
 
-    def alle(self):
+    def alle(self, agenten_ok=True):
         for rolle in ("LEAD", "BRAIN", "CHECK", "COMMAND", "BERICHT"):
-            self.assertEqual(agent.main(["agent.py", rolle, str(self.lauf)]), 0)
+            # Ein gescheiterter KI-Agent muss jetzt nonzero liefern;
+            # der deterministische Gesamtbericht darf trotzdem entstehen.
+            expected_rc = 0 if rolle == "BERICHT" or agenten_ok else 1
+            self.assertEqual(agent.main(["agent.py", rolle, str(self.lauf)]), expected_rc)
         return json.loads((self.team / "runs" / f"{self.lauf.name}.json").read_text())
 
     def test_ohne_ki_ehrlich_nicht_einsatzbereit(self):
         with mock.patch.dict(os.environ, {"GITHUB_TOKEN": ""}), \
              mock.patch.object(agent, "tests_ausfuehren", return_value={"ok": True, "anzahl": 1, "ausgabe_ende": ""}):
-            bericht = self.alle()
+            bericht = self.alle(agenten_ok=False)
         self.assertFalse(bericht["team_einsatzbereit"])
         self.assertEqual(bericht["agenten_mit_echter_ki"], [])
         for rolle in ("LEAD", "BRAIN", "CHECK", "COMMAND"):
@@ -215,7 +229,7 @@ class TestAgenten(unittest.TestCase):
     def test_s003_jeder_agent_berichtet_und_fehlende_ki_ist_blocker(self):
         with mock.patch.dict(os.environ, {"GITHUB_TOKEN": ""}), \
              mock.patch.object(agent, "tests_ausfuehren", return_value={"ok": True, "anzahl": 1, "ausgabe_ende": ""}):
-            bericht = self.alle()
+            bericht = self.alle(agenten_ok=False)
         for rolle in ("LEAD", "BRAIN", "CHECK", "COMMAND"):
             daten = json.loads((self.lauf / f"{rolle}.json").read_text(encoding="utf-8"))
             self.assertEqual(daten["rolle"], rolle)
@@ -224,7 +238,7 @@ class TestAgenten(unittest.TestCase):
         b = bericht["blocker"][0]
         self.assertEqual(b["art"], "KI-Anbindung fehlt")
         self.assertIn("GITHUB_TOKEN", b["detail"])
-        self.assertEqual(b["rollen"], ["LEAD", "COMMAND"])
+        self.assertEqual(b["rollen"], ["LEAD"])
         md = (self.team / "runs" / f"{self.lauf.name}.md").read_text(encoding="utf-8")
         self.assertIn("## Blocker", md)
         self.assertIn("KI-Anbindung fehlt", md)
@@ -237,6 +251,7 @@ class TestAgenten(unittest.TestCase):
         try:
             with mock.patch.dict(os.environ, {"GITHUB_TOKEN": "test", "SCHNAPPER_MODELL": ""}), \
                  mock.patch.object(ki, "_pruefe_url", return_value=None), \
+                 mock.patch.object(ki.KI, "modell", return_value="meta/Llama-3.3-70B-Instruct"), \
                  mock.patch.object(ki, "INFERENZ_URL", basis_url + "/inference"), \
                  mock.patch.object(ki, "KATALOG_URL", basis_url + "/catalog"), \
                  mock.patch.object(ki.KI.__init__, "__defaults__", (None, basis_url + "/inference", basis_url + "/catalog")), \
@@ -263,7 +278,12 @@ class TestAgenten(unittest.TestCase):
             fake = mock.Mock()
             fake.frage.return_value = {"text": '{"urteil": "bestanden"}', "modell": "m", "antwort_id": "1"}
             erg = agent.check(self.lauf, fake)
-        self.assertEqual(erg["urteil"]["urteil"], "abgelehnt")
+        # Fail-closed: bei negativen Werkzeugtests findet keine kostenrelevante
+        # CHECK-Modellinferenz statt und es wird kein positives Urteil erzeugt.
+        self.assertEqual(erg["status"], "ÜBERSPRUNGEN")
+        self.assertFalse(erg["ki_echt"])
+        self.assertNotIn("urteil", erg)
+        fake.frage.assert_not_called()
 
     def test_ungueltige_aufgabe_wird_abgelehnt(self):
         fake = mock.Mock()

@@ -43,7 +43,10 @@ def _request(pfad, payload=None, timeout=10):
             raw = antwort.read(200_001)
             if len(raw) > 200_000:
                 raise KINichtVerfuegbar("Ollama-Antwort zu groß.")
-            return json.loads(raw)
+            result = json.loads(raw)
+            if not isinstance(result, dict):
+                raise KINichtVerfuegbar("Lokale Ollama-API lieferte kein JSON-Objekt.")
+            return result
     except (urllib.error.URLError, TimeoutError, OSError, ValueError) as exc:
         raise KINichtVerfuegbar(
             "Lokales Ollama nicht erreichbar oder ungültige Antwort. "
@@ -68,31 +71,78 @@ class KI:
         tags = _request("/api/tags")
         if not isinstance(tags, dict) or not isinstance(tags.get("models"), list):
             raise KINichtVerfuegbar("Ungültige lokale Modellliste.")
-        modelle = {
-            v.get("name") for v in tags.get("models", [])
-            if isinstance(v, dict)
-        }
-        if self.modell not in modelle:
+        # Falsche Katalogtypen dürfen keine unkontrollierte Ausnahme auslösen.
+        installiert = any(
+            isinstance(v, dict) and isinstance(v.get("name"), str)
+            and v["name"] == self.modell for v in tags["models"]
+        )
+        if not installiert:
             raise KINichtVerfuegbar(
                 f"Lokales Modell {self.modell!r} nicht installiert; "
                 f"auf dem eigenen Rechner: ollama pull {self.modell}"
             )
 
     def _zaehle(self):
+        """Reserviert exakt einen Modellversuch unter exklusiver Dateisperre.
+
+        Die Sperre wird per atomarem mkdir erstellt: ein paralleler Prozess
+        wird ohne Modellaufruf blockiert. Verwaiste Sperren bleiben aus
+        Sicherheitsgründen bestehen, bis der Betreiber sie geprüft hat.
+        """
+        sperre = self.zaehler.with_name(self.zaehler.name + ".lock")
         try:
-            bisher = int(self.zaehler.read_text()) if self.zaehler.exists() else 0
-        except (OSError, ValueError) as exc:
-            raise KINichtVerfuegbar("Ungültiger KI-Aufrufzähler.") from exc
-        if bisher >= MAX_AUFRUFE:
+            self.zaehler.parent.mkdir(parents=True, exist_ok=True)
+            sperre.mkdir(mode=0o700)
+        except FileExistsError as exc:
             raise KINichtVerfuegbar(
-                f"Maximal {MAX_AUFRUFE} lokale KI-Aufrufe pro Stundenlauf."
-            )
-        self.zaehler.parent.mkdir(parents=True, exist_ok=True)
-        self.zaehler.write_text(str(bisher + 1), encoding="utf-8")
+                "KI-Aufrufzähler gesperrt; paralleler oder verwaister Lauf."
+            ) from exc
+        except OSError as exc:
+            raise KINichtVerfuegbar("KI-Aufrufzähler kann nicht gesperrt werden.") from exc
+
+        try:
+            try:
+                if self.zaehler.is_symlink():
+                    raise ValueError("Aufrufzähler darf kein Symlink sein")
+                if self.zaehler.exists():
+                    if self.zaehler.stat().st_size > 32:
+                        raise ValueError("Aufrufzähler zu groß")
+                    bisher = int(self.zaehler.read_text(encoding="utf-8"))
+                else:
+                    bisher = 0
+                if type(MAX_AUFRUFE) is not int or not 1 <= MAX_AUFRUFE <= 6:
+                    raise ValueError("Ungültiges Aufrufbudget")
+                if bisher < 0 or bisher > MAX_AUFRUFE:
+                    raise ValueError("Ungültiger Aufrufzähler")
+            except (OSError, ValueError, UnicodeError) as exc:
+                raise KINichtVerfuegbar(
+                    "Ungültiger KI-Aufrufzähler oder Aufrufbudget."
+                ) from exc
+            if bisher >= MAX_AUFRUFE:
+                raise KINichtVerfuegbar(
+                    f"Maximal {MAX_AUFRUFE} lokale KI-Aufrufe pro Stundenlauf."
+                )
+            nummer = bisher + 1
+            try:
+                self.zaehler.write_text(str(nummer), encoding="utf-8")
+            except OSError as exc:
+                raise KINichtVerfuegbar(
+                    "KI-Aufrufzähler konnte nicht gesichert werden."
+                ) from exc
+            return nummer
+        finally:
+            try:
+                sperre.rmdir()
+            except OSError as exc:
+                # Ein nicht entfernbarer Lock bleibt stehen und blockiert den
+                # Folgelauf. Niemals trotzdem eine neue Modellanfrage senden.
+                raise KINichtVerfuegbar(
+                    "Sperre des KI-Aufrufzählers konnte nicht aufgehoben werden."
+                ) from exc
 
     def frage(self, system, nutzer):
         self._pruefe_modell()
-        self._zaehle()
+        nummer = self._zaehle()
         antwort = _request("/api/chat", {
             "model": self.modell,
             "stream": False,
@@ -104,9 +154,14 @@ class KI:
             "options": {"num_predict": 700, "temperature": 0.2},
         }, timeout=180)
         try:
-            inhalt = antwort["message"]["content"].strip()
+            inhalt = antwort["message"]["content"]
         except (KeyError, TypeError, AttributeError) as exc:
             raise KINichtVerfuegbar("Lokale KI ohne verwertbaren Antworttext.") from exc
+        if not isinstance(inhalt, str):
+            raise KINichtVerfuegbar("Lokale KI ohne gültigen Textinhalt.")
+        if len(inhalt) > 12_000:
+            raise KINichtVerfuegbar("Lokale KI-Antwort überschreitet das Größenlimit.")
+        inhalt = inhalt.strip()
         if not inhalt:
             raise KINichtVerfuegbar("Leere lokale KI-Antwort.")
         return {
@@ -114,7 +169,7 @@ class KI:
             "antwort_id": "lokal-" + uuid.uuid4().hex,
             "nutzung": {"prompt_eval_count": antwort.get("prompt_eval_count"),
                        "eval_count": antwort.get("eval_count")},
-            "aufruf_nr": int(self.zaehler.read_text(encoding="utf-8")),
+            "aufruf_nr": nummer,
             "laufzeit": "Ollama lokal (keine bezahlte KI-API)",
             "erstellt_utc": dt.datetime.now(dt.timezone.utc).isoformat(),
         }

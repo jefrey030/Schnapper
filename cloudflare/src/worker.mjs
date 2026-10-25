@@ -13,6 +13,12 @@ export const TASKS = Object.freeze([
 const MAX_OUTPUT_TOKENS = 160;
 const MAX_TEXT = 1500;
 const MAX_ERROR = 220;
+ // Recognize accidental credential-shaped strings before any storage/logging.
+ const SECRET_PATTERN = /(sk-ant-[A-Za-z0-9_-]{10,}|ghp_[A-Za-z0-9]{20,}|github_pat_[A-Za-z0-9_]{20,}|AKIA[0-9A-Z]{16}|-----BEGIN [A-Z ]*PRIVATE KEY-----)/;
+ function redactSecrets(value) {
+  return String(value).replace(new RegExp(SECRET_PATTERN.source, 'g'), '[REDACTED]');
+ }
+
 const PROMPTS = {
  LEAD:'Wähle exakt drei priorisierte Arbeitspakete für die Aufgabe, definiere messbare Abnahmekriterien.',
  BRAIN:'Analysiere LEADs Arbeitsauftrag. Liefere Datenfelder, technische Umsetzungsideen und Testfälle. Kein Code wurde geschrieben.',
@@ -31,6 +37,14 @@ export function verifyGate(env) {
    env?.AI && typeof env.AI.run==='function' &&
    env?.DB && typeof env.DB.prepare==='function');
 }
+/** Persistent operator-controlled emergency stop. Missing/unreadable control = STOP. */
+export async function controlOpen(env) {
+ if(!verifyGate(env)) return false;
+ try {
+  const row=await env.DB.prepare('SELECT paused FROM schnapper_control WHERE id=1').first();
+  return row?.paused === 0;
+ } catch { return false; }
+}
 async function sha256(text) {
  const digest=await crypto.subtle.digest('SHA-256',new TextEncoder().encode(text));
  return Array.from(new Uint8Array(digest),n=>n.toString(16).padStart(2,'0')).join('');
@@ -39,6 +53,7 @@ function modelReply(response) {
  if(typeof response?.response!=='string') throw Error('Malformed model response');
  const text=response.response.trim();
  if(!text || text.length>MAX_TEXT*4) throw Error('Empty/oversized model response');
+ if(SECRET_PATTERN.test(text)) throw Error('Geheimnisindikator in Modellantwort; Antwort verworfen');
  return text.slice(0,MAX_TEXT);
 }
 function messages(role,task,outputs) {
@@ -55,6 +70,7 @@ async function mark(db,slot,status,error,attempts) {
 /** Deterministic 1-hour claim, no retry after partially failed inference. */
 export async function runSlot(env, timestamp) {
  if (!verifyGate(env)) return {status:'BLOCKIERT',reason:'Free-Plan oder Bindings nicht verifiziert – null KI-Aufrufe',attempted_calls:0};
+ if (!(await controlOpen(env))) return {status:'BLOCKIERT',reason:'Not-Aus aktiv oder nicht lesbar – null KI-Aufrufe',attempted_calls:0};
  let slot;
  try {slot=utcSlot(timestamp)} catch {return {status:'BLOCKIERT',reason:'Ungültiger Zeitpunkt',attempted_calls:0};}
  const hourIndex=Math.floor(new Date(timestamp).getTime()/3600000);
@@ -69,6 +85,9 @@ export async function runSlot(env, timestamp) {
  let attempts=0;
  try {
   for (const role of ROLES) {
+   // Auch während eines Laufs vor JEDEM neuen KI-Aufruf den Not-Aus lesen.
+   // Bereits laufende externe Anfragen können nicht rückwirkend abgebrochen werden.
+   if (!(await controlOpen(env))) throw Error('Not-Aus aktiv oder nicht lesbar');
    // D1 pre-commit of a chargeable model attempt ensures auditability.
    attempts++;
    await env.DB.prepare('UPDATE schnapper_runs SET attempted_calls=? WHERE slot=?')
@@ -83,7 +102,7 @@ export async function runSlot(env, timestamp) {
   await mark(env.DB,slot,'completed','',attempts);
   return {status:'ABGESCHLOSSEN',slot,task_id:task.id,attempted_calls:attempts,roles:outputs.map(({role,sha256})=>({role,sha256}))};
  } catch(error) {
-  const message='Lauf blockiert: '+String(error?.message || error).slice(0,180);
+  const message='Lauf blockiert: '+redactSecrets(error?.message || error).slice(0,180);
   try {await mark(env.DB,slot,'blocked',message,attempts);}catch{} // No paid fallback
   console.error(JSON.stringify({slot,status:'BLOCKIERT',attempted_calls:attempts,completed_roles:outputs.map(x=>x.role),error:message}));
   return {status:'BLOCKIERT',slot,attempted_calls:attempts,completed_roles:outputs.map(x=>x.role),reason:message};

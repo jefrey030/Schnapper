@@ -7,9 +7,9 @@ from __future__ import annotations
 import argparse
 import json
 import sys
-from decimal import Decimal
+from decimal import Decimal, InvalidOperation
 
-from .angebot import geld
+from .angebot import AngebotFehler, ZUSTAENDE, geld
 from .dubletten import entferne_dubletten
 from .einlesen import lies_datei
 from .suche import SORTIERUNGEN, Filter, suche
@@ -36,6 +36,22 @@ def main(argv=None) -> int:
     if bool(a.datei) == bool(a.openprices):
         p.error("entweder DATEI oder --openprices EAN angeben")
 
+    # Vor Dateiimport, Netzwerkfreigabe oder Verlaufsänderung prüfen.
+    # Ungültige Nutzerfilter dürfen weder einen Traceback noch einen
+    # versehentlichen Datenbank-/Dateischreibvorgang auslösen.
+    try:
+        max_preis = geld(a.max_preis) if a.max_preis else None
+        if max_preis is not None and max_preis <= 0:
+            raise ValueError("Höchstpreis muss größer als 0 sein")
+        min_rabatt = Decimal(a.min_rabatt.replace(",", ".")) if a.min_rabatt else None
+        if min_rabatt is not None and (not min_rabatt.is_finite() or not 0 <= min_rabatt <= 100):
+            raise ValueError("Mindestrabatt muss zwischen 0 und 100 Prozent liegen")
+        if any(z not in ZUSTAENDE for z in a.zustand):
+            raise ValueError("Unbekannter Zustand")
+    except (AngebotFehler, InvalidOperation, ValueError) as exc:
+        print(f"Ungültiger Suchfilter: {exc}", file=sys.stderr)
+        return 2
+
     lizenz = None
     if a.openprices:
         from .openprices import LIZENZ, OpenPricesAdapter, OpenPricesFehler, OpenPricesGesperrt
@@ -47,20 +63,25 @@ def main(argv=None) -> int:
             return 3
         lizenz = LIZENZ
     else:
-        ergebnis = lies_datei(a.datei)
+        try:
+            ergebnis = lies_datei(a.datei)
+        except (OSError, UnicodeError) as exc:
+            print("Angebotsdatei konnte nicht gelesen werden.", file=sys.stderr)
+            return 1
     verlauf = None
     if a.verlauf:
         try:
             verlauf = Verlauf.laden(a.verlauf)
-        except VerlaufFehler as exc:
-            print("Preisverlauf:", exc, file=sys.stderr)
+            # Transaktion mit Rollback: erst nach erfolgreicher Speicherung
+            # der Preisbeobachtungen geht die CLI zum Ergebnis über.
+            verlauf.importiere(ergebnis.angebote)
+        except (VerlaufFehler, OSError) as exc:
+            print("Preisverlauf konnte nicht sicher gespeichert werden.", file=sys.stderr)
             return 1
-        if verlauf.aufzeichnen(ergebnis.angebote):
-            verlauf.speichern()
     eindeutig, dubletten = entferne_dubletten(ergebnis.angebote)
     f = Filter(text=a.suche,
-               max_preis=geld(a.max_preis) if a.max_preis else None,
-               min_rabatt=Decimal(a.min_rabatt) if a.min_rabatt else None,
+               max_preis=max_preis,
+               min_rabatt=min_rabatt,
                zustaende=set(a.zustand), quellen=set(a.quelle),
                ohne_verdacht=not a.mit_verdacht, ohne_veraltet=a.ohne_veraltet)
     treffer = suche(eindeutig, f, a.sortierung)
