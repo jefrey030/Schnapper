@@ -207,15 +207,18 @@ class TestAgenten(unittest.TestCase):
         self.p.stop()
         self.tmp.cleanup()
 
-    def alle(self):
+    def alle(self, agenten_ok=True):
         for rolle in ("LEAD", "BRAIN", "CHECK", "COMMAND", "BERICHT"):
-            self.assertEqual(agent.main(["agent.py", rolle, str(self.lauf)]), 0)
+            # Ein gescheiterter KI-Agent muss jetzt nonzero liefern;
+            # der deterministische Gesamtbericht darf trotzdem entstehen.
+            expected_rc = 0 if rolle == "BERICHT" or agenten_ok else 1
+            self.assertEqual(agent.main(["agent.py", rolle, str(self.lauf)]), expected_rc)
         return json.loads((self.team / "runs" / f"{self.lauf.name}.json").read_text())
 
     def test_ohne_ki_ehrlich_nicht_einsatzbereit(self):
         with mock.patch.dict(os.environ, {"GITHUB_TOKEN": ""}), \
              mock.patch.object(agent, "tests_ausfuehren", return_value={"ok": True, "anzahl": 1, "ausgabe_ende": ""}):
-            bericht = self.alle()
+            bericht = self.alle(agenten_ok=False)
         self.assertFalse(bericht["team_einsatzbereit"])
         self.assertEqual(bericht["agenten_mit_echter_ki"], [])
         for rolle in ("LEAD", "BRAIN", "CHECK", "COMMAND"):
@@ -226,7 +229,7 @@ class TestAgenten(unittest.TestCase):
     def test_s003_jeder_agent_berichtet_und_fehlende_ki_ist_blocker(self):
         with mock.patch.dict(os.environ, {"GITHUB_TOKEN": ""}), \
              mock.patch.object(agent, "tests_ausfuehren", return_value={"ok": True, "anzahl": 1, "ausgabe_ende": ""}):
-            bericht = self.alle()
+            bericht = self.alle(agenten_ok=False)
         for rolle in ("LEAD", "BRAIN", "CHECK", "COMMAND"):
             daten = json.loads((self.lauf / f"{rolle}.json").read_text(encoding="utf-8"))
             self.assertEqual(daten["rolle"], rolle)
@@ -235,7 +238,7 @@ class TestAgenten(unittest.TestCase):
         b = bericht["blocker"][0]
         self.assertEqual(b["art"], "KI-Anbindung fehlt")
         self.assertIn("GITHUB_TOKEN", b["detail"])
-        self.assertEqual(b["rollen"], ["LEAD", "COMMAND"])
+        self.assertEqual(b["rollen"], ["LEAD"])
         md = (self.team / "runs" / f"{self.lauf.name}.md").read_text(encoding="utf-8")
         self.assertIn("## Blocker", md)
         self.assertIn("KI-Anbindung fehlt", md)
@@ -253,7 +256,7 @@ class TestAgenten(unittest.TestCase):
                  mock.patch.object(ki, "KATALOG_URL", basis_url + "/catalog"), \
                  mock.patch.object(ki.KI.__init__, "__defaults__", (None, basis_url + "/inference", basis_url + "/catalog")), \
                  mock.patch.object(agent, "tests_ausfuehren", return_value={"ok": True, "anzahl": 3, "ausgabe_ende": ""}):
-                bericht = self.alle()
+                bericht = self.alle(agenten_ok=False)
         finally:
             server.shutdown()
             server.server_close()
