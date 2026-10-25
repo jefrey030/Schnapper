@@ -4,12 +4,11 @@
  */
 export const MODEL = '@cf/meta/llama-3.2-1b-instruct';
 export const ROLES = Object.freeze(['LEAD', 'BRAIN', 'CHECK', 'COMMAND']);
-export const TASKS = Object.freeze([
-  {id:'S-000',goal:'Plane drei priorisierte MVP-Funktionen für eine legale Gebrauchtartikel-Suche mit messbaren Abnahmekriterien.'},
-  {id:'S-001',goal:'Beschreibe die bekannten geplanten App-Bausteine und welche Bestandsbelege noch fehlen, ohne Repository-Zugriff zu behaupten.'},
-  {id:'S-002',goal:'Skizziere einen sicheren Plan für legale Preisquellen, Dublettenabgleich und veraltete Inserate.'},
-  {id:'S-003',goal:'Definiere Prüfkriterien für einen stündlichen Vier-Agenten-Protokolllauf und seine nachprüfbare Abnahme.'}
-]);
+// Abgeleitet ausschließlich aus team/tasks.json: nur status=open UND approved=true.
+// Der Offline-Contract-Test erzwingt, dass dieser Stand mit der Aufgabenquelle
+// identisch bleibt. Derzeit gibt es 0 autorisierte offene Aufgaben.
+// Kein Schreiben in das Task-Register, kein externer Modellaufruf.
+export const TASKS = Object.freeze([]);
 const MAX_OUTPUT_TOKENS = 160;
 const MAX_TEXT = 1500;
 const MAX_ERROR = 220;
@@ -25,6 +24,26 @@ const PROMPTS = {
  CHECK:'Prüfe LEAD/BRAIN unabhängig und nenne Risiken plus Prüffälle. Keine ausgeführten Tests behaupten.',
  COMMAND:'Fasse den Stand und Fehler zusammen und schlage genau einen kleinsten sicheren Folgeschritt vor. Keine Freigabe für Produktivänderungen.'
 };
+/** Deterministische Auswahl ausschließlich explizit genehmigter Aufgaben.
+ * Fehlende/ungültige Identitäten, doppelte IDs oder unvollständige Freigaben
+ * dürfen niemals zu einem AI.run-Aufruf führen. */
+export function chooseApprovedTask(tasks, hourIndex) {
+ if(!Array.isArray(tasks)||!Number.isInteger(hourIndex)) return null;
+ const ids=new Set(), eligible=[];
+ for(const task of tasks) {
+  if(!task || typeof task!=='object' || typeof task.id!=='string'
+     || !/^S-[0-9]{3,6}$/.test(task.id) || ids.has(task.id)) return null;
+  ids.add(task.id);
+  if(task.status!=='open' || task.approved!==true) continue;
+  if(typeof task.goal!=='string' || !task.goal.trim() || task.goal.length>1500
+     || !Number.isInteger(task.revision) || task.revision<1
+     || typeof task.owner!=='string' || !task.owner.trim()) return null;
+  eligible.push(task);
+ }
+ if(eligible.length===0) return null;
+ eligible.sort((a,b)=>a.id.localeCompare(b.id));
+ return eligible[((hourIndex%eligible.length)+eligible.length)%eligible.length];
+}
 export function utcSlot(timestamp) {
  const d=new Date(timestamp);
  if(!Number.isFinite(d.getTime())) throw Error('Invalid timestamp');
@@ -68,13 +87,16 @@ async function mark(db,slot,status,error,attempts) {
   .bind(status,String(error||'').slice(0,MAX_ERROR),attempts,new Date().toISOString(),slot).run();
 }
 /** Deterministic 1-hour claim, no retry after partially failed inference. */
-export async function runSlot(env, timestamp) {
+// Dritter Parameter nur für isolierte Unit-Tests. Der produktive scheduled-
+// Handler übergibt ihn NICHT und verwendet stets den geprüften TASKS-Snapshot.
+export async function runSlot(env, timestamp, taskSource=TASKS) {
  if (!verifyGate(env)) return {status:'BLOCKIERT',reason:'Free-Plan oder Bindings nicht verifiziert – null KI-Aufrufe',attempted_calls:0};
  if (!(await controlOpen(env))) return {status:'BLOCKIERT',reason:'Not-Aus aktiv oder nicht lesbar – null KI-Aufrufe',attempted_calls:0};
  let slot;
  try {slot=utcSlot(timestamp)} catch {return {status:'BLOCKIERT',reason:'Ungültiger Zeitpunkt',attempted_calls:0};}
  const hourIndex=Math.floor(new Date(timestamp).getTime()/3600000);
- const task=TASKS[((hourIndex%TASKS.length)+TASKS.length)%TASKS.length];
+ const task=chooseApprovedTask(taskSource,hourIndex);
+ if(!task) return {status:'KEINE AUFGABE',reason:'Keine ausdrücklich genehmigte offene Aufgabe; null KI-Aufrufe',attempted_calls:0};
  let claim;
  try {
   claim=await env.DB.prepare('INSERT OR IGNORE INTO schnapper_runs (slot,task_id,status,started_utc,attempted_calls) VALUES (?,?,?,?,0)')
