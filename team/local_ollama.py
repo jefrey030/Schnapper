@@ -5,10 +5,12 @@ kein Proxy, kein Download und kein Wechsel zu Cloud-/Bezahlanbietern.
 Bei fehlendem lokalen Modell wird der KI-Lauf ehrlich blockiert.
 """
 import datetime as dt
+import fcntl
 import json
 import os
 import pathlib
 import re
+import stat
 import urllib.error
 import urllib.request
 import uuid
@@ -79,20 +81,52 @@ class KI:
             )
 
     def _zaehle(self):
+        """Atomare Reservierung pro lokaler Anfrage, auch bei Parallelzugriff.
+
+        Die Antwort-ID ist nur eine lokale Kennung. Der Zaehler ersetzt
+        keinerlei unabhaengigen Beweis tatsaechlicher Modell-Inferenz.
+        """
+        if not hasattr(os, "O_NOFOLLOW"):
+            raise KINichtVerfuegbar("Sichere lokale Zaehleroeffnung nicht unterstuetzt.")
         try:
-            bisher = int(self.zaehler.read_text()) if self.zaehler.exists() else 0
-        except (OSError, ValueError) as exc:
-            raise KINichtVerfuegbar("Ungültiger KI-Aufrufzähler.") from exc
-        if bisher >= MAX_AUFRUFE:
-            raise KINichtVerfuegbar(
-                f"Maximal {MAX_AUFRUFE} lokale KI-Aufrufe pro Stundenlauf."
+            self.zaehler.parent.mkdir(parents=True, exist_ok=True)
+            fd = os.open(
+                str(self.zaehler),
+                os.O_CREAT | os.O_RDWR | os.O_NOFOLLOW
+                | getattr(os, "O_CLOEXEC", 0) | getattr(os, "O_NONBLOCK", 0),
+                0o600,
             )
-        self.zaehler.parent.mkdir(parents=True, exist_ok=True)
-        self.zaehler.write_text(str(bisher + 1), encoding="utf-8")
+            with os.fdopen(fd, "r+b") as datei:
+                # Auch FIFO, Verzeichnis, Geraetedatei und Hardlink abweisen.
+                info = os.fstat(datei.fileno())
+                if not stat.S_ISREG(info.st_mode) or info.st_nlink != 1:
+                    raise OSError("Zaehler ist keine eigene regulaere Datei")
+                fcntl.flock(datei.fileno(), fcntl.LOCK_EX)
+                roh = datei.read(9)
+                if (len(roh) > 8 or
+                        (roh and re.fullmatch(rb"[0-9]{1,8}", roh) is None)):
+                    raise ValueError("Nichtnumerischer oder zu grosser Zaehler")
+                bisher = int(roh) if roh else 0
+                if bisher >= MAX_AUFRUFE:
+                    raise KINichtVerfuegbar(
+                        f"Maximal {MAX_AUFRUFE} lokale KI-Aufrufe pro Stundenlauf.")
+                nummer = bisher + 1
+                if nummer > 99_999_999:
+                    raise ValueError("Zaehlergrenze ueberschritten")
+                # Feste Breite vermeidet Truncate-Zwischenzustand.
+                datei.seek(0)
+                written = datei.write(f"{nummer:08d}".encode("ascii"))
+                if written != 8:
+                    raise OSError("Unvollstaendige Zaehler-Schreiboperation")
+                datei.flush()
+                os.fsync(datei.fileno())
+                return nummer
+        except (OSError, ValueError) as exc:
+            raise KINichtVerfuegbar("Lokaler KI-Aufrufzaehler unsicher oder nicht lesbar.") from exc
 
     def frage(self, system, nutzer):
         self._pruefe_modell()
-        self._zaehle()
+        aufruf_nummer = self._zaehle()
         antwort = _request("/api/chat", {
             "model": self.modell,
             "stream": False,
@@ -114,7 +148,7 @@ class KI:
             "antwort_id": "lokal-" + uuid.uuid4().hex,
             "nutzung": {"prompt_eval_count": antwort.get("prompt_eval_count"),
                        "eval_count": antwort.get("eval_count")},
-            "aufruf_nr": int(self.zaehler.read_text(encoding="utf-8")),
+            "aufruf_nr": aufruf_nummer,
             "laufzeit": "Ollama lokal (keine bezahlte KI-API)",
             "erstellt_utc": dt.datetime.now(dt.timezone.utc).isoformat(),
         }
