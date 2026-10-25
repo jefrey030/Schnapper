@@ -45,8 +45,8 @@ class TestMaster82Prozessbindung(unittest.TestCase):
         # Aufrufen, auch nach BERICHT. Der Angriff erfolgt daher am
         # Pruef->Manifest-Uebergang (und nicht schon im BERICHT-Fake).
         original_pruefung = dienst.pruefe_nachweise
-        def pruefung_mit_angriff(bericht, lauf, schritte):
-            result = original_pruefung(bericht, lauf, schritte)
+        def pruefung_mit_angriff(bericht, lauf, schritte, **kwargs):
+            result = original_pruefung(bericht, lauf, schritte, **kwargs)
             if tamper is not None:
                 target = lauf / "prozesse.json"
                 raw = target.read_text(encoding="utf-8")
