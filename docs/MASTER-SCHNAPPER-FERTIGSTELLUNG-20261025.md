@@ -74,3 +74,11 @@ Erster erfolgreicher [GitHub Actions #40216433994](https://github.com/jefrey030/
 
 Die erreichte Teilleistung ist konkret verifiziert, aber die Anzahl grüner Unit-Tests ersetzt weder echte Datenquellen noch unabhängige Sicherheits- oder Endgerätetests.
 
+
+## 6. Neues erledigtes Arbeitspaket F11 – Ergebnisexport für den Offline-MVP
+
+**25.10.2026:** Der [separate Export-Fertigstellungs-Master](MASTER-SCHNAPPER-FERTIGSTELLUNG-EXPORT-20261025.md) hat den bereits begonnenen lokalen CSV-/JSON-Export durch Referenzpreis-Übernahme, Spreadsheet-Schutz und neun neue Offline-Regressionsfälle vervollständigt. Die Tests vergleichen JSON-/CSV-Ergebnisse mit der gefilterten Suche und prüfen einen ungefährlichen CSV-Wiederimport, Nulltreffer, ungültige Filter, Download-Header, HEAD und Browserlinks.
+
+**Status F11: ✅ überprüft, nur Offline-MVP.** [GitHub Actions #40227372613](https://github.com/jefrey030/Schnapper/actions/runs/40227372613): Python 310 ausgeführt, 1 übersprungen, keine Fehler; Cloudflare 16/16 bestanden. Dieser letzte Nachweis bezieht sich auf den dokumentierten Export-Master vor Einfügung dieses Querverweises; der aktuelle Commit wird erneut geprüft.
+
+F5–F10 bleiben ausdrücklich **offen**: lizenzierte Liveangebote, unabhängige Review und Merge, Android-Gerätetest, Hosting/Monitoring, echte KI-Liveprobe und Legacy-Cron-Übernahme nach `main`. Ein zusätzlich abgeschlossenes Offline-Feature ist **kein** Nachweis für einen vollständig fertigen öffentlichen Dienst.
