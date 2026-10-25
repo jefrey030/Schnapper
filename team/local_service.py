@@ -11,6 +11,7 @@ import hashlib
 import json
 import os
 import pathlib
+import stat
 import subprocess
 import sys
 import time
@@ -167,6 +168,28 @@ def pruefe_nachweise(bericht, lauf, schritte):
     return fehler
 
 
+def _hash_sicher(p):
+    """Dateihash nur ueber einen einzigen sicheren Dateideskriptor.
+
+    Auf POSIX keine Symlink-Folgeverfolgung (auch nicht bei einem Austausch
+    zwischen Vorabpruefung und open). Nur regulaere Dateien bis 2 MB; ein
+    FIFO/Device darf niemals einen unendlichen Lesezugriff ausloesen.
+    Integritaet, aber keine unabhaengige Modell-Attestierung.
+    """
+    if not hasattr(os, "O_NOFOLLOW"):
+        raise OSError("O_NOFOLLOW fehlt: Artefaktnachweis nicht abgesichert")
+    flags = os.O_RDONLY | os.O_NOFOLLOW | getattr(os, "O_CLOEXEC", 0)
+    flags |= getattr(os, "O_NONBLOCK", 0)
+    fd = os.open(str(p), flags)
+    with os.fdopen(fd, "rb") as datei:
+        if not stat.S_ISREG(os.fstat(datei.fileno()).st_mode):
+            raise OSError("Nachweisartefakt ist keine regulaere Datei")
+        daten = datei.read(2_000_001)
+        if len(daten) > 2_000_000:
+            raise OSError("Nachweisartefakt ueberschreitet 2 MB")
+    return hashlib.sha256(daten).hexdigest()
+
+
 def einmal():
     if gestoppt():
         print("BLOCKIERT: Betreiber-Not-Aus team/work/STOP ist aktiv.")
@@ -234,24 +257,18 @@ def einmal():
         "fehler": fehler,
         "protokoll": str(report_path.relative_to(ROOT)),
     }
-    # Beleg-Hashes erlauben die spätere Prüfung der tatsächlich erzeugten Dateien.
-    dateien = [report_path, lauf / "prozesse.json"]
-    # Auch ein Symlink mit bestehendem Ziel muss als unzulaessig erkannt
-    # werden; er darf niemals fuer das Manifest gelesen werden.
-    dateien += [lauf / (rolle + ".json") for rolle in ROLES
-                if (lauf / (rolle + ".json")).exists()
-                or (lauf / (rolle + ".json")).is_symlink()]
-    zaehler = lauf / "ki_aufrufe.txt"
-    if zaehler.is_file() or zaehler.is_symlink():
-        dateien.append(zaehler)
+    # Kein optionaler Rollen-/Zaehlerbeleg: die Manifestliste ist vollstaendig.
+    # Die O_NOFOLLOW-Oeffnung und fstat-Pruefung erfolgen am *selben* FD.
+    # Ein Path.is_symlink()-Vortest waere anfaellig fuer Austausch-Rennen.
+    dateien = ([report_path, lauf / "prozesse.json"]
+               + [lauf / (rolle + ".json") for rolle in ROLES]
+               + [lauf / "ki_aufrufe.txt"])
     hashes = {}
     try:
         for p in dateien:
-            if p.is_symlink() or not p.is_file():
-                raise OSError("Fehlende Datei oder Symlink in Nachweisartefakten")
-            hashes[str(p.relative_to(ROOT))] = hashlib.sha256(p.read_bytes()).hexdigest()
+            hashes[str(p.relative_to(ROOT))] = _hash_sicher(p)
     except OSError:
-        print("BLOCKIERT: Nachweisdatei fehlt, ist ein Symlink oder nicht lesbar.")
+        print("BLOCKIERT: Pflichtnachweis fehlt, ist unsicher oder nicht lesbar.")
         return 1
     manifest = {
         "lauf": lauf.name, "zeit_utc": dt.datetime.now(dt.timezone.utc).isoformat(),
