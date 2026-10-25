@@ -4,7 +4,7 @@
 
 ## Nachweisstand (Repository und read-only Cloudflare-Prüfung)
 
-- **Aktualisierung 25.10.2026:** Das GitHub-Repository wurde als **öffentlich** verifiziert. Der Legacy-Stundenworkflow ist auf `main` noch vorhanden; **nur der Integrations-Draft #54** ersetzt ihn durch einen bewusst nie startenden Job ohne Cron. Die Tests für öffentliche Repositories können laufen; `skipped` ist ausdrücklich **kein PASS**.
+- **Aktualisierung 25.10.2026:** Das GitHub-Repository wurde als **öffentlich** verifiziert. Der Legacy-Stundenworkflow ist auf `main` noch vorhanden; **nur der Integrations-Draft #55** ersetzt ihn durch einen bewusst nie startenden Job ohne Cron. Die Tests für öffentliche Repositories können laufen; `skipped` ist ausdrücklich **kein PASS**.
 - Für Cloudflare sind weder `schnapper-agent-team` noch die D1-Datenbank nachgewiesen. Billing-Read fehlt (403), Workers-Free-Tarif ist nicht nachgewiesen. **Keine Ressourcen aktivieren.**
 - Lokale Python-/Node-Tests und D1-Simulationen müssen für die aktuelle Commit-SHA erneut ausgeführt und ihre Rohlogs gesichert werden. Alte Testerfolge beweisen keine Änderungen in diesem Branch.
 - GitHub-`main` war am 22.10. ungeschützt (`protected=false`). Vor öffentlicher Freigabe Branchschutz und erforderliche Checks nachweisen.
