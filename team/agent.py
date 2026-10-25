@@ -256,6 +256,13 @@ def check(ordner, ki):
 def command(ordner, ki):
     erg = basis("COMMAND")
     vorher = {r: lies(ordner, r) for r in ROLES[:3]}
+    # Ohne offene LEAD-Aufgabe ist keine COMMAND-KI-Auswertung sinnvoll.
+    # Insbesondere darf ein grüner Workflow einen unnoetigen KI-Aufruf
+    # weder ausloesen noch als erfolgreichen Vier-Agenten-Lauf ausgeben.
+    if (vorher.get("LEAD") or {}).get("status") == "KEINE AUFGABE":
+        erg.update(status="ÜBERSPRUNGEN",
+                   fehler="Keine offene Aufgabe von LEAD; COMMAND-KI-Aufruf unterdrückt.")
+        return erg
     kurz = {r: {"status": (v or {}).get("status"), "fehler": (v or {}).get("fehler"),
                 "ki_text": (((v or {}).get("ki") or {}).get("text") or "")[:2500]} for r, v in vorher.items()}
     antwort, fehler = ki_teil(ki, "COMMAND", json.dumps(kurz, ensure_ascii=False))
