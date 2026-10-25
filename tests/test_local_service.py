@@ -22,6 +22,9 @@ class TestDienst(unittest.TestCase):
         self.patches = [
             mock.patch.object(dienst, "ROOT", self.root),
             mock.patch.object(dienst, "TEAM", self.team),
+            # Older deterministic service tests exercise downstream reports, not consent.
+            # The real approval function has its own fail-closed regression suite.
+            mock.patch.object(dienst, "pruefe_freigabe", return_value="S-014"),
         ]
         for p in self.patches:
             p.start()
