@@ -53,7 +53,7 @@ class TestMaster82Prozessbindung(unittest.TestCase):
                 target.write_text(tamper(raw), encoding="utf-8")
             return result
 
-        with mock.patch.object(dienst.subprocess, "run", side_effect=fake), \
+        with mock.patch.object(dienst, "rolle_starten", side_effect=fake), \
              mock.patch.object(dienst, "pruefe_nachweise",
                                side_effect=pruefung_mit_angriff), \
              mock.patch("builtins.print") as printed:
