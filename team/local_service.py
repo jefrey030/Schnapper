@@ -30,7 +30,7 @@ def gestoppt():
     return (TEAM / "work" / "STOP").exists()
 
 
-def pruefe_nachweise(bericht, lauf, schritte):
+def pruefe_nachweise(bericht, lauf, schritte, beleg_hashes=None):
     """Strikter technischer Pilotnachweis, unabhängig von KI-Eigenbehauptungen.
 
     Die Ergebnisse gelten ausschließlich für lokale Agentenantworten, nicht
@@ -54,7 +54,11 @@ def pruefe_nachweise(bericht, lauf, schritte):
     try:
         if zaehler.is_symlink():
             raise ValueError("Symlink als Zähler nicht vertrauenswürdig")
-        lokaler_zaehler = int(zaehler.read_text(encoding="utf-8").strip())
+        zaehler_bytes = _lese_sicher(zaehler)
+        lokaler_zaehler = int(zaehler_bytes.decode("utf-8").strip())
+        if beleg_hashes is not None:
+            beleg_hashes[str(zaehler.relative_to(ROOT))] = hashlib.sha256(
+                zaehler_bytes).hexdigest()
     except (OSError, UnicodeError, ValueError):
         lokaler_zaehler = None
     if lokaler_zaehler != 4:
@@ -77,7 +81,11 @@ def pruefe_nachweise(bericht, lauf, schritte):
             fehler.append(f"Agentendatei fehlt: {rolle}.json")
         else:
             try:
-                einzeln = json.loads(datei.read_text(encoding="utf-8"))
+                rollen_bytes = _lese_sicher(datei)
+                einzeln = json.loads(rollen_bytes)
+                if beleg_hashes is not None:
+                    beleg_hashes[str(datei.relative_to(ROOT))] = hashlib.sha256(
+                        rollen_bytes).hexdigest()
             except (OSError, UnicodeError, ValueError):
                 fehler.append(f"Agentendatei {rolle}.json unlesbar/ungültig.")
             else:
@@ -168,8 +176,8 @@ def pruefe_nachweise(bericht, lauf, schritte):
     return fehler
 
 
-def _hash_sicher(p):
-    """Dateihash nur ueber einen einzigen sicheren Dateideskriptor.
+def _lese_sicher(p):
+    """Nachweisbytes ueber einen einzigen sicheren Dateideskriptor lesen.
 
     Auf POSIX keine Symlink-Folgeverfolgung (auch nicht bei einem Austausch
     zwischen Vorabpruefung und open). Nur regulaere Dateien bis 2 MB; ein
@@ -187,7 +195,12 @@ def _hash_sicher(p):
         daten = datei.read(2_000_001)
         if len(daten) > 2_000_000:
             raise OSError("Nachweisartefakt ueberschreitet 2 MB")
-    return hashlib.sha256(daten).hexdigest()
+    return daten
+
+
+def _hash_sicher(p):
+    """SHA256 ueber genau die Bytes der sicheren, begrenzten Datei-Oeffnung."""
+    return hashlib.sha256(_lese_sicher(p)).hexdigest()
 
 
 def einmal():
@@ -241,13 +254,22 @@ def einmal():
     try:
         if report_path.is_symlink():
             raise ValueError("Symlinkbericht")
-        bericht = json.loads(report_path.read_text(encoding="utf-8"))
+        bericht_bytes = _lese_sicher(report_path)
+        bericht = json.loads(bericht_bytes)
         if not isinstance(bericht, dict):
             raise ValueError("Bericht muss ein JSON-Objekt sein")
     except (OSError, UnicodeError, ValueError):
         print("BLOCKIERT: Stundenbericht ungültig oder nicht lesbar.")
         return 1
-    fehler = pruefe_nachweise(bericht, lauf, schritte)
+    # Exakte Bytes der fachlich geprueften Belege mit den spaeteren
+    # Manifest-Hashes vergleichen; niemand darf nach der fachlichen
+    # Pruefung eine andere Datei als erfolgreich belegen lassen.
+    beleg_hashes = {
+        str(report_path.relative_to(ROOT)):
+            hashlib.sha256(bericht_bytes).hexdigest(),
+    }
+    fehler = pruefe_nachweise(bericht, lauf, schritte,
+                             beleg_hashes=beleg_hashes)
     erfolgreich = not fehler
     ergebnis = {
         "lauf": lauf.name,
@@ -277,6 +299,13 @@ def einmal():
         # Ersatzdatei darf als technische Pilotevidenz zaehlen.
         if hashes[str(prozess_pfad.relative_to(ROOT))] != prozess_hash_erwartet:
             raise OSError("Prozessnachweis wurde nach dem Schreiben veraendert")
+        # Bericht + vier Rollenprotokolle + Zaehler muessen *alle*
+        # bereits bei der fachlichen Pruefung als Bytes gesehen worden
+        # sein, und ihr finaler Manifest-Inhalt muss identisch bleiben.
+        if len(beleg_hashes) != len(dateien) - 1 or any(
+                hashes.get(name) != expected
+                for name, expected in beleg_hashes.items()):
+            raise OSError("Manifestbeleg weicht vom geprueften Inhalt ab")
     except OSError:
         # Fehlende Pflichtartefakte duerfen weder einen Erfolg noch eine
         # Ausnahme ausgeben. Auch bei einem ansonsten positiven MOCK-Bericht
