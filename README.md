@@ -67,8 +67,8 @@ Modellantworten ist kein Nachweis für funktionierenden Vier-KI-Betrieb.
 
 ## Status der Stilllegung
 
-Dieser Text dokumentiert den **geplanten Stand im Draft-PR #53**. Vor einem
-geprüften Merge kann `main` weiterhin den alten Stundenworkflow enthalten.
+Dieser Text dokumentiert den **Stand im Integrations-Draft-PR #55**. Vor einem
+geprüften Merge enthält `main` weiterhin den alten Stundenworkflow.
 Der zuletzt geprüfte Stundenlauf [40143662656](https://github.com/jefrey030/Schnapper/actions/runs/40143662656)
 hatte **0 echte KI-Aufrufe**. Der sichere Offline-Weg und die nachweisbare
 Stilllegung haben Priorität vor einer neuen autonomen KI-Konfiguration.
@@ -169,3 +169,25 @@ und Kosten überprüfbar freigegeben sind.
 - `docs/EIGENE-ANGEBOTE.md` – echte, selbst gefundene Angebote eintragen und laden (Vorlage: `app/vorlagen/meine-angebote.csv`)
 - `docs/HANDY-START.md` – SCHNAPPER am Android-Handy mit Termux starten und auf den Startbildschirm legen
 - `docs/OPEN-PRICES.md` – echte Ladenpreise zu einem Barcode (Open Prices, ODbL); aus, bis `SCHNAPPER_OPENPRICES_FREIGABE=ja`
+
+
+## Fertigstellungsabnahme: Offline-MVP (25.10.2026)
+
+Der [große Fertigstellungs-Master](docs/MASTER-SCHNAPPER-FERTIGSTELLUNG-20261025.md)
+trennt die **bereits nutzbare Offline-App** von unerfüllten Live-/Release-Voraussetzungen.
+
+- Neu: Die Kommandozeile prüft Preis-/Rabatt-/Zustandsfilter **vor** Datei-/Verlaufzugriff,
+  beendet fehlerhafte Eingaben mit Exitcode `2` und erklärt fehlende Dateien kontrolliert
+  mit Exitcode `1` statt eines Python-Tracebacks.
+- Neu: Das CLI-Schreiben des Preisverlaufs nutzt `Verlauf.importiere` und meldet
+  einen Speicherfehler, statt eine nicht gespeicherte Änderung als Erfolg auszugeben.
+- Die neue `tests/test_fertigstellung_mvp.py` prüft mit eigenen Testdaten sowohl CLI-Import
+  und Preisvergleich als auch echte lokale HTTP-Anfragen für Websuche, Datei-Upload,
+  Blockade unfreigegebener Quellen und gesperrte Barcode-Netzwerkabfragen.
+- [CI-Nachweis zum ersten Code-Stand](https://github.com/jefrey030/Schnapper/actions/runs/40216433994):
+  292 Python-Tests (1 übersprungen, 0 Fehler), 16/16 Cloudflare-Tests (0 Fehler).
+  Diese Tests verwenden keine fremden Preis-APIs oder live laufende KI-Agenten.
+
+**Nicht fertig:** echte automatische Angebote aus freigegebenen Quellen, tatsächliche
+Android-Geräteabnahme, unabhängige Sicherheitsprüfung, geprüfte Live-KI und öffentliche
+Veröffentlichung. Ohne Freigabe bleibt der Integrations-Draft ungemergt.
