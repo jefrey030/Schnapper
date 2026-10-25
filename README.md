@@ -243,3 +243,28 @@ trennt die **bereits nutzbare Offline-App** von unerfüllten Live-/Release-Vorau
 **Nicht fertig:** echte automatische Angebote aus freigegebenen Quellen, tatsächliche
 Android-Geräteabnahme, unabhängige Sicherheitsprüfung, geprüfte Live-KI und öffentliche
 Veröffentlichung. Ohne Freigabe bleibt der Integrations-Draft ungemergt.
+
+
+## Web-Suche und Preisalarme nach Quelle/Kategorie (25.10.2026)
+
+Der lokale Browser bietet neben Begriff, Höchstpreis, Rabatt und Zustand jetzt auch
+**Quelle** und **Kategorie** an. Beispiel: Quelle `eigene`, Kategorie `Audio`.
+Beide Angaben sind optional, werden ohne Beachtung der Groß-/Kleinschreibung
+**exakt** mit den Angaben der bereits geladenen Liste verglichen. Es wird
+dadurch **keine neue Quelle aktiv geschaltet** und keine fremde Website durchsucht.
+
+- Die normale Suche `/api/suche?quelle=eigene&kategorie=Audio` filtert den
+  bereits geprüften lokalen Angebotsbestand.
+- Die Links „CSV für Tabellen“ und „JSON“ übernehmen dieselben Suchfilter.
+- Ein neuer Preisalarm merkt Quelle und Kategorie und prüft sie auch beim
+  späteren Öffnen der lokal gespeicherten Alarmliste. Bereits gespeicherte
+  Alarme ohne diese Angaben bleiben kompatibel.
+- Eingaben mit mehr als 80 Zeichen in Quelle oder Kategorie werden abgewiesen;
+  bekannte ausgeschlossene Quellen bleiben ausgeschlossen.
+- [Fertigstellungs-Master und Prüfumfang](docs/MASTER-SCHNAPPER-FERTIGSTELLUNG-FILTER-20261025.md)
+  sowie `tests/test_fertigstellung_filter.py` dokumentieren die Umsetzung
+  mit lokalen HTTP-Tests. Kein Live-Marktplatz, keine zusätzlichen Kosten,
+  keine automatische Zustellung von Benachrichtigungen.
+
+**Einschränkung:** Ein grüner Offline-Test ersetzt keinen Test auf einem realen
+Android-Gerät und keine Freigabe für externe Datenquellen oder Produktion.
