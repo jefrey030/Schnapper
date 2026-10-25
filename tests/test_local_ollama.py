@@ -2,6 +2,7 @@
 import os
 import pathlib
 import tempfile
+import threading
 import unittest
 from unittest import mock
 
@@ -158,6 +159,86 @@ class TestLokaleKI(unittest.TestCase):
                     self.assertEqual(req.call_count, 2)
                 # Auch der missglückte Chatversuch verbraucht sein Kontingent.
                 self.assertEqual(self.zaehler.read_text(encoding="utf-8"), "1")
+
+    def test_sperre_verhindert_parallele_zaehlung(self):
+        # Simuliert zwei konkurrierende Aufrufer ohne einen Chat-/HTTP-Aufruf.
+        ki = lokal.KI(self.zaehler)
+        start = threading.Event()
+        freigabe = threading.Event()
+        ergebnisse = []
+        original = pathlib.Path.write_text
+
+        def langsam(pfad, inhalt, *args, **kwargs):
+            if pfad == self.zaehler:
+                start.set()
+                if not freigabe.wait(timeout=5):
+                    raise OSError("Nur Test: Schreibvorgang nicht freigegeben")
+            return original(pfad, inhalt, *args, **kwargs)
+
+        def erster():
+            try:
+                ergebnisse.append(ki._zaehle())
+            except Exception as exc:
+                ergebnisse.append(exc)
+
+        with mock.patch.object(pathlib.Path, "write_text", new=langsam):
+            prozess = threading.Thread(target=erster, daemon=True)
+            prozess.start()
+            try:
+                self.assertTrue(start.wait(timeout=5))
+                with self.assertRaisesRegex(KINichtVerfuegbar, "gesperrt"):
+                    ki._zaehle()
+            finally:
+                freigabe.set()
+                prozess.join(timeout=5)
+        self.assertFalse(prozess.is_alive())
+        self.assertEqual(ergebnisse, [1])
+        self.assertEqual(self.zaehler.read_text(encoding="utf-8"), "1")
+        self.assertEqual(ki._zaehle(), 2)
+
+    def test_verwaister_lock_blockiert_statt_zu_ueberschreiben(self):
+        sperre = self.zaehler.with_name(self.zaehler.name + ".lock")
+        sperre.mkdir()
+        ki = lokal.KI(self.zaehler)
+        with self.assertRaisesRegex(KINichtVerfuegbar, "verwaister"):
+            ki._zaehle()
+        self.assertTrue(sperre.is_dir())
+        self.assertFalse(self.zaehler.exists())
+
+    def test_fehlerhaftes_counter_schreiben_raeumt_lock_auf(self):
+        ki = lokal.KI(self.zaehler)
+        with mock.patch.object(pathlib.Path, "write_text",
+                               side_effect=OSError("simulierter Defekt")):
+            with self.assertRaises(KINichtVerfuegbar):
+                ki._zaehle()
+        sperre = self.zaehler.with_name(self.zaehler.name + ".lock")
+        self.assertFalse(sperre.exists())
+        # Nach Behebung des künstlichen Problems wieder genau ein Versuch.
+        self.assertEqual(ki._zaehle(), 1)
+
+    def test_limit_abgelehnt_ohne_lock_zu_hinterlassen(self):
+        ki = lokal.KI(self.zaehler)
+        self.zaehler.write_text(str(lokal.MAX_AUFRUFE), encoding="utf-8")
+        with self.assertRaisesRegex(KINichtVerfuegbar, "Maximal"):
+            ki._zaehle()
+        self.assertFalse(self.zaehler.with_name(
+            self.zaehler.name + ".lock").exists())
+        self.assertEqual(int(self.zaehler.read_text()), lokal.MAX_AUFRUFE)
+
+    def test_aufrufnummer_wird_aus_reservierung_uebernommen(self):
+        ki = lokal.KI(self.zaehler)
+        def antwort(pfad, *args, **kwargs):
+            if pfad == "/api/tags":
+                return {"models": [{"name": "qwen2.5:3b"}]}
+            if pfad == "/api/chat":
+                # Externe Dateiveränderungen nach Reservierung dürfen die
+                # belegte Versuchsnummer nicht nachträglich umetikettieren.
+                self.zaehler.write_text("3", encoding="utf-8")
+                return {"message": {"content": "Mock-Antwort"}}
+            raise AssertionError("Unbekannter Testpfad")
+
+        with mock.patch.object(lokal, "_request", side_effect=antwort):
+            self.assertEqual(ki.frage("System", "Nutzer")["aufruf_nr"], 1)
 
     def test_lokales_limit(self):
         with mock.patch.object(lokal, "MAX_AUFRUFE", 1), \
