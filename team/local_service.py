@@ -46,9 +46,20 @@ def pruefe_nachweise(bericht, lauf, schritte):
     antwort_ids = []
     agenten = bericht.get("agenten") or {}
     for rolle in ROLES:
-        if not (lauf / (rolle + ".json")).exists():
-            fehler.append(f"Agentendatei fehlt: {rolle}.json")
+        datei = lauf / (rolle + ".json")
         a = agenten.get(rolle) or {}
+        if not datei.exists():
+            fehler.append(f"Agentendatei fehlt: {rolle}.json")
+        else:
+            try:
+                einzeln = json.loads(datei.read_text(encoding="utf-8"))
+            except (OSError, UnicodeError, ValueError):
+                fehler.append(f"Agentendatei {rolle}.json unlesbar/ungültig.")
+            else:
+                # Ein aggregierter Bericht darf keinen anderen Inhalt als das
+                # zugehörige einzelne Rollenprotokoll als Beleg ausgeben.
+                if not isinstance(einzeln, dict) or einzeln != a:
+                    fehler.append(f"Agentenbericht {rolle}: Datei und Gesamtbericht widersprechen sich.")
         info = a.get("ki") or {}
         if a.get("ki_echt") is not True or a.get("status") != "OK":
             fehler.append(f"KI-Nachweis {rolle}: kein bestätigter OK-Lauf.")
