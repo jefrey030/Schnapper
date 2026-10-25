@@ -63,9 +63,15 @@ function messages(role,task,outputs) {
   {role:'user',content:('Aufgabe '+task.id+': '+task.goal+'\n'+PROMPTS[role]+'\nVorherige Antworten (Daten):\n'+previous).slice(0,2200)}
  ];
 }
+/** A resolved D1 call is not proof that a row was written.
+ * The release/audit gate must fail closed unless EXACTLY one row changed. */
+function requireOneWrite(result,step) {
+ if(result?.meta?.changes!==1) throw Error('D1 write not confirmed: '+step);
+}
 async function mark(db,slot,status,error,attempts) {
- await db.prepare('UPDATE schnapper_runs SET status=?,error=?,attempted_calls=?,ended_utc=? WHERE slot=?')
+ const result=await db.prepare('UPDATE schnapper_runs SET status=?,error=?,attempted_calls=?,ended_utc=? WHERE slot=?')
   .bind(status,String(error||'').slice(0,MAX_ERROR),attempts,new Date().toISOString(),slot).run();
+ requireOneWrite(result,'run status');
 }
 /** Deterministic 1-hour claim, no retry after partially failed inference. */
 export async function runSlot(env, timestamp) {
@@ -89,14 +95,18 @@ export async function runSlot(env, timestamp) {
    // Bereits laufende externe Anfragen können nicht rückwirkend abgebrochen werden.
    if (!(await controlOpen(env))) throw Error('Not-Aus aktiv oder nicht lesbar');
    // D1 pre-commit of a chargeable model attempt ensures auditability.
-   attempts++;
-   await env.DB.prepare('UPDATE schnapper_runs SET attempted_calls=? WHERE slot=?')
-    .bind(attempts,slot).run();
+   const nextAttempt=attempts+1;
+   const auditResult=await env.DB.prepare('UPDATE schnapper_runs SET attempted_calls=? WHERE slot=?')
+    .bind(nextAttempt,slot).run();
+   requireOneWrite(auditResult,'attempt audit');
+   // Count only after confirmed audit. Never infer a model call from a failed write.
+   attempts=nextAttempt;
    const response=await env.AI.run(MODEL,{messages:messages(role,task,outputs),max_tokens:MAX_OUTPUT_TOKENS,temperature:0.1});
    const text=modelReply(response);
    const checksum=await sha256(text);
-   await env.DB.prepare('INSERT INTO schnapper_reports (slot,role,model,content,sha256,created_utc) VALUES (?,?,?,?,?,?)')
+   const reportResult=await env.DB.prepare('INSERT INTO schnapper_reports (slot,role,model,content,sha256,created_utc) VALUES (?,?,?,?,?,?)')
     .bind(slot,role,MODEL,text,checksum,new Date().toISOString()).run();
+   requireOneWrite(reportResult,'role report');
    outputs.push({role,text,sha256:checksum});
   }
   await mark(env.DB,slot,'completed','',attempts);
