@@ -1,4 +1,5 @@
 """Lokaler Scheduler: reine Unit-Tests, KEIN Modellaufruf."""
+import datetime as dt
 import json
 import pathlib
 import sys
@@ -111,7 +112,7 @@ class TestDienst(unittest.TestCase):
                                        "modell_antwort": "qwen2.5:1.5b",
                                        "done": True, "done_reason": "stop",
                                        "rolle": "assistant",
-                                       "created_at": "2026-10-25T13:00:00Z",
+                                       "created_at": dt.datetime.now(dt.timezone.utc).isoformat(),
                                        "prompt_eval_count": 11, "eval_count": 4,
                                    }},
                         }
@@ -261,7 +262,7 @@ class TestDienst(unittest.TestCase):
                     "ollama_beleg": {
                         "modell_antwort": "falsches:modell", "done": True,
                         "done_reason": "stop", "rolle": "assistant",
-                        "created_at": "2026-10-25T13:00:00Z",
+                        "created_at": dt.datetime.now(dt.timezone.utc).isoformat(),
                         "prompt_eval_count": 10, "eval_count": 4,
                     },
                 },
@@ -274,6 +275,92 @@ class TestDienst(unittest.TestCase):
         schritte = [{"rolle": r, "exitcode": 0} for r in (*rollen, "BERICHT")]
         fehler = dienst.pruefe_nachweise(bericht, lauf, schritte)
         self.assertEqual(sum("Ollama-Abschlussbeleg" in x for x in fehler), 4)
+
+    def test_veralteter_ollenbeleg_blockiert_den_lokalen_pilot(self):
+        lauf = self.team / "work" / "stale_pilot"
+        lauf.mkdir(parents=True)
+        (lauf / "ki_aufrufe.txt").write_text("4", encoding="utf-8")
+        rollen = ("LEAD", "BRAIN", "CHECK", "COMMAND")
+        alt = (dt.datetime.now(dt.timezone.utc) - dt.timedelta(hours=3)).isoformat()
+        agenten = {}
+        for r in rollen:
+            agenten[r] = {
+                "rolle": r, "status": "OK", "ki_echt": True,
+                "ki": {
+                    "laufzeit": "Ollama lokal (keine bezahlte KI-API)",
+                    "modell": "qwen2.5:1.5b", "text": "simulierter Text",
+                    "antwort_id": "lokal-" + r.lower(),
+                    "antwort_id_typ": "nur-lokale-kennung",
+                    "ollama_beleg": {
+                        "modell_antwort": "qwen2.5:1.5b", "done": True,
+                        "done_reason": "stop", "rolle": "assistant",
+                        "created_at": alt,
+                        "prompt_eval_count": 8, "eval_count": 3,
+                    },
+                },
+            }
+            (lauf / (r + ".json")).write_text(json.dumps(agenten[r]), encoding="utf-8")
+        bericht = {
+            "lauf": lauf.name, "team_einsatzbereit": True,
+            "agenten_mit_echter_ki": list(rollen), "ki_aufrufe": 4,
+            "agenten": agenten,
+        }
+        schritte = [{"rolle": r, "exitcode": 0} for r in (*rollen, "BERICHT")]
+        fehler = dienst.pruefe_nachweise(bericht, lauf, schritte)
+        self.assertEqual(sum("Ollama-Abschlussbeleg" in x for x in fehler), 4)
+
+    def test_simulierter_positiver_pilot_behauptet_keinen_echtheitsbeweis(self):
+        rollen = ("LEAD", "BRAIN", "CHECK", "COMMAND")
+
+        def fake(cmd, **kwargs):
+            lauf = pathlib.Path(cmd[3])
+            rolle = cmd[2]
+            if rolle == "BERICHT":
+                p = self.team / "runs" / (lauf.name + ".json")
+                p.parent.mkdir(parents=True, exist_ok=True)
+                agenten = {}
+                for r in rollen:
+                    agenten[r] = {
+                        "rolle": r, "status": "OK", "ki_echt": True,
+                        "plan": {"aufgabe_id": "S-000"} if r == "LEAD" else None,
+                        "vorschlag_datei": "team/proposals/test.md" if r == "BRAIN" else None,
+                        "protokoll": {"freigabe": "ja", "naechster_schritt": "Review"}
+                            if r == "COMMAND" else None,
+                        "ki": {
+                            "laufzeit": "Ollama lokal (keine bezahlte KI-API)",
+                            "modell": "qwen2.5:1.5b", "text": "nur Mock",
+                            "antwort_id": "lokal-" + r.lower(),
+                            "antwort_id_typ": "nur-lokale-kennung",
+                            "ollama_beleg": {
+                                "modell_antwort": "qwen2.5:1.5b",
+                                "done": True, "done_reason": "stop",
+                                "rolle": "assistant",
+                                "created_at": dt.datetime.now(dt.timezone.utc).isoformat(),
+                                "prompt_eval_count": 4, "eval_count": 2,
+                            },
+                        },
+                    }
+                    (lauf / (r + ".json")).write_text(
+                        json.dumps(agenten[r]), encoding="utf-8")
+                (lauf / "ki_aufrufe.txt").write_text("4", encoding="utf-8")
+                proposal = self.team / "proposals" / "test.md"
+                proposal.parent.mkdir(parents=True, exist_ok=True)
+                proposal.write_text("Nur Simulationsvorschlag", encoding="utf-8")
+                p.write_text(json.dumps({
+                    "lauf": lauf.name, "team_einsatzbereit": True,
+                    "agenten_mit_echter_ki": list(rollen), "ki_aufrufe": 4,
+                    "tests_ok": True, "tests_anzahl": 2,
+                    "check_urteil": "bestanden", "agenten": agenten,
+                }), encoding="utf-8")
+            return SimpleNamespace(returncode=0, stdout="", stderr="")
+
+        with mock.patch.object(dienst.subprocess, "run", side_effect=fake):
+            self.assertEqual(dienst.einmal(), 0)
+        manifest = next((self.team / "work").glob("*/nachweise.json"))
+        ergebnis = json.loads(manifest.read_text(encoding="utf-8"))["ergebnis"]
+        self.assertTrue(ergebnis["lokale_antwortbelege_vollstaendig"])
+        self.assertIs(ergebnis["vier_echte_ki_antworten"], False)
+        self.assertIn("ECHTHEIT UNVERIFIZIERT", ergebnis["status"])
 
     def test_falsche_laufzeit_oder_doppelte_ids_blockieren(self):
         lauf = self.team / "work" / "fake"
