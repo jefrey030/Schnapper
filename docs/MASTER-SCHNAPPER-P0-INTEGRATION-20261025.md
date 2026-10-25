@@ -68,3 +68,22 @@
 - Integrationsentwurf: [SCHNAPPER PR #54](https://github.com/jefrey030/Schnapper/pull/54), Draft gegen `main`.
 - Selbständige Rollen sind **noch nicht** als vier reale Modelle aktiv; diese Übergabe umfasst GitHub-Code, statische/Offline-Tests und sichere Auftragsverteilung.
 - Für die Abschlussabnahme den zuletzt erfolgreichen CI-Run **gegen die finale HEAD-SHA** aus den GitHub-Actions prüfen. Wenn keine Actions laufen: `BLOCKED / NOT_RUN`, nicht `PASS`.
+
+## Ausgeführte statische Integrationskontrolle – 25.10.2026
+
+Bei GitHub-Dateidirektvergleich des Integrationszweigs wurden 14 konkrete Bedingungen geprüft. **14/14 Bedingungen im Quelltext erfüllt.** Das ist eine **statische Prüfung**, nicht die Ausführung der Unit-Tests oder ein Modell-Aufruf.
+
+- Cron-/Schedule-Trigger entfernt.
+- Workflow-Job explizit `if: ${{ false }}`.
+- Keine `models: read`- oder `contents: write`-Berechtigung im deaktivierten Workflow.
+- Keine aktiven Agenten-/Netzwerk-Schritte im alten Workflow.
+- Legacy-GitHub-Models-KI verweigert Modellaufruf.
+- Readiness setzt `CHECK=bestanden`, `COMMAND=ja` und negativen Geheimnisfund-Scan voraus.
+- Keine COMMAND-Modellanfrage ohne offene LEAD-Aufgabe.
+- Lokale Host-Abnahme verlangt CHECK=`bestanden`.
+- Cloudflare Worker enthält Not-Aus-Abfrage; D1-Schema hat persistenten Standard-STOP.
+- Neue Workflow-Negativtests sind als Python-Testcode gespeichert.
+
+**Wichtig zur CI:** Zum Zeitpunkt des Abgleichs zeigte GitHub für PR #54 und dessen Integrations-HEAD **noch keinen neuen abgeschlossenen Actions-Lauf**. Die zuvor erfolgreichen CI-Läufe von #21 und #53 beweisen den kombinierten Code **nicht**. CI-Gate deshalb `NOT_VERIFIED`, trotz positivem statischem Check.
+
+**Release-Entscheid:** `NO-GO`, kein Merge oder Deployment.
