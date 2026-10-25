@@ -107,6 +107,29 @@ PYTHONPATH=app python -m schnapper.web app/beispiele/angebote.csv
 Dann im Browser `http://127.0.0.1:8765` öffnen. Suche, Filter, Sortierung und „Eigene Liste“ (CSV/JSON hochladen) funktionieren am Handy wie am PC. Hochgeladene Listen bleiben nur im Arbeitsspeicher (Ausnahme: Preisverlauf mit `--verlauf`, siehe unten).
 Mit `--host 0.0.0.0` ist die Seite im eigenen WLAN erreichbar (ohne Passwort, daher nur im Heimnetz).
 
+### CSV-/JSON-Export gefilterter Treffer (Fertigstellungs-Master P2)
+
+In der Suchansicht unter **Treffer herunterladen** auf **CSV für Tabellen** oder
+**JSON** tippen. Die Links übernehmen die gerade eingestellten Suchfilter
+(Suchbegriff, Höchstpreis, Mindestrabatt, Zustand und Sortierung).
+Beispiel für die lokale API:
+
+```text
+http://127.0.0.1:8765/api/export.csv?text=kopfhoerer&max_preis=60&sortierung=preis
+http://127.0.0.1:8765/api/export.json?text=kopfhoerer&max_preis=60&sortierung=preis
+```
+
+CSV verwendet UTF-8 mit BOM, Semikolon und festem Spaltenschema. Fremde
+Tabellentexte werden gegen Formel-Injektion abgesichert. Die Download-Dateien
+enthalten **nur die aktuell im SCHNAPPER-Server geladenen und gefilterten Angebote**;
+sie suchen nicht selbstständig im Internet. Sie werden nicht als Serverdatei
+persistiert. JSON enthält dieselben Treffer wie `/api/suche`.
+Bei einer leeren Suche enthält CSV nur die Kopfzeile.
+
+Details und Nachweise: [Fertigstellungs-Master P2](docs/MASTER-SCHNAPPER-FERTIGSTELLUNG-P2-EXPORT-20261025.md).
+Auch mit der Exportfunktion bleiben echte Datenquellen/Android-Gerätetests,
+Sicherheitsreview, Produktionsfreigabe und tatsächliche Live-KIs **offen**.
+
 ### Merkliste und Preisalarm in der Web-Oberfläche
 - **☆ Merken** auf jeder Karte: Das Angebot landet in der **Merkliste**. Dort steht, ob der Preis in der aktuell geladenen Liste seit dem Merken **günstiger, teurer oder gleich** ist – oder ob das Angebot verschwunden ist.
 - **⚡ Preisalarm für diese Suche:** Suchbegriff plus „Bis €“ und/oder „Ab % billiger“ eingeben, Knopf drücken. Unter **Preisalarme** steht bei jedem Öffnen, welche Wünsche gerade erfüllt sind (günstigstes Angebot zuerst). Die Zahl am Reiter zeigt, wie viele Alarme anschlagen.
