@@ -14,6 +14,20 @@ jobs:
     timeout-minutes: 5
     steps:
       - uses: actions/checkout@v4
+        with:
+          # S-006 vergleicht historische Bäume/Commits gegen main.
+          fetch-depth: 0
+          persist-credentials: false
+      - name: S-006 Remote-Refs für vollständige Branch-Abnahme holen
+        run: |
+          set -euo pipefail
+          git fetch --no-tags --no-recurse-submodules origin \
+            '+refs/heads/main:refs/remotes/origin/main' \
+            '+refs/heads/fix/schnapper-web-main-20261022:refs/remotes/origin/fix/schnapper-web-main-20261022' \
+            '+refs/heads/feature/schnapper-web-quellen-20261022:refs/remotes/origin/feature/schnapper-web-quellen-20261022' \
+            '+refs/heads/feature/schnapper-angebotskern-20261021:refs/remotes/origin/feature/schnapper-angebotskern-20261021' \
+            '+refs/heads/fix/schnapper-hourly-rotation-20261021:refs/remotes/origin/fix/schnapper-hourly-rotation-20261021'
+          git rev-parse --verify origin/main^{commit} >/dev/null
       - uses: actions/setup-python@v5
         with:
           python-version: '3.11'
