@@ -51,6 +51,12 @@ function query() {
   return p.toString();
 }
 
+function exportLinksAktualisieren() {
+  const qs = query();
+  $("export-csv").href = "/api/export.csv?" + qs;
+  $("export-json").href = "/api/export.json?" + qs;
+}
+
 function warnText(w) {
   if (w.startsWith("veraltet")) return { text: "Preis evtl. veraltet", gefahr: false, titel: w };
   if (w.startsWith("betrugsverdacht")) return { text: "Vorsicht: zu billig für Neuware", gefahr: true, titel: w };
@@ -157,7 +163,11 @@ async function suchen() {
   }
 }
 
-function spaeter() { clearTimeout(timer); timer = setTimeout(suchen, 250); }
+function spaeter() {
+  exportLinksAktualisieren();
+  clearTimeout(timer);
+  timer = setTimeout(suchen, 250);
+}
 
 async function hochladen(ev) {
   const datei = ev.target.files[0];
@@ -382,6 +392,7 @@ document.addEventListener("DOMContentLoaded", () => {
   }
   try { window.localStorage.getItem("schnapper.test"); } catch { $("speicher-hinweis").hidden = false; }
   zaehler();
+  exportLinksAktualisieren();
   suchen();
   alarmePruefen();
 });
