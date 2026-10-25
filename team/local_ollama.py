@@ -43,7 +43,10 @@ def _request(pfad, payload=None, timeout=10):
             raw = antwort.read(200_001)
             if len(raw) > 200_000:
                 raise KINichtVerfuegbar("Ollama-Antwort zu groß.")
-            return json.loads(raw)
+            result = json.loads(raw)
+            if not isinstance(result, dict):
+                raise KINichtVerfuegbar("Lokale Ollama-API lieferte kein JSON-Objekt.")
+            return result
     except (urllib.error.URLError, TimeoutError, OSError, ValueError) as exc:
         raise KINichtVerfuegbar(
             "Lokales Ollama nicht erreichbar oder ungültige Antwort. "
@@ -68,11 +71,12 @@ class KI:
         tags = _request("/api/tags")
         if not isinstance(tags, dict) or not isinstance(tags.get("models"), list):
             raise KINichtVerfuegbar("Ungültige lokale Modellliste.")
-        modelle = {
-            v.get("name") for v in tags.get("models", [])
-            if isinstance(v, dict)
-        }
-        if self.modell not in modelle:
+        # Falsche Katalogtypen dürfen keine unkontrollierte Ausnahme auslösen.
+        installiert = any(
+            isinstance(v, dict) and isinstance(v.get("name"), str)
+            and v["name"] == self.modell for v in tags["models"]
+        )
+        if not installiert:
             raise KINichtVerfuegbar(
                 f"Lokales Modell {self.modell!r} nicht installiert; "
                 f"auf dem eigenen Rechner: ollama pull {self.modell}"
@@ -80,15 +84,30 @@ class KI:
 
     def _zaehle(self):
         try:
-            bisher = int(self.zaehler.read_text()) if self.zaehler.exists() else 0
-        except (OSError, ValueError) as exc:
-            raise KINichtVerfuegbar("Ungültiger KI-Aufrufzähler.") from exc
+            if self.zaehler.is_symlink():
+                raise ValueError("Aufrufzähler darf kein Symlink sein")
+            if self.zaehler.exists():
+                if self.zaehler.stat().st_size > 32:
+                    raise ValueError("Aufrufzähler zu groß")
+                bisher = int(self.zaehler.read_text(encoding="utf-8"))
+            else:
+                bisher = 0
+            # Keine Umgehung der dokumentierten Obergrenze durch ENV-Werte.
+            if type(MAX_AUFRUFE) is not int or not 1 <= MAX_AUFRUFE <= 6:
+                raise ValueError("Ungültiges Aufrufbudget")
+            if bisher < 0 or bisher > MAX_AUFRUFE:
+                raise ValueError("Ungültiger Aufrufzähler")
+        except (OSError, ValueError, UnicodeError) as exc:
+            raise KINichtVerfuegbar("Ungültiger KI-Aufrufzähler oder Aufrufbudget.") from exc
         if bisher >= MAX_AUFRUFE:
             raise KINichtVerfuegbar(
                 f"Maximal {MAX_AUFRUFE} lokale KI-Aufrufe pro Stundenlauf."
             )
-        self.zaehler.parent.mkdir(parents=True, exist_ok=True)
-        self.zaehler.write_text(str(bisher + 1), encoding="utf-8")
+        try:
+            self.zaehler.parent.mkdir(parents=True, exist_ok=True)
+            self.zaehler.write_text(str(bisher + 1), encoding="utf-8")
+        except OSError as exc:
+            raise KINichtVerfuegbar("KI-Aufrufzähler konnte nicht gesichert werden.") from exc
 
     def frage(self, system, nutzer):
         self._pruefe_modell()
@@ -104,9 +123,14 @@ class KI:
             "options": {"num_predict": 700, "temperature": 0.2},
         }, timeout=180)
         try:
-            inhalt = antwort["message"]["content"].strip()
+            inhalt = antwort["message"]["content"]
         except (KeyError, TypeError, AttributeError) as exc:
             raise KINichtVerfuegbar("Lokale KI ohne verwertbaren Antworttext.") from exc
+        if not isinstance(inhalt, str):
+            raise KINichtVerfuegbar("Lokale KI ohne gültigen Textinhalt.")
+        if len(inhalt) > 12_000:
+            raise KINichtVerfuegbar("Lokale KI-Antwort überschreitet das Größenlimit.")
+        inhalt = inhalt.strip()
         if not inhalt:
             raise KINichtVerfuegbar("Leere lokale KI-Antwort.")
         return {
