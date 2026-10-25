@@ -3,9 +3,11 @@
 Die Tests prüfen nur lesend mit git. Fehlen die Remote-Branches (z. B. flacher
 Klon ohne diese Refs oder Branch bereits gelöscht), wird übersprungen."""
 import json
+import os
 import pathlib
 import subprocess
 import unittest
+from unittest import mock
 
 ROOT = pathlib.Path(__file__).resolve().parents[1]
 
@@ -36,13 +38,23 @@ def _ref_da(ref):
 
 class TestBranchesS006(unittest.TestCase):
     def test_kandidaten_sind_vollstaendig_in_main(self):
-        if not _ref_da("origin/main"):
-            self.skipTest("origin/main nicht vorhanden")
+        # CI muss alle vier Kandidaten wirklich prüfen. Ein grüner Test mit
+        # fehlender Git-Historie oder nur Teilmenge darf nicht mehr möglich sein.
+        ci = os.environ.get("GITHUB_ACTIONS", "").lower() == "true"
+        refs = ["origin/main"]
+        for branch, vergleich in KANDIDATEN.items():
+            refs.append("origin/" + branch)
+            if vergleich:
+                refs.append(vergleich)
+        fehlend = sorted({ref for ref in refs if not _ref_da(ref)})
+        if fehlend:
+            nachricht = "S-006: Git-Referenzen fehlen: " + ", ".join(fehlend)
+            if ci:
+                self.fail(nachricht)
+            self.skipTest(nachricht + " (lokaler Checkout ohne vollständige Remote-Refs)")
         geprueft = 0
         for branch, vergleich in KANDIDATEN.items():
             ref = "origin/" + branch
-            if not _ref_da(ref) or (vergleich and not _ref_da(vergleich)):
-                continue
             with self.subTest(branch=branch):
                 if vergleich is None:
                     r = _git("merge-base", "--is-ancestor", ref, "origin/main")
@@ -55,8 +67,22 @@ class TestBranchesS006(unittest.TestCase):
                     r = _git("diff", "--quiet", vergleich, ref)
                     self.assertEqual(r.returncode, 0, f"{branch} unterscheidet sich von {vergleich}")
                 geprueft += 1
-        if geprueft == 0:
-            self.skipTest("keine Kandidaten-Branches lokal vorhanden")
+        self.assertEqual(geprueft, len(KANDIDATEN),
+                         "S-006: nicht alle Kandidaten geprüft")
+
+    def test_ci_fehlende_main_ref_ist_fail_statt_skip(self):
+        with mock.patch.dict(os.environ, {"GITHUB_ACTIONS": "true"}), \
+             mock.patch(__name__ + "._ref_da", return_value=False):
+            with self.assertRaisesRegex(AssertionError, "S-006: Git-Referenzen fehlen"):
+                self.test_kandidaten_sind_vollstaendig_in_main()
+
+    def test_ci_fehlende_kandidatenref_ist_fail_statt_teilpass(self):
+        def nur_main(ref):
+            return ref == "origin/main"
+        with mock.patch.dict(os.environ, {"GITHUB_ACTIONS": "true"}), \
+             mock.patch(__name__ + "._ref_da", side_effect=nur_main):
+            with self.assertRaisesRegex(AssertionError, "S-006: Git-Referenzen fehlen"):
+                self.test_kandidaten_sind_vollstaendig_in_main()
 
     def test_s006_bleibt_vorschlag_und_nennt_alle_kandidaten(self):
         tasks = json.loads((ROOT / "team" / "tasks.json").read_text(encoding="utf-8"))["tasks"]
