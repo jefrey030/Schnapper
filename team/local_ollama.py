@@ -75,6 +75,11 @@ def _validiere_chat_antwort(antwort, modell):
         raise KINichtVerfuegbar("Ollama-Antwort hat keinen gültigen Zeitstempel.") from exc
     if zeit.tzinfo is None:
         raise KINichtVerfuegbar("Ollama-Zeitstempel braucht eine Zeitzone.")
+    # Ein vollständiges aber altes JSON kann eine erneut abgespielte Antwort
+    # sein. Ohne frischen lokalen Zeitstempel wird niemals Erfolg gemeldet.
+    alter_sekunden = (dt.datetime.now(dt.timezone.utc) - zeit).total_seconds()
+    if not (-120 <= alter_sekunden <= 600):
+        raise KINichtVerfuegbar("Ollama-Antwort ist veraltet oder liegt unplausibel in der Zukunft.")
     prompt_tokens, erzeugte_tokens = antwort.get("prompt_eval_count"), antwort.get("eval_count")
     if (type(prompt_tokens) is not int or prompt_tokens < 0
             or type(erzeugte_tokens) is not int or erzeugte_tokens < 1):
