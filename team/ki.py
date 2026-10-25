@@ -28,7 +28,14 @@ OPEN_WEIGHT_BEVORZUGT = (
     "mistral-ai/Ministral-3B",
 )
 OPEN_WEIGHT_ANBIETER = ("meta", "mistral-ai", "microsoft", "deepseek", "ai21-labs", "cohere")
-MAX_AUFRUFE = int(os.getenv("SCHNAPPER_MAX_AUFRUFE", "6"))
+def _sicheres_aufruflimit(wert):
+    """Fehlerhafte oder groessere Umgebungswerte aktiv sperren statt abstuerzen."""
+    if wert not in ("1", "2", "3", "4", "5", "6"):
+        return 0
+    return int(wert)
+
+
+MAX_AUFRUFE = _sicheres_aufruflimit(os.getenv("SCHNAPPER_MAX_AUFRUFE", "6"))
 MAX_TOKENS = 700
 
 
