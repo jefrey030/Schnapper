@@ -39,8 +39,8 @@ Es werden keine echten Modelle gestartet; die Tests nutzen ausschließlich nachg
 | 15 | Negativtest gegen ungültigen/fehlenden Zähler | CODE UMGESETZT |
 | 16 | Negativtest gegen beschädigte Rollen-JSON-Datei | CODE UMGESETZT |
 | 17 | Negativtest gegen beschädigten finalen Bericht | CODE UMGESETZT |
-| 18 | Gesamte Python-Unit-CI reproduzierbar prüfen | AUSSTEHEND vor CI-Lauf |
-| 19 | Cloudflare-Offline-CI auf HEAD prüfen | AUSSTEHEND vor CI-Lauf |
+| 18 | Gesamte Python-Unit-CI reproduzierbar prüfen | VERIFIZIERT: Run 40199048528, 198 Tests, 197 PASS / 1 SKIP / 0 FAIL |
+| 19 | Cloudflare-Offline-CI auf HEAD prüfen | VERIFIZIERT: Run 40199048528, 13/13 PASS |
 | 20 | Unabhängiger Review, Live-Ollama, Kosten- und Produktionsfreigabe | BLOCKED / NO-GO |
 
 ## 3. Sicherheitsabgrenzung
@@ -57,3 +57,14 @@ Der Abgleich ist ein **Konsistenztest lokaler Prüfartefakte**, keine kryptograf
 ## 5. Nächste Schritte
 
 Nach erfolgreich bestätigten Tests Code-Diff unabhängig prüfen; vor eventuellem Merge Basis-/Zielstand und Security-Reviews erneut abgleichen. Bei Fehler: ausschließlich die eigene Prüfbranch-Datei korrigieren und neuen CI-Lauf mit exakter SHA dokumentieren.
+## 6. Abgeschlossene Prüfungen und echte CI
+
+**Überprüfter Code-Commit:** `fa8b23d5f7c006e192ad1c8704a1d99276413dc9` auf eigenem Master-91-Zweig. [GitHub Actions Run 40199048528](https://github.com/jefrey030/Schnapper/actions/runs/40199048528), beide Jobs **completed / success**, echte Runner-Schritte und Logs gelesen.
+
+- Python: `python -m unittest discover -s tests -v`; **198 Fälle insgesamt, 197 PASS, 1 SKIP, 0 FAIL, Exit 0**. Der übersprungene Fall betrifft `origin/main` im shallow GitHub-Checkout; er zählt **nicht** als PASS.
+- Cloudflare: `node --test test/*.test.mjs`; **13 PASS, 0 FAIL, 0 SKIP, Exit 0**, rein offline ohne Deployment.
+- Vier ursprünglich ergänzte Negativtests plus Tests für falsch strukturierte Felder/Symlinks wurden grün im Gesamtpaket ausgeführt. Der ältere fehlerhafte Simulationslauf ist nicht als PASS gezählt; dessen HTTP-only-Nachahmer wurde **ausschließlich im Test** von der produktiven HTTPS-URL-Prüfung getrennt.
+- Der aktuelle Review-Branch ist ein Draft gegen den Master-90-Branch, kein Merge in `main`; keine echten Ollama-/GitHub-Models-/Cloudflare-Inferenzanfragen oder Bezahlfunktionen aktiviert.
+- Der Dateivergleich und der Zählervergleich sind nur interne **Konsistenzbelege**: bei einem vollständig kontrollierten/veränderten Dateisystem können Angreifer entsprechende Artefakte gemeinsam fälschen. **Keine kryptografische Authentizitätsgarantie**.
+
+**Stand 19/20 Arbeitspakete als Prüf- oder Codeaufgaben bearbeitet; Freigabe-Schritt 20 bleibt BLOCKED.** Unabhängiger Security-Review, echter Vier-Modelltest, Live-Not-Aus/D1/Kostenprüfung und ausdrückliche Produktionsfreigabe fehlen weiterhin. **NO-GO**.
