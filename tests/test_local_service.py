@@ -184,6 +184,31 @@ class TestDienst(unittest.TestCase):
         with mock.patch.object(dienst.subprocess, "run", side_effect=fake):
             self.assertEqual(dienst.einmal(), 1)
 
+    def test_beschadigte_rollenstrukturen_werden_abgelehnt_statt_abzustuerzen(self):
+        lauf = self.team / "work" / "unstrukturierter_bericht"
+        lauf.mkdir(parents=True)
+        report = {
+            "lauf": lauf.name, "team_einsatzbereit": True,
+            "agenten_mit_echter_ki": [{"rolle": "LEAD"}],
+            "ki_aufrufe": 4,
+            "agenten": {"LEAD": 1, "COMMAND": {"rolle": "COMMAND", "protokoll": "ja"}},
+        }
+        fehler = dienst.pruefe_nachweise(report, lauf, [])
+        self.assertTrue(any("KI-Nachweis für mindestens" in x for x in fehler))
+        self.assertTrue(any("Ungültige Rolle im Gesamtbericht: LEAD" in x for x in fehler))
+        self.assertTrue(any("kein gültiges Abschlussprotokoll" in x for x in fehler))
+
+    def test_symlink_als_rollendatei_wird_gesperrt(self):
+        lauf = self.team / "work" / "rollen_symlink"
+        lauf.mkdir(parents=True)
+        fremd = self.root / "andere_datei.json"
+        fremd.write_text('{"rolle":"LEAD"}', encoding="utf-8")
+        (lauf / "LEAD.json").symlink_to(fremd)
+        fehler = dienst.pruefe_nachweise(
+            {"lauf": lauf.name, "agenten": {"LEAD": {"rolle": "LEAD"}}},
+            lauf, [])
+        self.assertTrue(any("nicht vertrauenswürdig (Symlink): LEAD.json" in x for x in fehler))
+
     def test_falsche_laufzeit_oder_doppelte_ids_blockieren(self):
         lauf = self.team / "work" / "fake"
         lauf.mkdir(parents=True)
