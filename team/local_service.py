@@ -227,8 +227,13 @@ def einmal():
             sperre_fehler = True
             schritte.append({"rolle": rolle, "exitcode": -1,
                              "fehler": "Zeitlimit 240 Sekunden überschritten"})
-    (lauf / "prozesse.json").write_text(
-        json.dumps(schritte, ensure_ascii=False, indent=2), encoding="utf-8")
+    # Prozessbeleg ist aus den beobachteten Exitcodes und Rollen entstanden.
+    # Den Byte-Hash vor dem Schreiben merken: das spaetere Manifest darf
+    # nicht unbemerkt eine manipulierte Ersatzdatei belegen.
+    prozess_pfad = lauf / "prozesse.json"
+    prozess_roh = json.dumps(schritte, ensure_ascii=False, indent=2).encode("utf-8")
+    prozess_hash_erwartet = hashlib.sha256(prozess_roh).hexdigest()
+    prozess_pfad.write_bytes(prozess_roh)
     report_path = TEAM / "runs" / (lauf.name + ".json")
     if not report_path.exists():
         print(f"BLOCKIERT: Stundenbericht fehlt. Details: {lauf}/prozesse.json")
@@ -267,6 +272,11 @@ def einmal():
     try:
         for p in dateien:
             hashes[str(p.relative_to(ROOT))] = _hash_sicher(p)
+        # MASTER 82: In-memory-Rollenpruefung und On-Disk-Manifest muessen
+        # dieselben Prozessdaten betreffen. Keine rein selbstbehauptete
+        # Ersatzdatei darf als technische Pilotevidenz zaehlen.
+        if hashes[str(prozess_pfad.relative_to(ROOT))] != prozess_hash_erwartet:
+            raise OSError("Prozessnachweis wurde nach dem Schreiben veraendert")
     except OSError:
         # Fehlende Pflichtartefakte duerfen weder einen Erfolg noch eine
         # Ausnahme ausgeben. Auch bei einem ansonsten positiven MOCK-Bericht
