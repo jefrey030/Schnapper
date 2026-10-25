@@ -31,6 +31,38 @@
   <section id="ansicht-suche">
   <p id="beispiel" class="banner" hidden>Vorführung mit <strong>ausgedachten Beispieldaten</strong> – keine echten Angebote.</p>
 
+  <section class="eigenes-angebot" aria-label="Eigenes Angebot direkt erfassen">
+    <details id="eintrag-klappe">
+      <summary>+ Eigenes Angebot eingeben (ohne CSV)</summary>
+      <form id="eintrag-form" autocomplete="off">
+        <label>Titel
+          <input name="titel" type="text" maxlength="300" placeholder="z. B. Kopfhörer gebraucht" required>
+        </label>
+        <div class="eintrag-zeile">
+          <label>Preis in € <input name="preis" type="text" inputmode="decimal" maxlength="24" placeholder="45,00" required></label>
+          <label>Versand in € <input name="versand" type="text" inputmode="decimal" maxlength="24" placeholder="0"></label>
+          <label>Vergleichspreis in € <input name="referenzpreis" type="text" inputmode="decimal" maxlength="24" placeholder="optional"></label>
+        </div>
+        <div class="eintrag-zeile">
+          <label>Zustand
+            <select name="zustand">
+              <option value="gebraucht">gebraucht</option><option value="neu">neu</option>
+              <option value="wie_neu">wie neu</option><option value="defekt">defekt</option>
+              <option value="unbekannt">unbekannt</option>
+            </select>
+          </label>
+          <label>Kategorie <input name="kategorie" type="text" maxlength="80" placeholder="z. B. Audio"></label>
+        </div>
+        <label>Link zum Angebot (https://)
+          <input name="url" type="url" maxlength="2048" placeholder="https://shop.example/angebot" required>
+        </label>
+        <button id="eintrag-senden" class="knopf" type="submit">Angebot zur Liste hinzufügen</button>
+        <p id="eintrag-status" class="status" aria-live="polite"></p>
+        <p class="tipp">Nur eigene Fundstücke, keine automatische Marktplatzsuche. Einträge bleiben bis zum Serverneustart im Speicher: danach bei Bedarf die Treffer als CSV herunterladen.</p>
+      </form>
+    </details>
+  </section>
+
   <form id="filter" class="filter" autocomplete="off" role="search">
     <input id="text" name="text" type="search" placeholder="Was suchst du? z. B. Kopfhörer" aria-label="Suchbegriff">
     <div class="reihe">
