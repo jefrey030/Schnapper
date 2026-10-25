@@ -256,7 +256,7 @@ class TestAgenten(unittest.TestCase):
                  mock.patch.object(ki, "KATALOG_URL", basis_url + "/catalog"), \
                  mock.patch.object(ki.KI.__init__, "__defaults__", (None, basis_url + "/inference", basis_url + "/catalog")), \
                  mock.patch.object(agent, "tests_ausfuehren", return_value={"ok": True, "anzahl": 3, "ausgabe_ende": ""}):
-                bericht = self.alle(agenten_ok=False)
+                bericht = self.alle()
         finally:
             server.shutdown()
             server.server_close()
