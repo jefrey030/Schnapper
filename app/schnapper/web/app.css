@@ -38,6 +38,15 @@ main { max-width: 720px; margin: 0 auto; padding: 0 16px 48px; }
 .schalter label { display: flex; align-items: center; gap: 6px; min-height: 32px; }
 .schalter input { width: 18px; height: 18px; min-height: 0; accent-color: var(--akzent); }
 
+.export-reihe { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 12px;
+  margin: 12px 0; color: var(--leise); font-size: 14px; }
+.export-reihe a { display: inline-flex; align-items: center; min-height: 44px;
+  padding: 8px 12px; background: var(--flaeche); color: var(--akzent);
+  border: 1px solid var(--linie); border-radius: 10px; font-weight: 700;
+  text-decoration: none; }
+.export-reihe a:hover { text-decoration: underline; }
+.export-reihe a:focus-visible { outline: 2px solid var(--akzent); outline-offset: 2px; }
+
 .status { margin: 8px 0; font-size: 14px; color: var(--leise); }
 .probleme { margin: 0 0 12px; font-size: 14px; }
 .probleme summary { cursor: pointer; color: var(--warn); }
