@@ -83,35 +83,66 @@ class KI:
             )
 
     def _zaehle(self):
-        try:
-            if self.zaehler.is_symlink():
-                raise ValueError("Aufrufzähler darf kein Symlink sein")
-            if self.zaehler.exists():
-                if self.zaehler.stat().st_size > 32:
-                    raise ValueError("Aufrufzähler zu groß")
-                bisher = int(self.zaehler.read_text(encoding="utf-8"))
-            else:
-                bisher = 0
-            # Keine Umgehung der dokumentierten Obergrenze durch ENV-Werte.
-            if type(MAX_AUFRUFE) is not int or not 1 <= MAX_AUFRUFE <= 6:
-                raise ValueError("Ungültiges Aufrufbudget")
-            if bisher < 0 or bisher > MAX_AUFRUFE:
-                raise ValueError("Ungültiger Aufrufzähler")
-        except (OSError, ValueError, UnicodeError) as exc:
-            raise KINichtVerfuegbar("Ungültiger KI-Aufrufzähler oder Aufrufbudget.") from exc
-        if bisher >= MAX_AUFRUFE:
-            raise KINichtVerfuegbar(
-                f"Maximal {MAX_AUFRUFE} lokale KI-Aufrufe pro Stundenlauf."
-            )
+        """Reserviert exakt einen Modellversuch unter exklusiver Dateisperre.
+
+        Die Sperre wird per atomarem mkdir erstellt: ein paralleler Prozess
+        wird ohne Modellaufruf blockiert. Verwaiste Sperren bleiben aus
+        Sicherheitsgründen bestehen, bis der Betreiber sie geprüft hat.
+        """
+        sperre = self.zaehler.with_name(self.zaehler.name + ".lock")
         try:
             self.zaehler.parent.mkdir(parents=True, exist_ok=True)
-            self.zaehler.write_text(str(bisher + 1), encoding="utf-8")
+            sperre.mkdir(mode=0o700)
+        except FileExistsError as exc:
+            raise KINichtVerfuegbar(
+                "KI-Aufrufzähler gesperrt; paralleler oder verwaister Lauf."
+            ) from exc
         except OSError as exc:
-            raise KINichtVerfuegbar("KI-Aufrufzähler konnte nicht gesichert werden.") from exc
+            raise KINichtVerfuegbar("KI-Aufrufzähler kann nicht gesperrt werden.") from exc
+
+        try:
+            try:
+                if self.zaehler.is_symlink():
+                    raise ValueError("Aufrufzähler darf kein Symlink sein")
+                if self.zaehler.exists():
+                    if self.zaehler.stat().st_size > 32:
+                        raise ValueError("Aufrufzähler zu groß")
+                    bisher = int(self.zaehler.read_text(encoding="utf-8"))
+                else:
+                    bisher = 0
+                if type(MAX_AUFRUFE) is not int or not 1 <= MAX_AUFRUFE <= 6:
+                    raise ValueError("Ungültiges Aufrufbudget")
+                if bisher < 0 or bisher > MAX_AUFRUFE:
+                    raise ValueError("Ungültiger Aufrufzähler")
+            except (OSError, ValueError, UnicodeError) as exc:
+                raise KINichtVerfuegbar(
+                    "Ungültiger KI-Aufrufzähler oder Aufrufbudget."
+                ) from exc
+            if bisher >= MAX_AUFRUFE:
+                raise KINichtVerfuegbar(
+                    f"Maximal {MAX_AUFRUFE} lokale KI-Aufrufe pro Stundenlauf."
+                )
+            nummer = bisher + 1
+            try:
+                self.zaehler.write_text(str(nummer), encoding="utf-8")
+            except OSError as exc:
+                raise KINichtVerfuegbar(
+                    "KI-Aufrufzähler konnte nicht gesichert werden."
+                ) from exc
+            return nummer
+        finally:
+            try:
+                sperre.rmdir()
+            except OSError as exc:
+                # Ein nicht entfernbarer Lock bleibt stehen und blockiert den
+                # Folgelauf. Niemals trotzdem eine neue Modellanfrage senden.
+                raise KINichtVerfuegbar(
+                    "Sperre des KI-Aufrufzählers konnte nicht aufgehoben werden."
+                ) from exc
 
     def frage(self, system, nutzer):
         self._pruefe_modell()
-        self._zaehle()
+        nummer = self._zaehle()
         antwort = _request("/api/chat", {
             "model": self.modell,
             "stream": False,
@@ -138,7 +169,7 @@ class KI:
             "antwort_id": "lokal-" + uuid.uuid4().hex,
             "nutzung": {"prompt_eval_count": antwort.get("prompt_eval_count"),
                        "eval_count": antwort.get("eval_count")},
-            "aufruf_nr": int(self.zaehler.read_text(encoding="utf-8")),
+            "aufruf_nr": nummer,
             "laufzeit": "Ollama lokal (keine bezahlte KI-API)",
             "erstellt_utc": dt.datetime.now(dt.timezone.utc).isoformat(),
         }
