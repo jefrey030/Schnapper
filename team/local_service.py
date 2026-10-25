@@ -110,6 +110,61 @@ def pruefe_nachweise(bericht, lauf, schritte):
     return fehler
 
 
+
+def rolle_starten(cmd, *, cwd, env, capture_output=True, text=True,
+                  timeout=240, check=False, stop_on_flag=True):
+    """Agentenprozess mit regelmäßigem Betreiber-STOP-Check.
+
+    Der lokale Kindprozess wird beendet, wenn STOP während des Laufs erscheint.
+    Ein bereits an Ollama übermittelter Request kann dadurch nicht rückwirkend
+    zurückgerufen werden. BERICHT darf mit stop_on_flag=False noch protokollieren.
+    """
+    if not capture_output or not text or check:
+        raise ValueError("Lokaler Agent verlangt erfasste Textlogs ohne check=True")
+    if stop_on_flag and gestoppt():
+        return subprocess.CompletedProcess(cmd, -4, "", "")
+
+    # Keine Shell, nur das aktuelle Python und der festgelegte Agent.
+    with subprocess.Popen(
+        cmd, cwd=cwd, env=env, stdout=subprocess.PIPE,
+        stderr=subprocess.PIPE, text=True,
+    ) as proc:
+        ende = time.monotonic() + timeout
+        while True:
+            if stop_on_flag and gestoppt():
+                if proc.poll() is None:
+                    try:
+                        proc.terminate()
+                    except ProcessLookupError:
+                        pass
+                    try:
+                        proc.communicate(timeout=2)
+                    except subprocess.TimeoutExpired:
+                        try:
+                            proc.kill()
+                        except ProcessLookupError:
+                            pass
+                        proc.communicate()
+                # Weder potenziell sensible Teil-Logs noch einen Erfolg ausgeben.
+                return subprocess.CompletedProcess(cmd, -4, "", "")
+            rest = ende - time.monotonic()
+            if rest <= 0:
+                if proc.poll() is None:
+                    try:
+                        proc.kill()
+                    except ProcessLookupError:
+                        pass
+                proc.communicate()
+                raise subprocess.TimeoutExpired(cmd, timeout)
+            try:
+                stdout, stderr = proc.communicate(timeout=min(0.5, rest))
+            except subprocess.TimeoutExpired:
+                # Das Kind läuft weiter; nun erneut den Not-Aus prüfen.
+                continue
+            if stop_on_flag and gestoppt():
+                return subprocess.CompletedProcess(cmd, -4, "", "")
+            return subprocess.CompletedProcess(cmd, proc.returncode, stdout, stderr)
+
 def einmal():
     if gestoppt():
         print("BLOCKIERT: Betreiber-Not-Aus team/work/STOP ist aktiv.")
@@ -128,10 +183,10 @@ def einmal():
                              "fehler": "Not-Aus oder vorheriger Agent gescheitert; Agent nicht gestartet"})
             continue
         try:
-            proc = subprocess.run(
+            proc = rolle_starten(
                 [sys.executable, str(TEAM / "agent.py"), rolle, str(lauf)],
                 cwd=ROOT, env=env, capture_output=True, text=True,
-                timeout=240, check=False,
+                timeout=240, check=False, stop_on_flag=(rolle != "BERICHT"),
             )
             ausgabe = (proc.stdout or "")[-1500:]
             fehlerausgabe = (proc.stderr or "")[-1500:]
@@ -147,6 +202,10 @@ def einmal():
             sperre_fehler = True
             schritte.append({"rolle": rolle, "exitcode": -1,
                              "fehler": "Zeitlimit 240 Sekunden überschritten"})
+        except OSError:
+            sperre_fehler = True
+            schritte.append({"rolle": rolle, "exitcode": -5,
+                             "fehler": "Agentenprozess nicht startbar"})
     (lauf / "prozesse.json").write_text(
         json.dumps(schritte, ensure_ascii=False, indent=2), encoding="utf-8")
     report_path = TEAM / "runs" / (lauf.name + ".json")
