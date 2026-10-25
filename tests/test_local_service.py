@@ -91,14 +91,18 @@ class TestDienst(unittest.TestCase):
                     "agenten_mit_echter_ki": list(rollen),
                     "ki_aufrufe": 4,
                     "aufgabe": "S-000",
+                    "selected_task": {"id": "S-000"},
                     "check_urteil": "bestanden",
                     "tests_ok": True,
                     "tests_anzahl": 3,
                     "agenten": {
                         r: {
-                            "status": "OK", "ki_echt": True,
+                            "rolle": r, "status": "OK", "ki_echt": True,
                             "plan": {"aufgabe_id": "S-000"} if r == "LEAD" else None,
                             "vorschlag_datei": "team/proposals/fake.md" if r == "BRAIN" else None,
+                            "urteil": {"urteil": "bestanden"} if r == "CHECK" else None,
+                            "werkzeug": {"tests": {"ok": True, "anzahl": 3},
+                                        "geheimnis_funde": []} if r == "CHECK" else None,
                             "protokoll": {"freigabe": "ja",
                                           "naechster_schritt": "manuell pruefen"}
                                           if r == "COMMAND" else None,
