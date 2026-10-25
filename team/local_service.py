@@ -35,11 +35,20 @@ def pruefe_nachweise(bericht, lauf, schritte):
     als Freigabe von Patches oder als Beweis für echten Preisvergleich.
     """
     fehler = []
+    if not isinstance(bericht, dict):
+        return ["Stundenbericht ist kein JSON-Objekt."]
+    if not isinstance(schritte, list):
+        return ["Prozessnachweise sind keine Liste."]
+    if not isinstance(bericht.get("agenten"), dict):
+        return ["Agentendaten im Gesamtbericht sind kein JSON-Objekt."]
     if bericht.get("lauf") != lauf.name:
         fehler.append("Bericht gehört nicht zu diesem Lauf.")
     if bericht.get("team_einsatzbereit") is not True:
         fehler.append("Vier-Agenten-Team im Bericht nicht einsatzbereit.")
-    if set(bericht.get("agenten_mit_echter_ki") or []) != set(ROLES):
+    rollen_belegt = bericht.get("agenten_mit_echter_ki")
+    if (not isinstance(rollen_belegt, list)
+            or not all(isinstance(x, str) for x in rollen_belegt)
+            or sorted(rollen_belegt) != sorted(ROLES)):
         fehler.append("KI-Nachweis für mindestens eine Rolle fehlt.")
     if bericht.get("ki_aufrufe") != 4:
         fehler.append("KI-Nachweis: erwartet genau vier lokale Modellaufrufe.")
@@ -47,7 +56,10 @@ def pruefe_nachweise(bericht, lauf, schritte):
     agenten = bericht.get("agenten") or {}
     for rolle in ROLES:
         datei = lauf / (rolle + ".json")
-        a = agenten.get(rolle) or {}
+        a = agenten.get(rolle)
+        if not isinstance(a, dict):
+            fehler.append(f"Agentendaten {rolle}: kein JSON-Objekt.")
+            a = {}
         if not datei.exists():
             fehler.append(f"Agentendatei fehlt: {rolle}.json")
         else:
@@ -60,7 +72,9 @@ def pruefe_nachweise(bericht, lauf, schritte):
                 # zugehörige einzelne Rollenprotokoll als Beleg ausgeben.
                 if not isinstance(einzeln, dict) or einzeln != a:
                     fehler.append(f"Agentenbericht {rolle}: Datei und Gesamtbericht widersprechen sich.")
-        info = a.get("ki") or {}
+        info = a.get("ki")
+        if not isinstance(info, dict):
+            info = {}
         if a.get("ki_echt") is not True or a.get("status") != "OK":
             fehler.append(f"KI-Nachweis {rolle}: kein bestätigter OK-Lauf.")
         if info.get("laufzeit") != "Ollama lokal (keine bezahlte KI-API)":
@@ -79,12 +93,15 @@ def pruefe_nachweise(bericht, lauf, schritte):
         fehler.append("Antwort-IDs sind nicht viermal eindeutig.")
     # Vier lesbare KI-Antworten genügen nicht: Rollen müssen sinnvolle
     # strukturierte Übergaben erzeugen, sonst dreht die Rotation ins Leere.
-    lead = agenten.get("LEAD") or {}
-    plan = lead.get("plan") or {}
+    lead = agenten.get("LEAD")
+    lead = lead if isinstance(lead, dict) else {}
+    plan = lead.get("plan")
+    plan = plan if isinstance(plan, dict) else {}
     if not isinstance(plan, dict) or not isinstance(
         plan.get("aufgabe_id"), str) or not plan.get("aufgabe_id"):
         fehler.append("LEAD hat keinen gültigen Aufgabenauftrag erstellt.")
-    brain = agenten.get("BRAIN") or {}
+    brain = agenten.get("BRAIN")
+    brain = brain if isinstance(brain, dict) else {}
     pfad = brain.get("vorschlag_datei")
     if not isinstance(pfad, str) or not pfad.startswith("team/proposals/"):
         fehler.append("BRAIN hat keine Vorschlagsdatei nachgewiesen.")
@@ -95,7 +112,10 @@ def pruefe_nachweise(bericht, lauf, schritte):
             fehler.append("BRAIN-Vorschlag fehlt oder liegt außerhalb von team/proposals.")
     if bericht.get("check_urteil") != "bestanden":
         fehler.append("CHECK hat nicht bestanden: keine positive Pilotabnahme.")
-    command = (agenten.get("COMMAND") or {}).get("protokoll") or {}
+    command_rolle = agenten.get("COMMAND")
+    command_rolle = command_rolle if isinstance(command_rolle, dict) else {}
+    command = command_rolle.get("protokoll")
+    command = command if isinstance(command, dict) else {}
     if not isinstance(command, dict) or command.get("freigabe") != "ja" or not (
         isinstance(command.get("naechster_schritt"), str) and
         command["naechster_schritt"].strip()
@@ -105,7 +125,7 @@ def pruefe_nachweise(bericht, lauf, schritte):
         bericht.get("tests_anzahl"), int) or bericht["tests_anzahl"] < 1:
         fehler.append("Unit-Tests nicht erfolgreich nachgewiesen.")
     if len(schritte) != len(ROLES) + 1 or not all(
-        x.get("exitcode") == 0 for x in schritte):
+        isinstance(x, dict) and x.get("exitcode") == 0 for x in schritte):
         fehler.append("Mindestens ein Agentenprozess/der Bericht ist fehlgeschlagen.")
     return fehler
 
@@ -147,13 +167,26 @@ def einmal():
             sperre_fehler = True
             schritte.append({"rolle": rolle, "exitcode": -1,
                              "fehler": "Zeitlimit 240 Sekunden überschritten"})
+        except OSError:
+            # Fehlerdetails können Dateipfade oder sensitive Umgebungsdaten
+            # enthalten. Keine Roh-Exception in Berichten oder Logs speichern.
+            sperre_fehler = True
+            schritte.append({"rolle": rolle, "exitcode": -4,
+                             "fehler": "Agentenprozess konnte nicht gestartet werden."})
     (lauf / "prozesse.json").write_text(
         json.dumps(schritte, ensure_ascii=False, indent=2), encoding="utf-8")
     report_path = TEAM / "runs" / (lauf.name + ".json")
     if not report_path.exists():
         print(f"BLOCKIERT: Stundenbericht fehlt. Details: {lauf}/prozesse.json")
         return 1
-    bericht = json.loads(report_path.read_text(encoding="utf-8"))
+    try:
+        bericht = json.loads(report_path.read_text(encoding="utf-8"))
+    except (OSError, UnicodeError, ValueError):
+        print("BLOCKIERT: Stundenbericht fehlt, ist unlesbar oder enthält ungültiges JSON.")
+        return 1
+    if not isinstance(bericht, dict):
+        print("BLOCKIERT: Stundenbericht muss ein JSON-Objekt sein.")
+        return 1
     fehler = pruefe_nachweise(bericht, lauf, schritte)
     erfolgreich = not fehler
     ergebnis = {
