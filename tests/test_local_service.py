@@ -245,6 +245,88 @@ class TestDienst(unittest.TestCase):
         self.assertEqual(ergebnis["status"], "BLOCKIERT")
         self.assertFalse(ergebnis["vier_echte_ki_antworten"])
 
+    def test_prozesskette_exakt_einmal_und_in_richtiger_reihenfolge(self):
+        lauf = self.team / "work" / "prozessketten"
+        lauf.mkdir(parents=True)
+        bericht = {"lauf": lauf.name, "agenten": {}}
+        gueltig = [{"rolle": r, "exitcode": 0} for r in (*dienst.ROLES, "BERICHT")]
+        fail_muster = [
+            gueltig[:4],
+            gueltig[:],
+            [*gueltig[:2], gueltig[1], *gueltig[3:]],
+            list(reversed(gueltig)),
+            [*gueltig[:4], {"rolle": "BERICHT", "exitcode": False}],
+            [*gueltig[:4], {"rolle": "BERICHT", "exitcode": "0"}],
+        ]
+        fail_muster[1][1] = {"rolle": "LEAD", "exitcode": 0}
+        for schritte in fail_muster:
+            with self.subTest(schritte=schritte):
+                fehler = dienst.pruefe_nachweise(bericht, lauf, schritte)
+                self.assertTrue(any("Prozessbelege" in e for e in fehler))
+        ohne_prozessfehler = dienst.pruefe_nachweise(bericht, lauf, gueltig)
+        self.assertFalse(any("Prozessbelege" in e for e in ohne_prozessfehler))
+
+    def test_lead_aufgabe_muss_gesamtbericht_und_rotation_entsprechen(self):
+        lauf = self.team / "work" / "aufgabe"
+        lauf.mkdir(parents=True)
+        bericht = {
+            "lauf": lauf.name, "aufgabe": "S-002",
+            "selected_task": {"id": "S-001"},
+            "agenten": {"LEAD": {"rolle": "LEAD", "plan": {"aufgabe_id": "S-000"}}},
+        }
+        fehler = dienst.pruefe_nachweise(bericht, lauf, [])
+        self.assertTrue(any("Aufgaben-ID" in e for e in fehler))
+        bericht["aufgabe"] = "S-000"
+        bericht["selected_task"] = {"id": "S-000"}
+        fehler = dienst.pruefe_nachweise(bericht, lauf, [])
+        self.assertFalse(any("Aufgaben-ID" in e for e in fehler))
+
+    def test_check_urteil_und_testzahlen_widerspruch_blockiert(self):
+        lauf = self.team / "work" / "check"
+        lauf.mkdir(parents=True)
+        bericht = {
+            "lauf": lauf.name, "check_urteil": "bestanden",
+            "tests_ok": True, "tests_anzahl": 99,
+            "agenten": {"CHECK": {
+                "rolle": "CHECK", "urteil": {"urteil": "abgelehnt"},
+                "werkzeug": {"tests": {"ok": True, "anzahl": 3},
+                             "geheimnis_funde": []},
+            }},
+        }
+        fehler = dienst.pruefe_nachweise(bericht, lauf, [])
+        self.assertTrue(any("CHECK-Urteil" in e for e in fehler))
+        self.assertTrue(any("CHECK-Testergebnisse" in e for e in fehler))
+        bericht["agenten"]["CHECK"]["urteil"]["urteil"] = "bestanden"
+        bericht["tests_anzahl"] = 3
+        fehler = dienst.pruefe_nachweise(bericht, lauf, [])
+        self.assertFalse(any("CHECK-Urteil" in e or "CHECK-Testergebnisse" in e
+                             for e in fehler))
+
+    def test_check_geheimnisscan_darf_nicht_ausgelassen_werden(self):
+        lauf = self.team / "work" / "check-scan"
+        lauf.mkdir(parents=True)
+        bericht = {
+            "lauf": lauf.name, "agenten": {
+                "CHECK": {"rolle": "CHECK", "urteil": {"urteil": "bestanden"},
+                          "werkzeug": {"tests": {"ok": True, "anzahl": 2}}},
+            }, "check_urteil": "bestanden", "tests_ok": True,
+            "tests_anzahl": 2,
+        }
+        fehler = dienst.pruefe_nachweise(bericht, lauf, [])
+        self.assertTrue(any("Geheimnisscan" in e for e in fehler))
+        bericht["agenten"]["CHECK"]["werkzeug"]["geheimnis_funde"] = []
+        fehler = dienst.pruefe_nachweise(bericht, lauf, [])
+        self.assertFalse(any("Geheimnisscan" in e for e in fehler))
+
+    def test_einzelrollen_identitaet_muss_zur_datei_passen(self):
+        lauf = self.team / "work" / "rollen"
+        lauf.mkdir(parents=True)
+        falsch = {"rolle": "BRAIN", "status": "OK"}
+        (lauf / "LEAD.json").write_text(json.dumps(falsch), encoding="utf-8")
+        bericht = {"lauf": lauf.name, "agenten": {"LEAD": falsch}}
+        fehler = dienst.pruefe_nachweise(bericht, lauf, [])
+        self.assertTrue(any("Rollenidentität" in e for e in fehler))
+
     def test_falsche_laufzeit_oder_doppelte_ids_blockieren(self):
         lauf = self.team / "work" / "fake"
         lauf.mkdir(parents=True)
