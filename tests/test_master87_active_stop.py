@@ -90,7 +90,7 @@ class TestMaster87AktiverNotAus(unittest.TestCase):
 
     def test_stuck_child_after_stop_is_killed(self):
         p = self._fake_process()
-        def fake_comm(*, timeout):
+        def fake_comm(*, timeout=None):
             if timeout == 2:
                 raise dienst.subprocess.TimeoutExpired(self.cmd, timeout)
             if not self.stop.exists():
