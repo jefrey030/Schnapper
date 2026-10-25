@@ -35,11 +35,21 @@ Den lokalen Vier-Rollen-Pilot gegen beschädigte oder manipulierte Nachweisdatei
 
 ## Abnahmeliste
 
-- [ ] Fail-Closed-Berichtsparser und robustes Validierungsschema implementiert
-- [ ] Agenten-Prozessstartfehler sauber blockiert und dokumentiert
-- [ ] Neue Negativtests für unlesbare/ungültige Berichte und ungültige Feldtypen
-- [ ] Neue Regression für `OSError` mit gestoppter Folgerollenkette
-- [ ] Bisherige Positivsimulation weiter bestanden
-- [ ] Python- und Cloudflare-CI auf neuem Code-Stand erfolgreich
-- [ ] Finaler HEAD und Testzahlen dokumentiert
-- [ ] Produktivfreigabe bleibt ausdrücklich NO-GO
+- [x] Fail-Closed-Berichtsparser und robuste Typprüfungen implementiert
+- [x] Agenten-Prozessstartfehler sicher gesperrt und ohne rohe Exception protokolliert
+- [x] Neue Negativtests für unlesbare/ungültige Berichte und ungültige Feldtypen
+- [x] Neue Regression für `OSError` mit gestoppter Folgerollenkette
+- [x] Bisherige positive Offline-Simulation weiterhin bestanden
+- [x] [GitHub CI #40202225565](https://github.com/jefrey030/Schnapper/actions/runs/40202225565) zum Code-SHA `f561235670de18dfe1727fc9ee0ad0304896930b` erfolgreich
+- [x] Code-SHA `f561235670de18dfe1727fc9ee0ad0304896930b`, Python 248 Tests (1 Skip), Cloudflare 16/16 PASS dokumentiert
+- [x] Produktivfreigabe bleibt ausdrücklich NO-GO
+
+## Tatsächlich ausgeführte Arbeiten (nachweisbar)
+
+**BRAIN – Code:** `team/local_service.py` prüft den JSON-Gesamtbericht schon beim Laden. Defekte UTF-8-/JSON-Dateien und ein gültiges JSON mit einem anderen Root-Typ führen zu Exitcode 1 und `BLOCKIERT`; eine Erfolgskennzahl oder nachgelagerte Pilotfreigabe entsteht nicht. Der Prüfpfad kontrolliert `agenten`, Rollenfelder, Modellinformationen, Plan, COMMAND und Prozessliste als korrekte Datentypen. Ein fehlgeschlagener Start eines Kindprozesses (`OSError`) wird mit `exitcode=-4` im Prozessnachweis dokumentiert, der genaue Exception-Text wird nicht in Logs übernommen; kostenrelevante Folgerollen werden übersprungen. Ein Berichtsschritt kann die Fehlersituation weiterhin festhalten.
+
+**CHECK – Tests:** Vier zusätzliche Unit-Testmethoden in `tests/test_local_service.py` prüfen defektes JSON, Listen-/Null-Root, unpassende Feldtypen, `OSError` und falsche grüne Berichte. Beim ersten CI-Test gab es wegen einer **zwischenzeitlich ebenfalls verschärften CHECK-Freigaberegel** eine veraltete Testerwartung (`tests/test_agenten.py`): bei fehlgeschlagenen Werkzeugtests wird heute überhaupt keine CHECK-KI mehr angefragt, anstatt nachträglich ein `abgelehnt`-Urteil zu generieren. Die Regression wurde an diese strengere Sperre angepasst, **nicht** das Sicherheitsgate abgeschwächt.
+
+**Ausgeführte CI (vor diesem abschließenden Dokumentationscommit):** [Run 40202225565](https://github.com/jefrey030/Schnapper/actions/runs/40202225565) am SHA `f561235670de18dfe1727fc9ee0ad0304896930b`, **248 Python-Tests, 1 übersprungen, 0 Fehler** und **16 Cloudflare-Tests, 16 bestanden, 0 Fehler, 0 übersprungen**. Beide Jobs `success`. Der Abschluss-Dokumentationscommit muss separat durch dieselben Jobs bestätigt werden.
+
+**Freigabe und Grenzen:** Änderungen ausschließlich im Review-Draft [#55](https://github.com/jefrey030/Schnapper/pull/55). Keine Änderung an `main`, kein Merge, kein Cloudflare-Deploy, kein kostenpflichtiger Dienst und kein echter autonomer Vier-KI-Lauf. Ein grüner Test beweist nur den getesteten Code, keine Live-/Betriebsabnahme. Der auf `main` bestehende veraltete Stundenjob ist bis zu einer separat autorisierten Übernahme weiterhin ein offener P0-Blocker. Status **NO-GO**.
