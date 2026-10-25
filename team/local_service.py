@@ -43,12 +43,35 @@ def pruefe_nachweise(bericht, lauf, schritte):
         fehler.append("KI-Nachweis für mindestens eine Rolle fehlt.")
     if bericht.get("ki_aufrufe") != 4:
         fehler.append("KI-Nachweis: erwartet genau vier lokale Modellaufrufe.")
+    # Der Aufrufzähler ist ein separates lokal geschriebenes Prozessartefakt.
+    # Eine positive Zahl im JSON-Gesamtbericht reicht nicht aus.
+    try:
+        lokaler_zaehler = int((lauf / "ki_aufrufe.txt").read_text(encoding="utf-8").strip())
+    except (OSError, ValueError):
+        lokaler_zaehler = None
+    if lokaler_zaehler != 4:
+        fehler.append("KI-Aufrufzähler fehlt, ist ungültig oder nicht vier.")
+    # Nicht nur Existenz prüfen: ein Bericht darf sich nicht durch frei erfundene
+    # Rollenfelder selbst bestätigen. Die separat gespeicherten Rollen-JSONs
+    # müssen mit dem Gesamtbericht übereinstimmen (Integritätscheck, kein
+    # kryptografischer Nachweis einer tatsächlich externen KI-Antwort).
     antwort_ids = []
     agenten = bericht.get("agenten") or {}
     for rolle in ROLES:
-        if not (lauf / (rolle + ".json")).exists():
-            fehler.append(f"Agentendatei fehlt: {rolle}.json")
+        datei = lauf / (rolle + ".json")
         a = agenten.get(rolle) or {}
+        if not datei.is_file():
+            fehler.append(f"Agentendatei fehlt: {rolle}.json")
+        else:
+            try:
+                gespeichert = json.loads(datei.read_text(encoding="utf-8"))
+            except (OSError, ValueError):
+                fehler.append(f"Agentendatei beschädigt/nicht lesbar: {rolle}.json")
+            else:
+                if not isinstance(gespeichert, dict) or gespeichert.get("rolle") != rolle:
+                    fehler.append(f"Agentendatei enthält falsche Rolle: {rolle}.json")
+                if gespeichert != a:
+                    fehler.append(f"Abweichung zwischen Bericht und Agentendatei: {rolle}.json")
         info = a.get("ki") or {}
         if a.get("ki_echt") is not True or a.get("status") != "OK":
             fehler.append(f"KI-Nachweis {rolle}: kein bestätigter OK-Lauf.")
@@ -147,9 +170,10 @@ def einmal():
     erfolgreich = not fehler
     ergebnis = {
         "lauf": lauf.name,
-        "vier_echte_ki_antworten": not any(
-            "KI-Nachweis" in x or "Antwort-ID" in x or "Agentendatei" in x
-            for x in fehler),
+        # Niemals einen positiven Teilstatus aus der Abwesenheit bestimmter
+        # Fehlertext-Fragmente ableiten. Konsistente Vierer-Nachweise erfordern
+        # ALLE Freigabegates; auch ein manipulierter Zähler/Datei blockiert.
+        "vier_echte_ki_antworten": erfolgreich,
         "tests_bestanden": bericht.get("tests_ok") is True,
         "prozesse_ok": all(s["exitcode"] == 0 for s in schritte),
         "status": "TECHNISCHER PILOT ERFOLGREICH" if erfolgreich else "BLOCKIERT",
