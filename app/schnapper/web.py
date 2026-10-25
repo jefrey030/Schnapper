@@ -98,11 +98,16 @@ def filter_aus_query(q: dict) -> tuple[Filter, str]:
     zustand = eins("zustand")
     if zustand and zustand not in ZUSTAENDE:
         raise ValueError("Unbekannter Zustand")
+    quelle = eins("quelle")
+    kategorie = eins("kategorie")
+    if len(quelle) > 80 or len(kategorie) > 80:
+        raise ValueError("Quelle oder Kategorie zu lang (max. 80 Zeichen)")
     sortierung = eins("sortierung", "rabatt")
     if sortierung not in SORTIERUNGEN:
         raise ValueError("Unbekannte Sortierung")
     f = Filter(text=eins("text")[:200], max_preis=max_preis, min_rabatt=min_rabatt,
                zustaende={zustand} if zustand else set(),
+               quellen={quelle} if quelle else set(), kategorie=kategorie,
                ohne_veraltet=eins("ohne_veraltet") == "1", ohne_verdacht=eins("mit_verdacht") != "1")
     return f, sortierung
 
