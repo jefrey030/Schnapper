@@ -65,8 +65,16 @@ def jetzt():
 
 
 def lies(ordner, rolle):
+    """Nur kleine, lesbare JSON-Objekte als gültige Vorgängerbelege zulassen."""
     pfad = ordner / f"{rolle}.json"
-    return json.loads(pfad.read_text(encoding="utf-8")) if pfad.exists() else None
+    try:
+        # Schutz gegen übergroße/korrupte oder nicht lesbare KI-Protokolle.
+        if pfad.stat().st_size > 128_000:
+            return None
+        daten = json.loads(pfad.read_text(encoding="utf-8"))
+    except (OSError, ValueError, UnicodeError):
+        return None
+    return daten if isinstance(daten, dict) else None
 
 
 def schreibe(ordner, rolle, daten):
@@ -113,9 +121,13 @@ def repo_ueberblick(max_zeichen=6000):
 
 
 def tests_ausfuehren():
-    p = subprocess.run([sys.executable, "-m", "unittest", "discover", "-s", "tests", "-v"],
-                       cwd=ROOT, capture_output=True, text=True, timeout=120)
-    ausgabe = p.stdout + p.stderr
+    try:
+        p = subprocess.run([sys.executable, "-m", "unittest", "discover", "-s", "tests", "-v"],
+                           cwd=ROOT, capture_output=True, text=True, timeout=120)
+    except (OSError, subprocess.TimeoutExpired):
+        return {"ok": False, "anzahl": 0,
+                "ausgabe_ende": "Unit-Tests nicht ausführbar oder Zeitlimit überschritten."}
+    ausgabe = (p.stdout or "") + (p.stderr or "")
     anzahl = re.search(r"Ran (\d+) tests?", ausgabe)
     return {"ok": p.returncode == 0, "anzahl": int(anzahl.group(1)) if anzahl else 0,
             "ausgabe_ende": ausgabe[-1500:]}
@@ -206,7 +218,14 @@ def brain(ordner, ki):
     if not l or l.get("status") != "OK":
         erg.update(status="ÜBERSPRUNGEN", fehler="Kein gültiger Auftrag von LEAD.")
         return erg
-    antwort, fehler = ki_teil(ki, "BRAIN", json.dumps({"auftrag_von_lead": l["plan"]}, ensure_ascii=False)
+    plan = l.get("plan")
+    task_id = plan.get("aufgabe_id") if isinstance(plan, dict) else None
+    if (not isinstance(task_id, str)
+            or re.fullmatch(r"[A-Za-z0-9][A-Za-z0-9_-]{0,63}", task_id) is None):
+        erg.update(status="ÜBERSPRUNGEN",
+                   fehler="LEAD-Auftrag unvollständig oder unsichere Aufgaben-ID; kein BRAIN-KI-Aufruf.")
+        return erg
+    antwort, fehler = ki_teil(ki, "BRAIN", json.dumps({"auftrag_von_lead": plan}, ensure_ascii=False)
                               + "\n\n" + repo_ueberblick())
     if fehler:
         erg["fehler"] = fehler
@@ -233,10 +252,26 @@ def check(ordner, ki):
     if not b or b.get("status") != "OK":
         erg.update(status="ÜBERSPRUNGEN", fehler="Kein BRAIN-Vorschlag zum Prüfen (Tests wurden trotzdem ausgeführt).")
         return erg
+    plan = (l or {}).get("plan")
+    antwortdaten = b.get("ki") or {}
+    vorschlag = antwortdaten.get("text") if isinstance(antwortdaten, dict) else None
+    if (not l or l.get("status") != "OK"
+            or not isinstance(plan, dict)
+            or not isinstance(vorschlag, str) or not vorschlag.strip()
+            or not isinstance(tests, dict)
+            or tests.get("ok") is not True
+            or not isinstance(tests.get("anzahl"), int) or tests["anzahl"] < 1
+            or funde):
+        erg.update(status="ÜBERSPRUNGEN",
+                   fehler="LEAD-/BRAIN-/Test- oder Geheimnisprüfung unvollständig; kein CHECK-KI-Aufruf.")
+        return erg
+    aufgabe = plan.get("aufgabe")
+    akzeptanz = plan.get("akzeptanzkriterien") or (
+        aufgabe.get("acceptance") if isinstance(aufgabe, dict) else None)
     antwort, fehler = ki_teil(ki, "CHECK", json.dumps({
-        "akzeptanzkriterien": l["plan"].get("akzeptanzkriterien") or l["plan"]["aufgabe"].get("acceptance"),
-        "auftrag_check": l["plan"].get("auftrag_check"),
-        "brain_vorschlag": b["ki"]["text"],
+        "akzeptanzkriterien": akzeptanz,
+        "auftrag_check": plan.get("auftrag_check"),
+        "brain_vorschlag": vorschlag,
         "echte_testergebnisse": {"ok": tests["ok"], "anzahl": tests["anzahl"]},
         "geheimnis_funde": funde}, ensure_ascii=False))
     if fehler:
