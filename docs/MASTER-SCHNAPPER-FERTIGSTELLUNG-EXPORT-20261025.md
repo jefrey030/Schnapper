@@ -38,4 +38,36 @@ Der lokale Offline-MVP besitzt bereits Suche, CSV-/JSON-Import, Preisvergleich, 
 
 ## Ausführung und Abschluss
 
-Die tatsächlichen Code-Commits, neuen Tests, letzte GitHub-Actions-SHA, PASS/SKIP/FAIL-Zahlen sowie unerledigten externen Freigaben werden **erst nach Prüfung** ergänzt.
+## Tatsächlich ausgeführt und geprüft
+
+**EX1 – Ausgangslage und bestehendes Feature:** Zu Beginn war die Export-Route bereits als erster Entwurf implementiert, aber ohne gezielte vollständige Regressionstests und ohne `referenzpreis` als CSV-Spalte. Bestehende UI-Links im Browser wurden weiterverwendet statt neu angelegt.
+
+**EX2 – fachliche CSV-Verbesserung:** `app/schnapper/web.py`: Die CSV enthält neu die Spalte `referenzpreis` als Teil von `CSV_FELDER`. Getestet werden preislich gefilterte Treffer mit `gesamtpreis`, `preis`, `versand`, `referenzpreis`, `rabatt_prozent` und Quellennachweis. Eine normale, vertrauenswürdige Eigenliste kann im Test wieder als CSV eingelesen werden.
+
+**EX3 – Sicherheit:** Tabulatoren, ASCII-Steuerzeichen und Unicode-Zeilentrenner werden vor dem CSV-Schreiben zu Leerzeichen. Formelpräfixe `=`, `+`, `-` und `@` werden auch nach Unicode-Leerzeichen, BOM oder Zero-Width-Space mit einem Apostroph entschärft. Rohdaten werden nicht als HTML gerendert. Das ist eine wirksame Schutzmaßnahme gegen typische Spreadsheet-Formelinjektion, keine Garantie für jeden Tabellenimporter.
+
+**EX4 – HTTP-Verträge:** CSV mit UTF-8-BOM, Semikolon, `Content-Disposition: attachment`, `X-Content-Type-Options: nosniff`, `Cache-Control: no-store`; JSON enthält exakt den `/api/suche`-Antwortinhalt der gleichen Filterabfrage. `HEAD` liefert Header ohne Body.
+
+**EX5 – negative Eingaben:** Ungültige Filter liefern HTTP 400 **ohne** Anhangs-Header. Bei null Treffern bleibt ein valider CSV-Header bzw. eine leere JSON-Trefferliste.
+
+**EX6 – Browser:** Bereits integrierte CSV-/JSON-Links und ihr JavaScript-Abgleich mit dem aktiven Filterformular wurden durch eine lokale HTTP-/Asset-Prüfung kontrolliert. Ein echter Android-Browser-Ablauf ist damit nicht nachgewiesen.
+
+**EX7 – Kosten/Quellen:** Tests nutzen den lokalen Server und synthetische eigene CSV-Angebote. Ausgeschlossene Fremdquellen werden beim Import entfernt. Der Export selbst führt keine Netzwerkanfrage zu externen Marktplätzen aus; GitHub-CI verwendete keine externen KI-Modelle.
+
+**EX8 – Regressionen:** `tests/test_export_fertigstellung.py` enthält **neun** gezielte `unittest`-Testmethoden für JSON-Gleichheit, CSV-Spalten/Referenzpreis, Wiederimport einer harmlosen Eigenliste, Nulltreffer, Fehlerfilter, HEAD, Download-Links sowie Tabellenformel- und Fremdnetzschutz.
+
+**Erfolgreicher Code-Testlauf:** Commit `abaca391ef031c43ad6224187bb8f5b30621ced8`, [GitHub Actions #40227202057](https://github.com/jefrey030/Schnapper/actions/runs/40227202057):
+- Python **310 ausgeführte Tests, 1 übersprungen, 0 fehlgeschlagen**.
+- Cloudflare **16/16 Tests bestanden, 0 übersprungen, 0 fehlgeschlagen**.
+- Beide Jobs `success`. Ein abschließender Dokumentationscommit erfordert eine eigene CI-Kontrolle.
+
+**EX9 – weiterhin offen:** Echte lizenzierte automatische Angebotsquellen, unabhängige Sicherheitsprüfung, tatsächlicher Android-Geräte-/Download-Test, Live-KI-Agenten, Hosting/Monitoring und Betreiberfreigabe für Merge/Deployment. Diese Aufgaben dürfen **nicht** als erledigt markiert werden. Das Hauptrepository `main` enthält ohne Merge weiterhin den historischen Stundenworkflow.
+
+## Technische und betriebliche Schlussfolgerung
+
+**Lokaler MVP:** Ergebnisexport fachlich vervollständigt und automatisiert getestet.  
+**Automatische Live-Schnäppchen-App:** noch nicht fertig.  
+**Vier autonome KI-Agenten:** nicht als produktiv laufend belegt.  
+**Externe Dienste, Kosten, Veröffentlichungen, Merge:** keine Aktivierung.  
+**Freigabestatus:** **NO-GO**.
+
