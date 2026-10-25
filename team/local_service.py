@@ -180,6 +180,8 @@ def einmal():
         print(f"BLOCKIERT: Stundenbericht fehlt. Details: {lauf}/prozesse.json")
         return 1
     try:
+        if report_path.stat().st_size > 1_000_000:
+            raise ValueError("Bericht über Größenlimit")
         bericht = json.loads(report_path.read_text(encoding="utf-8"))
     except (OSError, UnicodeError, ValueError):
         print("BLOCKIERT: Stundenbericht fehlt, ist unlesbar oder enthält ungültiges JSON.")
