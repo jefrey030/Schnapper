@@ -1,39 +1,37 @@
-"""Offline regression tests for fail-closed GitHub Actions cost gating.
-
-These tests inspect the workflow without starting a runner or model API call.
-They cannot replace an actual GitHub Actions integration run.
-"""
+"""Sperrtests des abgeschalteten GitHub-Models-Stundenlaufs (nur statisch)."""
 from pathlib import Path
 import re
 import unittest
 
-WORKFLOW = Path(__file__).resolve().parents[1] / ".github" / "workflows" / "schnapper-hourly.yml"
+ROOT = Path(__file__).resolve().parents[1]
+WORKFLOW = ROOT / ".github" / "workflows" / "schnapper-hourly.yml"
 
 
-class HourlyWorkflowCostGuardTests(unittest.TestCase):
+class LegacyDisabledTests(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
         cls.workflow = WORKFLOW.read_text(encoding="utf-8")
-        match = re.search(r"(?m)^    if: >-\n((?:      [^\n]*\n)+)", cls.workflow)
-        if match is None:
-            raise AssertionError("Missing multiline job-level guard")
-        cls.job_guard = match.group(1)
 
-    def test_private_or_missing_visibility_must_fail_closed(self):
-        self.assertIn("toJSON(github.event.repository.private) == 'false'", self.job_guard)
-        self.assertNotIn("github.event.repository.private == false", self.job_guard)
+    def test_keine_automatischen_stundenlaeufe(self):
+        self.assertIn("workflow_dispatch:", self.workflow)
+        self.assertNotRegex(self.workflow, r"(?m)^\s*schedule\s*:")
+        self.assertNotRegex(self.workflow, r"(?m)^\s*-\s*cron\s*:")
 
-    def test_repository_flag_cannot_bypass_visibility(self):
-        self.assertIn("vars.SCHNAPPER_OEFFENTLICH == 'true'", self.job_guard)
-        self.assertIn("vars.SCHNAPPER_PAUSE != 'true'", self.job_guard)
-        self.assertNotIn("||", self.job_guard)
+    def test_kein_job_kann_starten_auch_nicht_manuell(self):
+        self.assertRegex(self.workflow, r"(?m)^\s+if:\s*\$\{\{\s*false\s*\}\}\s*$")
+        self.assertNotIn("team/agent.py", self.workflow)
+        self.assertNotIn("curl ", self.workflow)
 
-    def test_independent_visibility_check_before_agent_calls(self):
-        self.assertIn('Kostenschutz – nur öffentliches Repository', self.workflow)
-        self.assertIn('if [ "$privat" != "False" ]', self.workflow)
-        guard_step = self.workflow.index('Kostenschutz – nur öffentliches Repository')
-        first_agent = self.workflow.index('Agent LEAD – plant und verteilt')
-        self.assertLess(guard_step, first_agent)
+    def test_keine_modelle_und_keine_schreibrechte(self):
+        self.assertRegex(self.workflow, r"(?m)^\s+contents: read\s*$")
+        self.assertNotRegex(self.workflow, r"(?m)^\s*models:\s*read")
+        self.assertNotRegex(self.workflow, r"(?m)^\s*contents:\s*write")
+
+    def test_oeffentliche_ci_trotzdem_verfuegbar(self):
+        tests = (ROOT / ".github" / "workflows" / "tests.yml").read_text(encoding="utf-8")
+        self.assertIn("cloudflare-tests:", tests)
+        self.assertIn("python-tests:", tests)
+        self.assertIn("github.event.repository.private == false", tests)
 
 
 if __name__ == "__main__":
