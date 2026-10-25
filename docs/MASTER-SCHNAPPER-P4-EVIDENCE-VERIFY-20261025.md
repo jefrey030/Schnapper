@@ -25,9 +25,22 @@ Der lokale Pilot schreibt bereits `team/work/<Lauf>/nachweise.json` mit SHA-256-
 6. Vor Merge: GitHub Actions Python- und Cloudflare-Tests grün; Produktionssysteme, `main` und kostenpflichtige Dienste bleiben unverändert.
 
 ## Abnahmecheckliste
-- [ ] Lokaler Nur-Lese-Nachweisprüfer implementiert
-- [ ] Reine Offline-CLI `--verify` implementiert
-- [ ] Manipulations- und Pfadkontrolltests erfolgreich
-- [ ] Echter CI-Testlauf für Python + Cloudflare erfolgreich
-- [ ] GitHub-HEAD und Nachweise dokumentiert
-- [ ] Unabhängige Produktionsfreigabe ausdrücklich weiterhin NO-GO
+- [x] Lokaler Nur-Lese-Nachweisprüfer implementiert
+- [x] Reine Offline-CLI `--verify` implementiert
+- [x] Zehn Manipulations- und Pfadkontrolltests erfolgreich
+- [x] Echter CI-Testlauf Python + Cloudflare erfolgreich, Code-SHA `ac4ba5d3f2b6db1e5ea3a860f40ad5ab1e250c81`, [Run #40211791992](https://github.com/jefrey030/Schnapper/actions/runs/40211791992)
+- [x] Code-HEAD und reale CI-Zahlen dokumentiert (Dokumentationscommit erhält separaten CI-Test)
+- [x] Unabhängige Produktionsfreigabe ausdrücklich weiterhin NO-GO
+
+## Ausführung – echte GitHub-Arbeit
+
+- `team/local_service.py`: neue, vollständig offline arbeitende Prüffunktion `pruefe_manifest(lauf)`. Sie nimmt nur direkte Laufordner unter `team/work`, akzeptiert keine Symlinks, prüft das Manifest als JSON-Objekt unter Größenlimit und bildet die Dateiliste **selbst** anhand des bekannten Rollen-/Berichtsschemas.
+- SHA-256 aller erwarteten Dateien wird erneut aus den Bytes berechnet und mit der gespeicherten Prüfsumme verglichen. Fehlt eine Datei, ist der Digest ungültig, der Datensatz zu groß, die Lauf-ID fremd oder die Manifest-Pfadauflistung manipuliert, lautet das Ergebnis `BLOCKIERT`.
+- `--verify LAUFORDNER`: manuell aufrufbares Nur-Lese-Kommando, das keine Arbeitsrollen, Modelle, Netzwerkdienste oder Scheduler-Sperren startet.
+- Nach `nachweise.json`-Erstellung wird die neue Prüfung auch bei der normalen lokalen Pilotverarbeitung aufgerufen; falls sie scheitert, wird der Prozess insgesamt als blockiert zurückgemeldet.
+- `tests/test_local_service.py`: zehn zusätzliche eigenständige Offline-Testmethoden für positiven/negativen Pilot, geänderte oder gelöschte Datei, unzulässigen Pfad, symbolischen Link, ungültigen SHA-256, widersprüchliche Ergebnisangabe, fehlende Agenten, fremden Laufordner und CLI ohne Prozessstart.
+- Ein unmittelbar entdeckter Syntaxfehler im neu ergänzten Test-Kontextmanager wurde vor dem **abschließenden** Testlauf korrigiert.
+
+**Geprüfter Code-HEAD:** `ac4ba5d3f2b6db1e5ea3a860f40ad5ab1e250c81`, [GitHub Actions #40211791992](https://github.com/jefrey030/Schnapper/actions/runs/40211791992). Python: **271 Tests**, **1 übersprungen**, **0 fehlgeschlagen**. Cloudflare: **16 Tests**, **16 bestanden**, **0 fehlgeschlagen**, **0 übersprungen**. Beide Jobs melden Erfolg.
+
+**Grenzen:** Ein SHA-256-Manifest ist ohne externe Signatur **kein** kryptografischer Authentizitätsnachweis gegen Akteure mit Schreibzugriff auf alle lokalen Artefakte. Die Tests nutzen synthetische Daten; es wurde kein echter Ollama-/Cloudflare-Modelllauf aktiviert. `main` ist von dieser Korrektur unberührt. Die ältere Stundenjob-Stilllegung auf `main` und die unabhängige produktive Security-Abnahme bleiben offen. Veröffentlichung/Release weiterhin **NO-GO**. Kosten 0 €.
