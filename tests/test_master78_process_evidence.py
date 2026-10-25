@@ -8,7 +8,7 @@ from types import SimpleNamespace
 from unittest import mock
 
 sys.path.insert(0, str(pathlib.Path(__file__).resolve().parent))
-from test_master77_proof import TestMaster77Nachweise
+import test_master77_proof as master77
 sys.path.insert(0, str(pathlib.Path(__file__).resolve().parents[1] / "team"))
 import local_service as dienst
 
@@ -17,7 +17,7 @@ class TestMaster78Prozessbelege(unittest.TestCase):
     def setUp(self):
         # Bestehende isolierte MASTER-77-Fixture wiederverwenden, ohne
         # deren Testmethoden doppelt in unittest einzusammeln.
-        self.fixture = TestMaster77Nachweise(
+        self.fixture = master77.TestMaster77Nachweise(
             "test_mock_is_consistent_but_not_a_live_ai_proof")
         self.fixture.setUp()
         self.addCleanup(self.fixture.doCleanups)
