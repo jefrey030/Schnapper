@@ -77,6 +77,46 @@ def _request(pfad, payload=None, timeout=10):
         ) from exc
 
 
+def _validiere_chat_antwort(antwort, modell):
+    """Prüft Ollama-API-Metadaten; lokale UUIDs sind KEINE Anbieter-Attestierung."""
+    if not isinstance(antwort, dict):
+        raise KINichtVerfuegbar("Ungültiger Ollama-Antworttyp.")
+    if antwort.get("model") != modell:
+        raise KINichtVerfuegbar("Ollama meldet ein unerwartetes Modell.")
+    if antwort.get("done") is not True or antwort.get("done_reason") != "stop":
+        raise KINichtVerfuegbar("Ollama-Antwort nicht vollständig erfolgreich abgeschlossen.")
+    message = antwort.get("message")
+    if not isinstance(message, dict) or message.get("role") != "assistant":
+        raise KINichtVerfuegbar("Ollama-Nachricht stammt nicht aus der Assistant-Rolle.")
+    text = message.get("content")
+    if not isinstance(text, str) or not text.strip():
+        raise KINichtVerfuegbar("Leere oder ungültige Ollama-Antwort.")
+    erstellt = antwort.get("created_at")
+    if not isinstance(erstellt, str) or len(erstellt) > 80:
+        raise KINichtVerfuegbar("Ollama-Antwort hat keinen gültigen Zeitstempel.")
+    try:
+        zeit = dt.datetime.fromisoformat(erstellt.replace("Z", "+00:00"))
+    except ValueError as exc:
+        raise KINichtVerfuegbar("Ollama-Antwort hat keinen gültigen Zeitstempel.") from exc
+    if zeit.tzinfo is None:
+        raise KINichtVerfuegbar("Ollama-Zeitstempel braucht eine Zeitzone.")
+    prompt_tokens, erzeugte_tokens = antwort.get("prompt_eval_count"), antwort.get("eval_count")
+    if (type(prompt_tokens) is not int or prompt_tokens < 0
+            or type(erzeugte_tokens) is not int or erzeugte_tokens < 1):
+        raise KINichtVerfuegbar("Ollama-Tokenzählung fehlt oder ist ungültig.")
+    return {
+        "text": text.strip(),
+        "modell_antwort": antwort["model"],
+        "done": True,
+        "done_reason": "stop",
+        "rolle": "assistant",
+        "created_at": erstellt,
+        "prompt_eval_count": prompt_tokens,
+        "eval_count": erzeugte_tokens,
+    }
+
+
+
 class KI:
     def __init__(self, zaehler_datei):
         if os.environ.get("SCHNAPPER_KI_BACKEND") != "ollama":
@@ -98,9 +138,11 @@ class KI:
         tags = _request("/api/tags")
         if not isinstance(tags, dict) or not isinstance(tags.get("models"), list):
             raise KINichtVerfuegbar("Ungültige lokale Modellliste.")
+        # Aus lokalen Ollama-Katalogen nur syntaktisch gültige Namen lesen;
+        # verschachtelte Listen/Dictionaries dürfen keine Exception auslösen.
         modelle = {
-            v.get("name") for v in tags.get("models", [])
-            if isinstance(v, dict)
+            v["name"] for v in tags["models"]
+            if isinstance(v, dict) and isinstance(v.get("name"), str)
         }
         if self.modell not in modelle:
             raise KINichtVerfuegbar(
@@ -171,17 +213,20 @@ class KI:
             ],
             "options": {"num_predict": 700, "temperature": 0.2},
         }, timeout=180)
-        try:
-            inhalt = antwort["message"]["content"].strip()
-        except (KeyError, TypeError, AttributeError) as exc:
-            raise KINichtVerfuegbar("Lokale KI ohne verwertbaren Antworttext.") from exc
-        if not inhalt:
-            raise KINichtVerfuegbar("Leere lokale KI-Antwort.")
+        beleg = _validiere_chat_antwort(antwort, self.modell)
         return {
-            "text": inhalt, "modell": self.modell,
+            "text": beleg["text"], "modell": self.modell,
+            # Die UUID belegt lediglich die lokale Zuordnung, keine echte
+            # kryptografische Identität eines Ollama-/Modellanbieters.
             "antwort_id": "lokal-" + uuid.uuid4().hex,
-            "nutzung": {"prompt_eval_count": antwort.get("prompt_eval_count"),
-                       "eval_count": antwort.get("eval_count")},
+            "antwort_id_typ": "nur-lokale-kennung",
+            "ollama_beleg": {k: v for k, v in beleg.items() if k != "text"},
+            "nutzung": {
+                "prompt_eval_count": beleg["prompt_eval_count"],
+                "eval_count": beleg["eval_count"],
+            },
+            # MASTER 80: reservierte Nummer behalten (kein unsicheres
+            # Nachlesen des Counters bei parallelen Modellantworten).
             "aufruf_nr": aufruf_nummer,
             "laufzeit": "Ollama lokal (keine bezahlte KI-API)",
             "erstellt_utc": dt.datetime.now(dt.timezone.utc).isoformat(),
