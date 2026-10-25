@@ -30,9 +30,26 @@ Die bestehende lokale Ollama-Anbindung isoliert und ohne echte Modellinferenz au
 6. Repo `main` und der Legacy-Stundenworkflow bleiben ohne separate Review-/Merge-Freigabe **unverändert**.
 
 ## 5. Abnahmecheckliste
-- [ ] Ausführung im bestehenden Draft verifiziert
-- [ ] Katalog-/Counter-/Response-Fehler mit Fail-Closed behandelt
-- [ ] Passende Negativtests ergänzt und grüner Positivtest erhalten
-- [ ] Python- und Cloudflare-Tests auf finalem HEAD erfolgreich
-- [ ] SHA, CI-Run, Anzahl der Tests, Einschränkungen dokumentiert
-- [ ] Keine Live-KI, kein Deployment, keine Bezahldienste; Release NO-GO
+- [x] Ausführung im bestehenden Draft #55 verifiziert
+- [x] Katalog-/Counter-/Response-Fehler mit Fail-Closed behandelt
+- [x] Sechs neue Negativ-Testfunktionen ergänzt, vorhandener positiver Ollama-Mocktest bleibt grün
+- [x] Code-HEAD `bd3bb0b6e878f52f94bcd68ca282aef3db88ad49` erfolgreich geprüft: [GitHub Actions #40213052241](https://github.com/jefrey030/Schnapper/actions/runs/40213052241)
+- [x] SHA, CI-Run, 277 Python-Tests (1 SKIP) und 16/16 Cloudflare-Tests dokumentiert; Dokumentationscommit erhält eigenen CI-Nachweis
+- [x] Keine Live-KI, kein Deployment, keine Bezahldienste; Release NO-GO
+
+## 6. Wirklich ausgeführte Änderungen
+
+### `team/local_ollama.py`
+1. Die `/api/tags`-Modellliste wird ohne Umwandlung untrusted `name`-Felder in hashbasierte Container geprüft; List-/Dict-Namen führen zu kontrolliertem Fehlschlag statt `TypeError`.
+2. Die Ollama-HTTP-Funktion erwartet ein JSON-Objekt; gültige JSON-Skalare oder Listen werden als ungültige Protokollantwort blockiert.
+3. Der lokale Aufrufzähler akzeptiert nur einen nichtnegativen kleinen Integer und ein Budget von 1–6, begrenzt Dateigrößen, lehnt symbolische Links ab und fängt Schreibfehler als `KINichtVerfuegbar` ab. Erfolgt ein später fehlerhafter Modellversuch, bleibt der vorab gezählte Versuch verbraucht.
+4. KI-Antworten erfordern tatsächlichen Text, enthalten maximal 12.000 Zeichen und werden bei leeren, fehlenden, nicht textuellen oder übergroßen Inhalten verweigert. Die festen localhost-/Proxy-/Redirect-Grenzen bleiben erhalten.
+
+### `tests/test_local_ollama.py`
+Sechs zusätzliche unabhängige Offline-Testfunktionen für ungültige JSON-Wurzeltypen, gemischte/kaputte Modellkataloge, negativen/defekten/zu großen Zähler, zu hohe konfigurierte Limits, Symlink-Zähler und fehlerhafte/übergroße Antwortinhalte. Alle Tests verwenden synthetische Daten und `unittest.mock`. Keine echten Modellaufrufe, Netzwerkzugriffe oder Downloads.
+
+### Reproduzierbarer Nachweis
+**Getestete Code-SHA:** `bd3bb0b6e878f52f94bcd68ca282aef3db88ad49`; [GitHub Actions #40213052241](https://github.com/jefrey030/Schnapper/actions/runs/40213052241): `python-tests` **277 ausgeführt (1 SKIP), 0 Fehler**; `cloudflare-tests` **16/16 bestanden, 0 SKIP, 0 Fehler**. Beide Jobs `success`.
+
+### Nicht erreicht / verbleibende Release-Sperren
+Die sechs Testfunktionen beweisen die offline getesteten Schutzregeln, **nicht** die Verfügbarkeit eines realen lokalen Modells, eine kryptografische KI-Antwort-Authentifizierung oder einen produktiven Vier-KI-Stundenlauf. Ungeprüfte fremde Systeme/Finanzdaten wurden nicht abgefragt. Draft #55 ist noch nicht nach `main` gemergt; dessen Legacy-Stundenworkflow wird durch diese Draft-Änderungen nicht abgeschaltet. Unabhängige Code-/Sicherheitsreview, reale Testumgebung und ausdrückliche Betreiberfreigabe bleiben notwendig. **NO-GO Produktivbetrieb.**
