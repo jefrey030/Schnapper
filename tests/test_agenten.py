@@ -184,7 +184,7 @@ class TestAgenten(unittest.TestCase):
         basis_url = f"http://127.0.0.1:{server.server_port}"
         try:
             with mock.patch.dict(os.environ, {"GITHUB_TOKEN": "test", "SCHNAPPER_MODELL": ""}), \
-                 mock.patch.object(ki, "ERLAUBTER_HOST", "127.0.0.1"), \
+                 mock.patch.object(ki, "_pruefe_url", return_value=None), \
                  mock.patch.object(ki, "INFERENZ_URL", basis_url + "/inference"), \
                  mock.patch.object(ki, "KATALOG_URL", basis_url + "/catalog"), \
                  mock.patch.object(ki.KI, "modell", return_value="meta/Llama-3.3-70B-Instruct"), \
