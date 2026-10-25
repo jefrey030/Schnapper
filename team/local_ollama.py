@@ -14,6 +14,7 @@ import urllib.request
 import uuid
 
 from ki import KINichtVerfuegbar, MAX_AUFRUFE
+from operator_approval import pruefe_freigabe
 
 LOKAL = "http://127.0.0.1:11434"
 MODELL_DEFAULT = "qwen2.5:1.5b"
@@ -28,6 +29,9 @@ _HTTP = urllib.request.build_opener(
 
 
 def _request(pfad, payload=None, timeout=10):
+    # Enforce permission at the final HTTP boundary, including direct callers.
+    if pfad == "/api/chat":
+        pruefe_freigabe()
     if pfad not in ("/api/tags", "/api/chat"):
         raise KINichtVerfuegbar("Unzulässiger Ollama-Pfad.")
     if payload is not None and pfad != "/api/chat":
@@ -55,6 +59,8 @@ class KI:
     def __init__(self, zaehler_datei):
         if os.environ.get("SCHNAPPER_KI_BACKEND") != "ollama":
             raise KINichtVerfuegbar("Lokale KI ist nicht freigegeben.")
+        # Backend selection is not operator consent.
+        pruefe_freigabe()
         self.zaehler = pathlib.Path(zaehler_datei)
         self.modell = os.environ.get("SCHNAPPER_OLLAMA_MODELL", MODELL_DEFAULT).strip()
         if not re.fullmatch(r"[a-zA-Z0-9][a-zA-Z0-9_.:/-]{0,79}", self.modell):
@@ -91,6 +97,8 @@ class KI:
         self.zaehler.write_text(str(bisher + 1), encoding="utf-8")
 
     def frage(self, system, nutzer):
+        # Revalidate consent, selected open task and STOP before every request.
+        pruefe_freigabe()
         self._pruefe_modell()
         self._zaehle()
         antwort = _request("/api/chat", {
