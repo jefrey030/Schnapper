@@ -17,6 +17,7 @@ import csv
 import io
 import json
 import pathlib
+import re
 import sys
 import threading
 from decimal import Decimal, InvalidOperation
@@ -129,8 +130,9 @@ def als_json(ergebnis, name: str, beispiel: bool, verlauf: Verlauf | None = None
 
 
 CSV_FELDER = (
-    "id", "titel", "gesamtpreis", "preis", "versand", "rabatt_prozent",
-    "zustand", "quelle", "kategorie", "url", "erfasst_am", "warnungen",
+    "id", "titel", "gesamtpreis", "preis", "versand", "referenzpreis",
+    "rabatt_prozent", "zustand", "quelle", "kategorie", "url", "erfasst_am",
+    "warnungen",
 )
 
 
@@ -150,10 +152,15 @@ def exportiere_csv(daten: dict) -> bytes:
             if feld == "warnungen":
                 wert = " | ".join(wert or [])
             text = "" if wert is None else str(wert)
-            text = text.replace("\r", " ").replace("\n", " ").replace("\t", " ")
-            # Spreadsheet-Programme koennen Formeln in untrusted Zellen
-            # ausfuehren; fuehrendes Apostroph erzwingt Textbehandlung.
-            if text.lstrip(" \ufeff").startswith(("=", "+", "-", "@")):
+            # Alle ASCII-Steuerzeichen und Unicode-Zeilentrenner entfernen:
+            # ungepruefte Feldinhalte duerfen keine Zeilen injizieren.
+            text = "".join(
+                " " if ord(zeichen) < 32 or zeichen in "\u2028\u2029"
+                else zeichen for zeichen in text
+            )
+            # Spreadsheetprogramme duerfen untrusted Zellen nicht als
+            # Formeln ausfuehren – auch nach Unicode-Leerzeichen/BOM nicht.
+            if re.match(r"^[\s\ufeff\u200b]*[=+\-@]", text):
                 text = "'" + text
             zellen.append(text)
         schreiber.writerow(zellen)
