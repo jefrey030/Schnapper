@@ -135,22 +135,33 @@ class TestKostenbremsen(unittest.TestCase):
             for verboten in ("api.anthropic.com", "ANTHROPIC_API_KEY", "api.openai.com", "OPENAI_API_KEY"):
                 self.assertNotIn(verboten, text, f"{verboten} in {datei}")
 
-    def test_workflow_minimale_rechte(self):
+    def test_workflow_ist_unbedingt_stillgelegt(self):
         wf = (ROOT / ".github/workflows/schnapper-hourly.yml").read_text(encoding="utf-8")
-        self.assertIn("models: read", wf)
-        self.assertIn("timeout-minutes: 10", wf)
-        self.assertIn("SCHNAPPER_PAUSE", wf)
-        self.assertNotIn("secrets.ANTHROPIC", wf)
-        for rolle in ("LEAD", "BRAIN", "CHECK", "COMMAND"):
-            self.assertIn(f"team/agent.py {rolle}", wf)
+        self.assertIn("workflow_dispatch:", wf)
+        self.assertNotIn("schedule:", wf)
+        self.assertNotIn("cron:", wf)
+        self.assertNotIn("models: read", wf)
+        self.assertNotIn("contents: write", wf)
+        self.assertIn("contents: read", wf)
+        self.assertIn("if: ${{ false }}", wf)
+        self.assertNotIn("team/agent.py LEAD", wf)
+        self.assertNotIn("python team/agent.py", wf)
+        self.assertNotIn("curl ", wf)
 
-    def test_kostenschutz_nur_oeffentlich(self):
-        wf = (ROOT / ".github/workflows/schnapper-hourly.yml").read_text(encoding="utf-8")
-        self.assertIn("github.event.repository.private == false", wf)
-        self.assertIn("vars.SCHNAPPER_OEFFENTLICH == 'true'", wf)
-        self.assertIn("Repository ist privat", wf)
+    def test_tests_nur_im_oeffentlichen_repo(self):
         tests_wf = (ROOT / ".github/workflows/tests.yml").read_text(encoding="utf-8")
         self.assertIn("github.event.repository.private == false", tests_wf)
+        self.assertIn("cloudflare-tests:", tests_wf)
+
+    def test_abgeschaltete_github_models_wird_nicht_kontaktiert(self):
+        with tempfile.TemporaryDirectory() as d:
+            counter = pathlib.Path(d) / "calls.txt"
+            with mock.patch.dict(os.environ, {"GITHUB_TOKEN": "test-only"}), \
+                 mock.patch.object(ki, "_http") as http:
+                with self.assertRaisesRegex(ki.KINichtVerfuegbar, "eingestellt"):
+                    ki.KI(counter).frage("system", "frage")
+                http.assert_not_called()
+            self.assertFalse(counter.exists())
 
     def test_aufrufbudget(self):
         with tempfile.TemporaryDirectory() as d:
@@ -237,6 +248,7 @@ class TestAgenten(unittest.TestCase):
         try:
             with mock.patch.dict(os.environ, {"GITHUB_TOKEN": "test", "SCHNAPPER_MODELL": ""}), \
                  mock.patch.object(ki, "_pruefe_url", return_value=None), \
+                 mock.patch.object(ki.KI, "modell", return_value="meta/Llama-3.3-70B-Instruct"), \
                  mock.patch.object(ki, "INFERENZ_URL", basis_url + "/inference"), \
                  mock.patch.object(ki, "KATALOG_URL", basis_url + "/catalog"), \
                  mock.patch.object(ki.KI.__init__, "__defaults__", (None, basis_url + "/inference", basis_url + "/catalog")), \
