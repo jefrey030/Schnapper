@@ -327,6 +327,30 @@ class TestDienst(unittest.TestCase):
         fehler = dienst.pruefe_nachweise(bericht, lauf, [])
         self.assertTrue(any("Rollenidentität" in e for e in fehler))
 
+    def test_symlink_zu_externer_agentendatei_ist_keine_evidenz(self):
+        lauf = self.team / "work" / "symlink"
+        lauf.mkdir(parents=True)
+        fremd = self.root / "fremd.json"
+        daten = {"rolle": "LEAD", "status": "OK"}
+        fremd.write_text(json.dumps(daten), encoding="utf-8")
+        try:
+            (lauf / "LEAD.json").symlink_to(fremd)
+        except (OSError, NotImplementedError):
+            self.skipTest("Symbolische Links auf diesem Betriebssystem nicht erlaubt")
+        fehler = dienst.pruefe_nachweise(
+            {"lauf": lauf.name, "agenten": {"LEAD": daten}}, lauf, [])
+        self.assertTrue(any("symbolischer Link" in x for x in fehler))
+
+    def test_bool_zahl_ist_keine_gemessene_testanzahl(self):
+        lauf = self.team / "work" / "boolzahl"
+        lauf.mkdir(parents=True)
+        bericht = {
+            "lauf": lauf.name, "agenten": {}, "tests_ok": True,
+            "tests_anzahl": True,
+        }
+        fehler = dienst.pruefe_nachweise(bericht, lauf, [])
+        self.assertTrue(any("Unit-Tests nicht erfolgreich" in x for x in fehler))
+
     def test_falsche_laufzeit_oder_doppelte_ids_blockieren(self):
         lauf = self.team / "work" / "fake"
         lauf.mkdir(parents=True)
