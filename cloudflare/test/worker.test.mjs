@@ -123,3 +123,58 @@ test('Second model reply with synthetic secret stops before persisting second an
  assert.equal(x.db.reports.length,1);
  assert.ok(!JSON.stringify(x.db.reports).includes(fakeToken));
 });
+
+test('D1 successful HTTP result with zero changed audit rows blocks BEFORE inference',async()=>{
+ const x=fakeEnv();const original=x.env.DB.prepare.bind(x.env.DB);
+ x.env.DB.prepare=(sql)=>sql.startsWith('UPDATE schnapper_runs SET attempted_calls=')
+  ? {bind(){return {async run(){return {meta:{changes:0}}}}}}
+  : original(sql);
+ const out=await runSlot(x.env,Date.UTC(2026,9,22,19));
+ assert.equal(out.status,'BLOCKIERT');
+ assert.equal(out.attempted_calls,0);
+ assert.equal(x.getCalls(),0);
+ assert.equal(x.db.audit.length,0);
+ assert.equal(x.db.statuses.at(-1)[0],'blocked');
+});
+
+test('D1 unconfirmed audit metadata also prevents any model call',async()=>{
+ const x=fakeEnv();const original=x.env.DB.prepare.bind(x.env.DB);
+ x.env.DB.prepare=(sql)=>sql.startsWith('UPDATE schnapper_runs SET attempted_calls=')
+  ? {bind(){return {async run(){return {}}}}}
+  : original(sql);
+ const out=await runSlot(x.env,Date.UTC(2026,9,22,20));
+ assert.equal(out.status,'BLOCKIERT');
+ assert.equal(out.attempted_calls,0);
+ assert.equal(x.getCalls(),0);
+});
+
+test('D1 no-op model report insert prevents false role completion and next model call',async()=>{
+ const x=fakeEnv();const original=x.env.DB.prepare.bind(x.env.DB);
+ x.env.DB.prepare=(sql)=>sql.startsWith('INSERT INTO schnapper_reports')
+  ? {bind(){return {async run(){return {meta:{changes:0}}}}}}
+  : original(sql);
+ const out=await runSlot(x.env,Date.UTC(2026,9,22,21));
+ assert.equal(out.status,'BLOCKIERT');
+ assert.equal(out.attempted_calls,1);
+ assert.deepEqual(out.completed_roles,[]);
+ assert.equal(x.getCalls(),1);
+ assert.equal(x.db.reports.length,0);
+ assert.equal(x.db.statuses.at(-1)[0],'blocked');
+});
+
+test('D1 no-op completed status write must NOT return a success verdict',async()=>{
+ const x=fakeEnv();const original=x.env.DB.prepare.bind(x.env.DB);
+ x.env.DB.prepare=(sql)=>{
+  if(!sql.startsWith('UPDATE schnapper_runs SET status='))return original(sql);
+  const stmt=original(sql);
+  return {bind(...args){
+   if(args[0]==='completed')return {async run(){return {meta:{changes:0}}}};
+   return stmt.bind(...args);
+  }};
+ };
+ const out=await runSlot(x.env,Date.UTC(2026,9,22,22));
+ assert.equal(x.getCalls(),4);
+ assert.equal(x.db.reports.length,4);
+ assert.equal(out.status,'BLOCKIERT');
+ assert.equal(x.db.statuses.at(-1)[0],'blocked');
+});
