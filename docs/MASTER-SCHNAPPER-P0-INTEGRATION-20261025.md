@@ -62,3 +62,9 @@
 ## Zustand
 
 **Draft, keine produktive Freigabe.** Rollenzuweisung ist eine dokumentierte Arbeitsplanung, nicht vier laufende KI-Instanzen.
+
+## GitHub-Übergabe
+
+- Integrationsentwurf: [SCHNAPPER PR #54](https://github.com/jefrey030/Schnapper/pull/54), Draft gegen `main`.
+- Selbständige Rollen sind **noch nicht** als vier reale Modelle aktiv; diese Übergabe umfasst GitHub-Code, statische/Offline-Tests und sichere Auftragsverteilung.
+- Für die Abschlussabnahme den zuletzt erfolgreichen CI-Run **gegen die finale HEAD-SHA** aus den GitHub-Actions prüfen. Wenn keine Actions laufen: `BLOCKED / NOT_RUN`, nicht `PASS`.
