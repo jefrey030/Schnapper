@@ -144,6 +144,32 @@ class TestDienst(unittest.TestCase):
         )
         self.assertTrue(any("unlesbar/ungültig" in e for e in fehler))
 
+    def test_vier_antworten_falsch_bei_anderem_freigabefehler(self):
+        # Ein fehlendes CHECK-GO muss vier_echte_ki_antworten=False setzen,
+        # selbst wenn der gefälschte Sammelbericht vier Rollen behauptet.
+        def fake(cmd, **kwargs):
+            if cmd[2] == "BERICHT":
+                lauf = pathlib.Path(cmd[3])
+                p = self.team / "runs" / (lauf.name + ".json")
+                p.parent.mkdir(parents=True, exist_ok=True)
+                p.write_text(json.dumps({
+                    "lauf": lauf.name,
+                    "team_einsatzbereit": True,
+                    "agenten_mit_echter_ki": list(dienst.ROLES),
+                    "ki_aufrufe": 4,
+                    "tests_ok": True,
+                }), encoding="utf-8")
+            return SimpleNamespace(returncode=0, stdout="", stderr="")
+
+        with mock.patch.object(dienst.subprocess, "run", side_effect=fake), \
+             mock.patch.object(dienst, "pruefe_nachweise",
+                               return_value=["CHECK hat nicht bestanden"]), \
+             mock.patch("builtins.print") as printed:
+            self.assertEqual(dienst.einmal(), 1)
+        ergebnis = json.loads(printed.call_args.args[0])
+        self.assertEqual(ergebnis["status"], "BLOCKIERT")
+        self.assertFalse(ergebnis["vier_echte_ki_antworten"])
+
     def test_falsche_laufzeit_oder_doppelte_ids_blockieren(self):
         lauf = self.team / "work" / "fake"
         lauf.mkdir(parents=True)
