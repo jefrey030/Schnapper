@@ -21,4 +21,5 @@ jobs:
     timeout-minutes: 1
     steps:
       - name: Stillgelegt - kein KI-Aufruf
-        run: echo 'NO-GO: Sicherheits- und Modellsysteme nicht freigegeben.'
+        run: |
+          echo "NO-GO: Sicherheits- und Modellsysteme nicht freigegeben."
