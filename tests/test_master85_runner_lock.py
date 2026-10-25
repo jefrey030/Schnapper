@@ -156,7 +156,7 @@ class TestMaster85SicheresRunnerLock(unittest.TestCase):
         extern = self.root / "external"
         extern.write_text("locked")
         self.path.symlink_to(extern)
-        with mock.patch.object(dienst.subprocess, "run") as process:
+        with mock.patch.object(dienst, "rolle_starten") as process:
             self.assertEqual(self._once(), (2, 0))
             process.assert_not_called()
 
