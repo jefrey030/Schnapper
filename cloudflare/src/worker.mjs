@@ -31,6 +31,14 @@ export function verifyGate(env) {
    env?.AI && typeof env.AI.run==='function' &&
    env?.DB && typeof env.DB.prepare==='function');
 }
+/** Persistent operator-controlled emergency stop. Missing/unreadable control = STOP. */
+export async function controlOpen(env) {
+ if(!verifyGate(env)) return false;
+ try {
+  const row=await env.DB.prepare('SELECT paused FROM schnapper_control WHERE id=1').first();
+  return row?.paused === 0;
+ } catch { return false; }
+}
 async function sha256(text) {
  const digest=await crypto.subtle.digest('SHA-256',new TextEncoder().encode(text));
  return Array.from(new Uint8Array(digest),n=>n.toString(16).padStart(2,'0')).join('');
@@ -55,6 +63,7 @@ async function mark(db,slot,status,error,attempts) {
 /** Deterministic 1-hour claim, no retry after partially failed inference. */
 export async function runSlot(env, timestamp) {
  if (!verifyGate(env)) return {status:'BLOCKIERT',reason:'Free-Plan oder Bindings nicht verifiziert – null KI-Aufrufe',attempted_calls:0};
+ if (!(await controlOpen(env))) return {status:'BLOCKIERT',reason:'Not-Aus aktiv oder nicht lesbar – null KI-Aufrufe',attempted_calls:0};
  let slot;
  try {slot=utcSlot(timestamp)} catch {return {status:'BLOCKIERT',reason:'Ungültiger Zeitpunkt',attempted_calls:0};}
  const hourIndex=Math.floor(new Date(timestamp).getTime()/3600000);
@@ -69,6 +78,9 @@ export async function runSlot(env, timestamp) {
  let attempts=0;
  try {
   for (const role of ROLES) {
+   // Auch während eines Laufs vor JEDEM neuen KI-Aufruf den Not-Aus lesen.
+   // Bereits laufende externe Anfragen können nicht rückwirkend abgebrochen werden.
+   if (!(await controlOpen(env))) throw Error('Not-Aus aktiv oder nicht lesbar');
    // D1 pre-commit of a chargeable model attempt ensures auditability.
    attempts++;
    await env.DB.prepare('UPDATE schnapper_runs SET attempted_calls=? WHERE slot=?')
