@@ -1,4 +1,5 @@
 """Lokaler Scheduler: reine Unit-Tests, KEIN Modellaufruf."""
+import hashlib
 import json
 import pathlib
 import sys
@@ -25,6 +26,121 @@ class TestDienst(unittest.TestCase):
         for p in self.patches:
             p.start()
             self.addCleanup(p.stop)
+
+    def _manifest_fixture(self, erfolgreich=True):
+        """Synthetisches SHA-256-Manifest ohne reale KI oder Netzwerk."""
+        lauf = self.team / "work" / "lauf-test"
+        lauf.mkdir(parents=True, exist_ok=True)
+        runs = self.team / "runs"
+        runs.mkdir(exist_ok=True)
+        dateien = [runs / (lauf.name + ".json"), lauf / "prozesse.json"]
+        if erfolgreich:
+            dateien += [lauf / (r + ".json") for r in dienst.ROLES]
+        for i, datei in enumerate(dateien):
+            datei.write_text(json.dumps({"test": i}), encoding="utf-8")
+        manifest = {
+            "lauf": lauf.name,
+            "ergebnis": {
+                "lauf": lauf.name,
+                "status": "TECHNISCHER PILOT ERFOLGREICH" if erfolgreich else "BLOCKIERT",
+                "vier_echte_ki_antworten": erfolgreich,
+            },
+            "dateien": {
+                str(p.relative_to(self.root)): hashlib.sha256(p.read_bytes()).hexdigest()
+                for p in dateien
+            },
+        }
+        (lauf / "nachweise.json").write_text(json.dumps(manifest), encoding="utf-8")
+        return lauf, manifest
+
+    def test_manifest_gueltig_und_vollstaendig_pruefen(self):
+        lauf, _ = self._manifest_fixture()
+        resultat = dienst.pruefe_manifest(lauf)
+        self.assertEqual(resultat["status"], "INTEGRITAET_OK")
+        self.assertEqual(resultat["dateien_geprueft"], 6)
+        self.assertEqual(resultat["fehler"], [])
+
+    def test_manifest_blockierter_lauf_bleibt_blockiert_aber_nachvollziehbar(self):
+        lauf, _ = self._manifest_fixture(erfolgreich=False)
+        resultat = dienst.pruefe_manifest(lauf)
+        self.assertEqual(resultat["status"], "INTEGRITAET_OK")
+        self.assertEqual(resultat["dateien_geprueft"], 2)
+
+    def test_manifest_entdeckt_nachtraeglich_geaenderte_ki_datei(self):
+        lauf, _ = self._manifest_fixture()
+        (lauf / "CHECK.json").write_text("nachtraeglich geaendert", encoding="utf-8")
+        resultat = dienst.pruefe_manifest(lauf)
+        self.assertEqual(resultat["status"], "BLOCKIERT")
+        self.assertTrue(any("Prüfsummenabweichung" in e for e in resultat["fehler"]))
+
+    def test_manifest_erkennt_geloeschten_beleg(self):
+        lauf, _ = self._manifest_fixture()
+        (lauf / "BRAIN.json").unlink()
+        resultat = dienst.pruefe_manifest(lauf)
+        self.assertEqual(resultat["status"], "BLOCKIERT")
+        self.assertTrue(any("Dateiliste" in e for e in resultat["fehler"]))
+
+    def test_manifest_blockiert_fremde_pfade_ohne_sie_zu_lesen(self):
+        lauf, manifest = self._manifest_fixture()
+        secret = self.root / "fremd.txt"
+        secret.write_text("nicht-zum-lesen", encoding="utf-8")
+        manifest["dateien"]["../../fremd.txt"] = hashlib.sha256(secret.read_bytes()).hexdigest()
+        (lauf / "nachweise.json").write_text(json.dumps(manifest), encoding="utf-8")
+        # Whitelist wird vor dem Hashing geprüft. Der fremde Pfad ist
+        # kein zulässiges Dateimitglied, selbst mit korrekt geratenem Hash.
+        status = dienst.pruefe_manifest(lauf)["status"]
+        self.assertEqual(status, "BLOCKIERT")
+
+    def test_manifest_symlink_beleg_und_symlink_lauf_sind_gesperrt(self):
+        lauf, _ = self._manifest_fixture()
+        outside = self.root / "fremd.json"
+        outside.write_text('{"fremd":true}', encoding="utf-8")
+        (lauf / "LEAD.json").unlink()
+        try:
+            (lauf / "LEAD.json").symlink_to(outside)
+        except (OSError, NotImplementedError):
+            self.skipTest("Symbolische Links auf diesem Host nicht verfügbar")
+        resultat = dienst.pruefe_manifest(lauf)
+        self.assertEqual(resultat["status"], "BLOCKIERT")
+        self.assertTrue(any("verlinkt" in e for e in resultat["fehler"]))
+        link = self.team / "work" / "anderer_lauf"
+        link.symlink_to(lauf, target_is_directory=True)
+        self.assertEqual(dienst.pruefe_manifest(link)["status"], "BLOCKIERT")
+
+    def test_manifest_sperrt_falsche_sha256_und_widerspruch(self):
+        lauf, manifest = self._manifest_fixture()
+        key = next(iter(manifest["dateien"]))
+        manifest["dateien"][key] = "kein-sha-256"
+        manifest["ergebnis"]["vier_echte_ki_antworten"] = False
+        (lauf / "nachweise.json").write_text(json.dumps(manifest), encoding="utf-8")
+        fehler = dienst.pruefe_manifest(lauf)["fehler"]
+        self.assertTrue(any("Fingerabdruck" in e for e in fehler))
+        self.assertTrue(any("widersprechen" in e for e in fehler))
+
+    def test_manifest_erfolgsbehauptung_ohne_vier_agenten_blockiert(self):
+        lauf, manifest = self._manifest_fixture(erfolgreich=False)
+        manifest["ergebnis"]["status"] = "TECHNISCHER PILOT ERFOLGREICH"
+        manifest["ergebnis"]["vier_echte_ki_antworten"] = True
+        (lauf / "nachweise.json").write_text(json.dumps(manifest), encoding="utf-8")
+        result = dienst.pruefe_manifest(lauf)
+        self.assertEqual(result["status"], "BLOCKIERT")
+        self.assertTrue(any("Agentenbelege" in e for e in result["fehler"]))
+
+    def test_manifest_abweichenden_laufordner_sicher_abweisen(self):
+        lauf, _ = self._manifest_fixture()
+        self.assertEqual(dienst.pruefe_manifest(self.root)["status"], "BLOCKIERT")
+        self.assertEqual(dienst.pruefe_manifest(lauf / "..")["status"], "BLOCKIERT")
+        self.assertEqual(dienst.pruefe_manifest(self.root / "nicht_da")["status"], "BLOCKIERT")
+
+    def test_verify_cli_ist_lesend_und_startet_keine_agenten(self):
+        lauf, _ = self._manifest_fixture()
+        with mock.patch.object(sys, "argv", ["local_service.py", "--verify", str(lauf)]), \\
+             mock.patch.object(dienst.subprocess, "run") as run, \\
+             mock.patch("builtins.print") as output:
+            self.assertEqual(dienst.start(), 0)
+        run.assert_not_called()
+        self.assertFalse((self.team / "work" / "local_runner.lock").exists())
+        self.assertEqual(json.loads(output.call_args.args[0])["status"], "INTEGRITAET_OK")
 
     def test_fehlender_bericht_ist_blockiert(self):
         with mock.patch.object(dienst.subprocess, "run",
