@@ -105,7 +105,15 @@ class TestDienst(unittest.TestCase):
                             "ki": {"laufzeit": "Ollama lokal (keine bezahlte KI-API)",
                                    "modell": "qwen2.5:1.5b",
                                    "text": "simulierte Antwort (nur im Unit Test)",
-                                   "antwort_id": "lokal-" + r.lower()},
+                                   "antwort_id": "lokal-" + r.lower(),
+                                   "antwort_id_typ": "nur-lokale-kennung",
+                                   "ollama_beleg": {
+                                       "modell_antwort": "qwen2.5:1.5b",
+                                       "done": True, "done_reason": "stop",
+                                       "rolle": "assistant",
+                                       "created_at": "2026-10-25T13:00:00Z",
+                                       "prompt_eval_count": 10, "eval_count": 3,
+                                   }},
                         }
                         for r in rollen
                     },
