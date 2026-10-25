@@ -170,6 +170,77 @@ class TestDienst(unittest.TestCase):
         self.assertEqual(ergebnis["status"], "BLOCKIERT")
         self.assertFalse(ergebnis["vier_echte_ki_antworten"])
 
+    def test_kaputter_stundenbericht_stoppt_ohne_positive_antworten(self):
+        for name, inhalt in (
+            ("ungültig", "{kaputtes json"),
+            ("liste", "[1, 2, 3]"),
+            ("null", "null"),
+        ):
+            with self.subTest(fall=name):
+                def fake(cmd, **kwargs):
+                    if cmd[2] == "BERICHT":
+                        lauf = pathlib.Path(cmd[3])
+                        p = self.team / "runs" / (lauf.name + ".json")
+                        p.parent.mkdir(parents=True, exist_ok=True)
+                        p.write_text(inhalt, encoding="utf-8")
+                    return SimpleNamespace(returncode=0, stdout="", stderr="")
+
+                with mock.patch.object(dienst.subprocess, "run", side_effect=fake), \
+                     mock.patch("builtins.print") as ausgabe:
+                    self.assertEqual(dienst.einmal(), 1)
+                self.assertIn("BLOCKIERT", str(ausgabe.call_args))
+
+    def test_nachweispruefung_abweichende_json_typen_blockiert(self):
+        lauf = self.team / "work" / "ungueltige-typen"
+        lauf.mkdir(parents=True)
+        tests = (
+            None,
+            [],
+            {"lauf": lauf.name, "agenten": []},
+            {"lauf": lauf.name, "agenten": {},
+             "agenten_mit_echter_ki": [["LEAD"]]},
+            {"lauf": lauf.name,
+             "agenten": {"LEAD": ["statt", "objekt"], "BRAIN": {"ki": ["fake"]},
+                         "COMMAND": {"protokoll": ["fake"]}},
+             "agenten_mit_echter_ki": list(dienst.ROLES)},
+        )
+        for fall in tests:
+            with self.subTest(fall=repr(fall)[:100]):
+                fehler = dienst.pruefe_nachweise(fall, lauf, [])
+                self.assertTrue(fehler)
+
+    def test_agenten_start_oserror_stoppt_folgerollen_und_versteckt_details(self):
+        anfragen = []
+        def fake(cmd, **kwargs):
+            anfragen.append(cmd[2])
+            if cmd[2] == "LEAD":
+                raise OSError("privates-temporäres-detail")
+            return SimpleNamespace(returncode=0, stdout="", stderr="")
+        with mock.patch.object(dienst.subprocess, "run", side_effect=fake):
+            self.assertEqual(dienst.einmal(), 1)
+        self.assertEqual(anfragen, ["LEAD", "BERICHT"])
+        lauf = next((self.team / "work").glob("*/"))
+        prozesse = json.loads((lauf / "prozesse.json").read_text(encoding="utf-8"))
+        self.assertEqual(prozesse[0]["exitcode"], -4)
+        self.assertTrue(all(x["exitcode"] == -2 for x in prozesse[1:4]))
+        self.assertNotIn("privates-temporäres-detail", json.dumps(prozesse))
+
+    def test_strukturell_ungueltiger_bericht_hat_keinen_gruenen_piloten(self):
+        def fake(cmd, **kwargs):
+            if cmd[2] == "BERICHT":
+                lauf = pathlib.Path(cmd[3])
+                p = self.team / "runs" / (lauf.name + ".json")
+                p.parent.mkdir(parents=True, exist_ok=True)
+                p.write_text(json.dumps({"lauf": lauf.name, "agenten": []}),
+                             encoding="utf-8")
+            return SimpleNamespace(returncode=0, stdout="", stderr="")
+        with mock.patch.object(dienst.subprocess, "run", side_effect=fake), \
+             mock.patch("builtins.print") as printed:
+            self.assertEqual(dienst.einmal(), 1)
+        ergebnis = json.loads(printed.call_args.args[0])
+        self.assertEqual(ergebnis["status"], "BLOCKIERT")
+        self.assertFalse(ergebnis["vier_echte_ki_antworten"])
+
     def test_falsche_laufzeit_oder_doppelte_ids_blockieren(self):
         lauf = self.team / "work" / "fake"
         lauf.mkdir(parents=True)
