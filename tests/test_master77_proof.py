@@ -158,7 +158,7 @@ class TestMaster77Nachweise(unittest.TestCase):
                 path.parent.mkdir(parents=True, exist_ok=True)
                 path.write_text("{not json", encoding="utf-8")
             return SimpleNamespace(stdout="", stderr="", returncode=0)
-        with mock.patch.object(dienst.subprocess, "run", side_effect=run), \
+        with mock.patch.object(dienst, "rolle_starten", side_effect=run), \
              mock.patch("builtins.print") as printed:
             self.assertEqual(dienst.einmal(), 1)
             lines = "\n".join(str(x) for x in printed.call_args_list)
