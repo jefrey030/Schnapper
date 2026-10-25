@@ -107,6 +107,32 @@ def pruefe_nachweise(bericht, lauf, schritte, beleg_hashes=None):
         modell = info.get("modell")
         if not isinstance(modell, str) or not modell or modell.lower().endswith(":cloud"):
             fehler.append(f"KI-Nachweis {rolle}: Modell ungültig/Cloud.")
+        # Ollama gibt hier keine signierte Job-ID zurück. Die UUID ist nur
+        # eine lokal erzeugte Zuordnung; entscheidend ist die zuvor validierte
+        # API-Abschlussmetadatenstruktur, separat von der lokalen Kennung.
+        if info.get("antwort_id_typ") != "nur-lokale-kennung":
+            fehler.append(f"Antwort-ID von {rolle} ist nicht als lokale Kennung ausgewiesen.")
+        beleg = info.get("ollama_beleg")
+        if not isinstance(beleg, dict):
+            fehler.append(f"Ollama-Abschlussbeleg für {rolle} fehlt.")
+        else:
+            antwortzeit = beleg.get("created_at")
+            try:
+                zeit = dt.datetime.fromisoformat(
+                    antwortzeit.replace("Z", "+00:00")
+                ) if isinstance(antwortzeit, str) and len(antwortzeit) <= 80 else None
+            except ValueError:
+                zeit = None
+            if (beleg.get("modell_antwort") != modell
+                    or beleg.get("done") is not True
+                    or beleg.get("done_reason") != "stop"
+                    or beleg.get("rolle") != "assistant"
+                    or type(beleg.get("prompt_eval_count")) is not int
+                    or beleg["prompt_eval_count"] < 0
+                    or type(beleg.get("eval_count")) is not int
+                    or beleg["eval_count"] < 1
+                    or zeit is None or zeit.tzinfo is None):
+                fehler.append(f"Ollama-Abschlussbeleg für {rolle} ungültig.")
         identifier = info.get("antwort_id")
         if not isinstance(identifier, str) or not identifier.startswith("lokal-"):
             fehler.append(f"Antwort-ID von {rolle} fehlt oder ist unzulässig.")
