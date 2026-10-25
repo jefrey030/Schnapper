@@ -141,7 +141,7 @@ def exportiere_csv(daten: dict) -> bytes:
     Es werden nur geprüfte Treffer und feste Spaltennamen exportiert.
     """
     ausgabe = io.StringIO(newline="")
-    schreiber = csv.writer(ausgabe, delimiter=";", lineterminator="\\r\\n")
+    schreiber = csv.writer(ausgabe, delimiter=";", lineterminator="\r\n")
     schreiber.writerow(CSV_FELDER)
     for treffer in daten["treffer"]:
         zellen = []
@@ -150,14 +150,14 @@ def exportiere_csv(daten: dict) -> bytes:
             if feld == "warnungen":
                 wert = " | ".join(wert or [])
             text = "" if wert is None else str(wert)
-            text = text.replace("\\r", " ").replace("\\n", " ").replace("\\t", " ")
+            text = text.replace("\r", " ").replace("\n", " ").replace("\t", " ")
             # Spreadsheet-Programme koennen Formeln in untrusted Zellen
             # ausfuehren; fuehrendes Apostroph erzwingt Textbehandlung.
-            if text.lstrip(" \\ufeff").startswith(("=", "+", "-", "@")):
+            if text.lstrip(" \ufeff").startswith(("=", "+", "-", "@")):
                 text = "'" + text
             zellen.append(text)
         schreiber.writerow(zellen)
-    return ("\\ufeff" + ausgabe.getvalue()).encode("utf-8")
+    return ("\ufeff" + ausgabe.getvalue()).encode("utf-8")
 
 
 def baue_handler(zustand: Zustand):
@@ -205,7 +205,7 @@ def baue_handler(zustand: Zustand):
                         HTTPStatus.OK, exportiere_csv(daten),
                         "text/csv; charset=utf-8", "schnapper-treffer.csv")
                 if teile.path == "/api/export.json":
-                    roh = (json.dumps(daten, ensure_ascii=False, indent=2) + "\\n").encode("utf-8")
+                    roh = (json.dumps(daten, ensure_ascii=False, indent=2) + "\n").encode("utf-8")
                     return self._senden(
                         HTTPStatus.OK, roh, "application/json; charset=utf-8",
                         "schnapper-treffer.json")
