@@ -62,9 +62,9 @@ class LokaleErfassung(unittest.TestCase):
         wert.update(andere)
         return wert
 
-    def sende(self, wert=None, headers=None):
+    def sende(self, wert="__DEFAULT__", headers=None):
         return self.http("/api/eigenes-angebot", json.dumps(
-            self.eintrag() if wert is None else wert, ensure_ascii=False).encode("utf-8"),
+            self.eintrag() if wert == "__DEFAULT__" else wert, ensure_ascii=False).encode("utf-8"),
             headers if headers is not None else {
                 "X-Schnapper": "1", "Content-Type": "application/json"})
 
