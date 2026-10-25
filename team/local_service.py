@@ -168,6 +168,97 @@ def pruefe_nachweise(bericht, lauf, schritte):
     return fehler
 
 
+
+def pruefe_manifest(lauf):
+    """Offline-Nachweise prüfen: lesend, ohne KI, Shell, Netzwerk oder Änderungen.
+
+    SHA-256 entdeckt nachträgliche Dateiveränderungen. Es ist keine Signatur:
+    Wer auch das Manifest schreiben darf, kann alle Hashes neu erzeugen.
+    """
+    fehler = []
+    geprueft = 0
+    lauf_pfad = pathlib.Path(lauf)
+    # Niemals untrusted Pfade aus dem Manifest selbst für den Dateizugriff
+    # verwenden. Stattdessen die exakten erwarteten Namen selbst bilden.
+    try:
+        work = TEAM / "work"
+        if (work.is_symlink() or ".." in lauf_pfad.parts
+                or lauf_pfad.is_symlink() or not lauf_pfad.is_dir()):
+            raise ValueError("Unzulässiger Laufordner")
+        work_real = work.resolve(strict=True)
+        lauf_real = lauf_pfad.resolve(strict=True)
+        root_real = ROOT.resolve(strict=True)
+        if (lauf_real.parent != work_real
+                or not work_real.is_relative_to(root_real)
+                or not (TEAM / "runs").resolve().is_relative_to(root_real)):
+            raise ValueError("Lauf außerhalb von team/work")
+    except (OSError, RuntimeError, ValueError):
+        return {"status": "BLOCKIERT", "lauf": None, "dateien_geprueft": 0,
+                "fehler": ["Unzulässiger oder fehlender Laufordner."]}
+
+    manifest_pfad = lauf_real / "nachweise.json"
+    try:
+        if manifest_pfad.is_symlink() or not manifest_pfad.is_file():
+            raise ValueError("Nachweis fehlt oder ist ein Link")
+        if manifest_pfad.stat().st_size > 100_000:
+            raise ValueError("Nachweis über Größenlimit")
+        manifest = json.loads(manifest_pfad.read_text(encoding="utf-8"))
+    except (OSError, UnicodeError, ValueError):
+        return {"status": "BLOCKIERT", "lauf": lauf_real.name,
+                "dateien_geprueft": 0,
+                "fehler": ["Nachweisdatei fehlt, ist ungültig oder zu groß."]}
+    if not isinstance(manifest, dict):
+        return {"status": "BLOCKIERT", "lauf": lauf_real.name,
+                "dateien_geprueft": 0,
+                "fehler": ["Nachweis ist kein JSON-Objekt."]}
+
+    result = manifest.get("ergebnis")
+    hashes = manifest.get("dateien")
+    if not isinstance(result, dict) or not isinstance(hashes, dict):
+        fehler.append("Nachweisstruktur unvollständig.")
+        result = result if isinstance(result, dict) else {}
+        hashes = hashes if isinstance(hashes, dict) else {}
+    if manifest.get("lauf") != lauf_real.name or result.get("lauf") != lauf_real.name:
+        fehler.append("Laufkennung widerspricht dem Manifest.")
+    status = result.get("status")
+    if status not in ("BLOCKIERT", "TECHNISCHER PILOT ERFOLGREICH"):
+        fehler.append("Ergebnisstatus fehlt oder ist ungültig.")
+    if result.get("vier_echte_ki_antworten") is not (
+            status == "TECHNISCHER PILOT ERFOLGREICH"):
+        fehler.append("Nachweisstatus und KI-Kennzahl widersprechen sich.")
+
+    pfade = [TEAM / "runs" / (lauf_real.name + ".json"),
+             lauf_real / "prozesse.json"]
+    rollendateien = [lauf_real / (rolle + ".json") for rolle in ROLES]
+    pfade += [p for p in rollendateien if p.is_file() or p.is_symlink()]
+    if status == "TECHNISCHER PILOT ERFOLGREICH" and len(pfade) != 6:
+        fehler.append("Agentenbelege für erfolgreichen Lauf unvollständig.")
+
+    erlaubt = {str(p.relative_to(ROOT)): p for p in pfade}
+    if set(hashes) != set(erlaubt):
+        fehler.append("Dateiliste weicht von den erwarteten Nachweisen ab.")
+    for name, p in erlaubt.items():
+        expected = hashes.get(name)
+        if (not isinstance(expected, str)
+                or len(expected) != 64
+                or any(c not in "0123456789abcdef" for c in expected)):
+            fehler.append("SHA-256-Fingerabdruck fehlt oder ist ungültig: " + p.name)
+            continue
+        try:
+            if p.is_symlink() or not p.is_file() or p.stat().st_size > 1_000_000:
+                raise ValueError("Ungültige Nachweisdatei")
+            calculated = hashlib.sha256(p.read_bytes()).hexdigest()
+        except (OSError, ValueError):
+            fehler.append("Datei fehlt, ist verlinkt oder zu groß: " + p.name)
+            continue
+        geprueft += 1
+        if calculated != expected:
+            fehler.append("Prüfsummenabweichung: " + p.name)
+    return {"status": "INTEGRITAET_OK" if not fehler else "BLOCKIERT",
+            "lauf": lauf_real.name, "dateien_geprueft": geprueft,
+            "fehler": fehler}
+
+
 def einmal():
     if gestoppt():
         print("BLOCKIERT: Betreiber-Not-Aus team/work/STOP ist aktiv.")
@@ -253,6 +344,15 @@ def einmal():
     }
     (lauf / "nachweise.json").write_text(
         json.dumps(manifest, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
+    integritaet = pruefe_manifest(lauf)
+    if integritaet["status"] != "INTEGRITAET_OK":
+        # Auch ein vorher positiver Agentenbericht zählt dann nicht als
+        # technischer Erfolg. Der Prüfer verändert keine Nachweisdatei.
+        print(json.dumps({"lauf": lauf.name, "status": "BLOCKIERT",
+                          "vier_echte_ki_antworten": False,
+                          "fehler": ["Integritätsprüfung der Nachweise fehlgeschlagen."]},
+                         ensure_ascii=False))
+        return 1
     print(json.dumps(ergebnis, ensure_ascii=False))
     return 0 if erfolgreich else 1
 
@@ -262,7 +362,14 @@ def start():
     g = p.add_mutually_exclusive_group(required=True)
     g.add_argument("--once", action="store_true", help="jetzt einen überprüften Pilotlauf starten")
     g.add_argument("--loop", action="store_true", help="einmal sofort, danach zu jeder vollen UTC-Stunde")
+    g.add_argument("--verify", metavar="LAUFORDNER",
+                   help="lokalen SHA-256-Nachweis offline prüfen (keine KI)")
     args = p.parse_args()
+    if args.verify is not None:
+        # Read-only: weder Scheduler-Lock noch subprocess/Ollama benötigen.
+        pruefung = pruefe_manifest(pathlib.Path(args.verify))
+        print(json.dumps(pruefung, ensure_ascii=False))
+        return 0 if pruefung["status"] == "INTEGRITAET_OK" else 1
     sperre = TEAM / "work" / "local_runner.lock"
     sperre.parent.mkdir(parents=True, exist_ok=True)
     try:
