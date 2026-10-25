@@ -16,6 +16,8 @@ import time
 import uuid
 
 from agent import GEHEIMNIS_MUSTER  # Dieselben Token-Indikatoren wie in Agentenberichten
+from ki import KINichtVerfuegbar
+from operator_approval import pruefe_freigabe
 
 ROOT = pathlib.Path(__file__).resolve().parent.parent
 TEAM = ROOT / "team"
@@ -263,6 +265,12 @@ def einmal():
     if gestoppt():
         print("BLOCKIERT: Betreiber-Not-Aus team/work/STOP ist aktiv.")
         return 2
+    try:
+        # Refuse even a local subprocess if explicit scoped approval is absent.
+        pruefe_freigabe()
+    except KINichtVerfuegbar:
+        print("BLOCKIERT: Lokale Betreiberfreigabe oder passende offene Aufgabe fehlt.")
+        return 2
     stempel = dt.datetime.now(dt.timezone.utc).strftime("%Y%m%dT%H%M%SZ")
     lauf = TEAM / "work" / (stempel + "-" + uuid.uuid4().hex[:6])
     lauf.mkdir(parents=True, exist_ok=False)
@@ -386,7 +394,9 @@ def start():
             if gestoppt():
                 print("STOP: Betreiber-Not-Aus aktiv. Kein weiterer Stundenlauf.")
                 return 2
-            einmal()
+            ergebnis_code = einmal()
+            if ergebnis_code != 0:
+                return ergebnis_code  # Never retry until explicit new operator start.
             jetzt = dt.datetime.now(dt.timezone.utc)
             naechste = (jetzt.replace(minute=0, second=0, microsecond=0)
                         + dt.timedelta(hours=1))
