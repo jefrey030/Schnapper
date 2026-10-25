@@ -81,6 +81,10 @@ class KI:
     def __init__(self, zaehler_datei):
         if os.environ.get("SCHNAPPER_KI_BACKEND") != "ollama":
             raise KINichtVerfuegbar("Lokale KI ist nicht freigegeben.")
+        if (type(MAX_AUFRUFE) is not int
+                or not 1 <= MAX_AUFRUFE <= MAX_SICHERE_AUFRUFE):
+            raise KINichtVerfuegbar(
+                "Ungültiges KI-Aufruflimit: höchstens sechs lokal erlaubt.")
         self.zaehler = pathlib.Path(zaehler_datei)
         self.modell = os.environ.get("SCHNAPPER_OLLAMA_MODELL", MODELL_DEFAULT).strip()
         if not re.fullmatch(r"[a-zA-Z0-9][a-zA-Z0-9_.:/-]{0,79}", self.modell):
