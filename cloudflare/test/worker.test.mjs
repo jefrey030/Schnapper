@@ -75,3 +75,51 @@ test('Emergency stop in the middle of a run blocks all next calls',async()=>{
 });
 test('Malformed timestamps not accepted',async()=>{const x=fakeEnv();assert.equal((await runSlot(x.env,'not-a-date')).status,'BLOCKIERT');assert.equal(x.getCalls(),0);assert.equal(utcSlot(Date.UTC(2026,9,22,4,17)),'2026102204');});
 test('HTTP does not expose private reports',async()=>{assert.equal((await worker.fetch()).status,404);});
+
+test('Model reply containing a synthetic credential is rejected before D1 report',async()=>{
+ const x=fakeEnv();
+ const fakeToken='ghp_'+'A'.repeat(25);
+ x.env.AI.run=async()=>({response:'Text '+fakeToken});
+ const out=await runSlot(x.env,Date.UTC(2026,9,22,16));
+ assert.equal(out.status,'BLOCKIERT');
+ assert.equal(out.attempted_calls,1);
+ assert.equal(x.db.reports.length,0);
+ assert.equal(x.db.statuses.at(-1)[0],'blocked');
+ assert.ok(!JSON.stringify(x.db.statuses).includes(fakeToken));
+ assert.ok(!JSON.stringify(out).includes(fakeToken));
+});
+
+test('Synthetic provider credential never leaks to returned reason, D1 or console',async()=>{
+ const x=fakeEnv();
+ const fakeToken='github_pat_'+'A'.repeat(25);
+ x.env.AI.run=async()=>{throw Error('Provider exception '+fakeToken)};
+ const oldError=console.error;
+ const consoleLines=[];
+ console.error=(...args)=>consoleLines.push(args.join(' '));
+ let out;
+ try {out=await runSlot(x.env,Date.UTC(2026,9,22,17))}
+ finally {console.error=oldError}
+ assert.equal(out.status,'BLOCKIERT');
+ assert.equal(out.attempted_calls,1);
+ assert.ok(!JSON.stringify(out).includes(fakeToken));
+ assert.ok(!JSON.stringify(x.db.statuses).includes(fakeToken));
+ assert.ok(!consoleLines.join(' ').includes(fakeToken));
+ assert.ok(out.reason.includes('[REDACTED]'));
+ assert.ok(x.db.statuses.at(-1)[1].includes('[REDACTED]'));
+});
+
+test('Second model reply with synthetic secret stops before persisting second answer',async()=>{
+ const x=fakeEnv();
+ const fakeToken='sk-ant-'+'B'.repeat(20);
+ let calls=0;
+ x.env.AI.run=async()=>{
+   calls++;
+   return {response:calls===2?'Fehler '+fakeToken:'Sauberer LEAD-Plan'};
+ };
+ const out=await runSlot(x.env,Date.UTC(2026,9,22,18));
+ assert.equal(out.status,'BLOCKIERT');
+ assert.equal(out.attempted_calls,2);
+ assert.deepEqual(out.completed_roles,['LEAD']);
+ assert.equal(x.db.reports.length,1);
+ assert.ok(!JSON.stringify(x.db.reports).includes(fakeToken));
+});
