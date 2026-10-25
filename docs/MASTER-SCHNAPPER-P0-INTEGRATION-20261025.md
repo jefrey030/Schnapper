@@ -65,7 +65,7 @@
 
 ## GitHub-Übergabe
 
-- Integrationsentwurf: [SCHNAPPER PR #54](https://github.com/jefrey030/Schnapper/pull/54), Draft gegen `main`.
+- Integrationsentwurf: [SCHNAPPER PR #55](https://github.com/jefrey030/Schnapper/pull/55), Draft gegen `main`.
 - Selbständige Rollen sind **noch nicht** als vier reale Modelle aktiv; diese Übergabe umfasst GitHub-Code, statische/Offline-Tests und sichere Auftragsverteilung.
 - Für die Abschlussabnahme den zuletzt erfolgreichen CI-Run **gegen die finale HEAD-SHA** aus den GitHub-Actions prüfen. Wenn keine Actions laufen: `BLOCKED / NOT_RUN`, nicht `PASS`.
 
