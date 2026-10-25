@@ -105,8 +105,21 @@ def pruefe_nachweise(bericht, lauf, schritte):
         ordner = (TEAM / "proposals").resolve()
         if not datei.is_relative_to(ordner) or not datei.is_file():
             fehler.append("BRAIN-Vorschlag fehlt oder liegt außerhalb von team/proposals.")
-    if bericht.get("check_urteil") != "bestanden":
+    # CHECK-Werkzeugdaten und Freigabe müssen aus der gespeicherten Rolle
+    # stammen, nicht nur aus den aggregierten (potenziell manipulierten) Feldern.
+    check = agenten.get("CHECK") or {}
+    check_urteil = (check.get("urteil") or {}).get("urteil")
+    check_werkzeug = check.get("werkzeug") or {}
+    check_tests = check_werkzeug.get("tests") or {}
+    if bericht.get("check_urteil") != "bestanden" or check_urteil != "bestanden":
         fehler.append("CHECK hat nicht bestanden: keine positive Pilotabnahme.")
+    if check_werkzeug.get("geheimnis_funde") != []:
+        fehler.append("CHECK-Geheimnisscan fehlt oder hat Funde.")
+    if (check_tests.get("ok") is not True
+            or not isinstance(check_tests.get("anzahl"), int)
+            or check_tests["anzahl"] < 1
+            or check_tests["anzahl"] != bericht.get("tests_anzahl")):
+        fehler.append("CHECK-Tests sind unvollständig oder widersprechen dem Gesamtbericht.")
     command = (agenten.get("COMMAND") or {}).get("protokoll") or {}
     if not isinstance(command, dict) or command.get("freigabe") != "ja" or not (
         isinstance(command.get("naechster_schritt"), str) and
