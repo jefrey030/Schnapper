@@ -36,9 +36,9 @@ Finde und behebe zwei konkrete Restschwachstellen im lokalen Ollama-Evidenzpfad:
 | M93-17 | P0 | Eigenbeleg-Konsistenz separat als bool berichten | CODE UMGESETZT |
 | M93-18 | P0 | Lokale UUID nicht als echte Providerattestierung werten | UMGESETZT |
 | M93-19 | P0 | Positiven Mocklauf auf konservative Ehrlichkeit testen | CODE UMGESETZT |
-| M93-20 | P0 | Python-Gesamtsuite des Master-93-Branchs | NOCH ZU PRÜFEN |
-| M93-21 | P0 | Cloudflare-Offline-Suite des Master-93-Branchs | NOCH ZU PRÜFEN |
-| M93-22 | P0 | Integrations-PR und echte Logs/SHA dokumentieren | NOCH ZU PRÜFEN |
+| M93-20 | P0 | Python-Gesamtsuite des Master-93-Branchs | VERIFIZIERT: 206 Tests, 205 PASS, 1 SKIP, 0 FAIL |
+| M93-21 | P0 | Cloudflare-Offline-Suite des Master-93-Branchs | VERIFIZIERT: 13 PASS, 0 SKIP, 0 FAIL |
+| M93-22 | P0 | Integrations-PR und echte Logs/SHA dokumentieren | VERIFIZIERT: Draft PR #93; Actions #40201559986 |
 | M93-23 | P0 | Unabhängige Security-Abnahme/Review einholen | OFFEN; kein Eigenreview als unabhängig ausgeben |
 | M93-24 | P0 | Echte vier Modellantworten, Live-Not-Aus, Budget und Deployment-Gates | OFFEN / NO-GO |
 
@@ -53,3 +53,16 @@ Finde und behebe zwei konkrete Restschwachstellen im lokalen Ollama-Evidenzpfad:
 ## Abnahme
 
 Nur SHA-fixierte echte CI-Läufe mit exakten Python-/Cloudflare-PASS-/SKIP-/FAIL-Zahlen gelten als Code-Testnachweis; ein grüner Test ersetzt keine Security-/Produktionsfreigabe. Frühere Master 90/91/92 und ihre PRs bleiben offen, bestehende Branches unverändert. **Gesamtstatus bis zu dokumentierter unabhängiger Freigabe: NO-GO.**
+
+## Tatsächlicher CI-Nachtrag (25.10.2026)
+
+**Head-SHA:** `05a964a2202b00b38f99a6e9c5f0acb35e0a610a`  
+**Pull Request:** [SCHNAPPER #93](https://github.com/jefrey030/Schnapper/pull/93), gestapelter Draft gegen Master 92  
+**Echte GitHub-Actions-Quelle:** [Run #40201559986](https://github.com/jefrey030/Schnapper/actions/runs/40201559986), zwei Jobs jeweils SUCCESS. Beide Joblogs wirklich geprüft.
+
+- **Python:** `python -m unittest discover -s tests -v` → **206 Fälle, 205 PASS, 1 SKIP, 0 FAIL**, Exit 0. Der übergangene Fall ist keine Freigabe.
+- **Cloudflare offline:** `node --test test/*.test.mjs` → **13 PASS, 0 SKIP, 0 FAIL**, Exit 0. Keine Workers- oder Modellbereitstellung.
+- **Regressionen:** alt/vorausdatierte Ollama-Antwort wird blockiert; gültige frische Mockdaten akzeptiert. Vier alte Rollenbelege blockieren die Pilotauswertung. Ein rein simuliert positiver Pilot darf trotz formell konsistenter Daten **nicht** `vier_echte_ki_antworten=true` ausgeben.
+- **Fertig:** M93-01–M93-22 als Code-, Prüf-, Dokumentations- oder CI-Schritte erledigt. **Offen:** M93-23 unabhängig reviewen; M93-24 echten Modell-/Host-/Not-Aus-/Kosten-Gate nachweisen und erst dann separat die Freigabe entscheiden.
+
+**Sicherheitsurteil:** Offline-CI-PASS ist kein Proof für echten autonomen KI-Betrieb und kein Produktions-GO. Es gab keine Replit-/Cloudflare-/Supabase-Deployments, keine Main-Commits/Merges und keine kostenpflichtigen APIs.
