@@ -62,7 +62,7 @@ class TestMaster83AllePflichtbelege(unittest.TestCase):
                     path.write_bytes(mutation(raw))
             return errors
 
-        with mock.patch.object(dienst.subprocess, "run", side_effect=fake), \
+        with mock.patch.object(dienst, "rolle_starten", side_effect=fake), \
              mock.patch.object(dienst, "pruefe_nachweise",
                                side_effect=inject), \
              mock.patch("builtins.print") as out:
