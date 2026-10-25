@@ -48,7 +48,7 @@ class TestMaster82Prozessbindung(unittest.TestCase):
         with mock.patch.object(dienst.subprocess, "run", side_effect=fake), \
              mock.patch("builtins.print") as printed:
             status = dienst.einmal()
-        msg = str(printed.call_args_list)
+        msg = str(printed.call_args.args[0])
         return status, msg
 
     def test_unchanged_process_evidence_still_accepts_mock(self):
@@ -64,7 +64,7 @@ class TestMaster82Prozessbindung(unittest.TestCase):
         code, text = self._run(alter)
         self.assertEqual(code, 1)
         self.assertIn("BLOCKIERT", text)
-        self.assertIn("vier_echte_ki_antworten': False", text.replace('"', "'"))
+        self.assertIn('"vier_echte_ki_antworten": false', text)
 
     def test_process_exitcode_changed_after_written_blocks(self):
         def alter(text):
