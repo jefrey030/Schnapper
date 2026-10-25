@@ -268,3 +268,30 @@ dadurch **keine neue Quelle aktiv geschaltet** und keine fremde Website durchsuc
 
 **Einschränkung:** Ein grüner Offline-Test ersetzt keinen Test auf einem realen
 Android-Gerät und keine Freigabe für externe Datenquellen oder Produktion.
+
+
+## Eigenes Angebot am Handy direkt erfassen (25.10.2026)
+
+Die lokale Browserseite hat jetzt den Bereich **„+ Eigenes Angebot eingeben (ohne CSV)“**.
+Du kannst selbst gefundene Angebote direkt anlegen – Titel, Preis in €, optionalen
+Versand/Referenzpreis, Zustand, Kategorie und den HTTPS-Link eintragen und auf
+**„Angebot zur Liste hinzufügen“** tippen. Der Eintrag erscheint danach in Suche,
+Export und bei passenden bestehenden Preisalarmen.
+
+- Die Quelle wird **ausschließlich serverseitig** auf `eigene` gesetzt; der Browser
+  kann weder Fremdquellen noch eigene IDs oder fingierte Erfassungszeitpunkte
+  erzwingen. Adressen mit Tracking-Parametern zählen als derselbe Angebotslink.
+- Ungültige Preise, nicht-HTTPS-Adressen und doppelte Angebote werden verständlich
+  abgewiesen; alle Eingaben gehen nur an die lokale App. Kein automatischer
+  eBay-/Kleinanzeigen-Zugriff.
+- **Die manuell ergänzten Angebote werden nicht dauerhaft gespeichert!** Sie
+  bleiben im Arbeitsspeicher des laufenden lokalen Servers. Vor dem Beenden
+  unter „Treffer herunterladen“ **CSV für Tabellen** sichern. Dabei gegebenenfalls
+  zuerst die Suchfilter zurücksetzen, damit sämtliche Angebote exportiert werden.
+- Ein anschließend hochgeladenes CSV/JSON ersetzt die laufende Liste wie bisher.
+- Die Seite ist responsiv gestaltet. Die neue Bedienung wurde automatisiert
+  per lokalem HTTP getestet; ein **echter Android-Gerätetest** steht noch aus.
+
+[Master mit Sicherheits- und Abnahmeregeln](docs/MASTER-SCHNAPPER-EINZELERFASSUNG-20261025.md)
+· Regressionen in `tests/test_manuelle_einzel_erfassung.py`. Weiterhin kein
+Live-Quellenzugang, keine Bezahl-API und keine Produktionsfreigabe.
