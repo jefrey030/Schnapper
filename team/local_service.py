@@ -75,6 +75,8 @@ def pruefe_nachweise(bericht, lauf, schritte):
         info = a.get("ki")
         if not isinstance(info, dict):
             info = {}
+        if a.get("rolle") != rolle:
+            fehler.append(f"Agentenbericht {rolle}: Rollenidentität fehlt oder ist falsch.")
         if a.get("ki_echt") is not True or a.get("status") != "OK":
             fehler.append(f"KI-Nachweis {rolle}: kein bestätigter OK-Lauf.")
         if info.get("laufzeit") != "Ollama lokal (keine bezahlte KI-API)":
@@ -110,6 +112,31 @@ def pruefe_nachweise(bericht, lauf, schritte):
         ordner = (TEAM / "proposals").resolve()
         if not datei.is_relative_to(ordner) or not datei.is_file():
             fehler.append("BRAIN-Vorschlag fehlt oder liegt außerhalb von team/proposals.")
+    # Aggregierte Angaben müssen aus den tatsächlichen Einzelbelegen folgen,
+    # nicht bloß eine positive Behauptung im Sammelbericht sein.
+    if (bericht.get("aufgabe") != plan.get("aufgabe_id")
+            or not isinstance(bericht.get("selected_task"), dict)
+            or bericht["selected_task"].get("id") != plan.get("aufgabe_id")):
+        fehler.append("Aufgaben-ID von LEAD, Rotation und Gesamtbericht widerspricht sich.")
+    check_rolle = agenten.get("CHECK")
+    check_rolle = check_rolle if isinstance(check_rolle, dict) else {}
+    urteil = check_rolle.get("urteil")
+    urteil = urteil if isinstance(urteil, dict) else {}
+    werkzeuge = check_rolle.get("werkzeug")
+    werkzeuge = werkzeuge if isinstance(werkzeuge, dict) else {}
+    einzeltests = werkzeuge.get("tests")
+    einzeltests = einzeltests if isinstance(einzeltests, dict) else {}
+    if urteil.get("urteil") != bericht.get("check_urteil"):
+        fehler.append("CHECK-Urteil und Gesamtbericht widersprechen sich.")
+    if (einzeltests.get("ok") is not True
+            or not isinstance(einzeltests.get("anzahl"), int)
+            or isinstance(einzeltests.get("anzahl"), bool)
+            or einzeltests.get("anzahl", 0) < 1
+            or bericht.get("tests_ok") is not True
+            or bericht.get("tests_anzahl") != einzeltests.get("anzahl")):
+        fehler.append("CHECK-Testergebnisse und Gesamtbericht stimmen nicht überein.")
+    if werkzeuge.get("geheimnis_funde") != []:
+        fehler.append("CHECK-Geheimnisscan fehlt oder ist nicht leer.")
     if bericht.get("check_urteil") != "bestanden":
         fehler.append("CHECK hat nicht bestanden: keine positive Pilotabnahme.")
     command_rolle = agenten.get("COMMAND")
@@ -124,9 +151,16 @@ def pruefe_nachweise(bericht, lauf, schritte):
     if bericht.get("tests_ok") is not True or not isinstance(
         bericht.get("tests_anzahl"), int) or bericht["tests_anzahl"] < 1:
         fehler.append("Unit-Tests nicht erfolgreich nachgewiesen.")
-    if len(schritte) != len(ROLES) + 1 or not all(
-        isinstance(x, dict) and x.get("exitcode") == 0 for x in schritte):
-        fehler.append("Mindestens ein Agentenprozess/der Bericht ist fehlgeschlagen.")
+    erwartet = (*ROLES, "BERICHT")
+    if (len(schritte) != len(erwartet)
+            or not all(
+                isinstance(schritt, dict)
+                and schritt.get("rolle") == rolle
+                and type(schritt.get("exitcode")) is int
+                and schritt["exitcode"] == 0
+                for rolle, schritt in zip(erwartet, schritte)
+            )):
+        fehler.append("Prozessbelege unvollständig, vertauscht, doppelt oder fehlgeschlagen.")
     return fehler
 
 
