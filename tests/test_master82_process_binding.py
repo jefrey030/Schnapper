@@ -39,13 +39,23 @@ class TestMaster82Prozessbindung(unittest.TestCase):
                 report_dir.mkdir(parents=True, exist_ok=True)
                 (report_dir / (lauf.name + ".json")).write_text(
                     json.dumps(source), encoding="utf-8")
-                if tamper is not None:
-                    target = lauf / "prozesse.json"
-                    raw = target.read_text(encoding="utf-8")
-                    target.write_text(tamper(raw), encoding="utf-8")
             return SimpleNamespace(returncode=0, stdout="", stderr="")
 
+        # Der Dienst schreibt prozesse.json erst NACH allen subprocess.run-
+        # Aufrufen, auch nach BERICHT. Der Angriff erfolgt daher am
+        # Pruef->Manifest-Uebergang (und nicht schon im BERICHT-Fake).
+        original_pruefung = dienst.pruefe_nachweise
+        def pruefung_mit_angriff(bericht, lauf, schritte):
+            result = original_pruefung(bericht, lauf, schritte)
+            if tamper is not None:
+                target = lauf / "prozesse.json"
+                raw = target.read_text(encoding="utf-8")
+                target.write_text(tamper(raw), encoding="utf-8")
+            return result
+
         with mock.patch.object(dienst.subprocess, "run", side_effect=fake), \
+             mock.patch.object(dienst, "pruefe_nachweise",
+                               side_effect=pruefung_mit_angriff), \
              mock.patch("builtins.print") as printed:
             status = dienst.einmal()
         msg = str(printed.call_args.args[0])
