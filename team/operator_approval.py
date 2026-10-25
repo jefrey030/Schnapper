@@ -25,9 +25,9 @@ DENIED = "BLOCKIERT: explizite lokale Betreiberfreigabe oder passende offene Auf
 def _read_json(path, max_bytes, private=False):
     """Read bounded local JSON, no symlinks; never return untrusted diagnostics."""
     try:
-        if path.is_symlink() or not hasattr(os, "O_NOFOLLOW"):
+        if path.is_symlink() or not hasattr(os, "O_NOFOLLOW") or not hasattr(os, "O_NONBLOCK"):
             raise ValueError("unsafe platform or link")
-        fd = os.open(path, os.O_RDONLY | os.O_NOFOLLOW)
+        fd = os.open(path, os.O_RDONLY | os.O_NOFOLLOW | os.O_NONBLOCK)
         try:
             info = os.fstat(fd)
             if not stat.S_ISREG(info.st_mode) or info.st_nlink != 1:
