@@ -240,6 +240,39 @@ class TestLokaleKI(unittest.TestCase):
         with mock.patch.object(lokal, "_request", side_effect=antwort):
             self.assertEqual(ki.frage("System", "Nutzer")["aufruf_nr"], 1)
 
+    def test_blockierte_entfernung_des_locks_ist_fehler(self):
+        ki = lokal.KI(self.zaehler)
+        with mock.patch.object(pathlib.Path, "rmdir",
+                               side_effect=OSError("Sperre noch in Benutzung")):
+            with self.assertRaisesRegex(KINichtVerfuegbar, "nicht aufgehoben"):
+                ki._zaehle()
+        # Lock bleibt absichtlich stehen: keine unkontrollierte Wiederholung.
+        sperre = self.zaehler.with_name(self.zaehler.name + ".lock")
+        self.assertTrue(sperre.exists())
+        with self.assertRaisesRegex(KINichtVerfuegbar, "gesperrt"):
+            ki._zaehle()
+
+    def test_symlink_oder_datei_als_lock_bleibt_gesperrt(self):
+        for art in ("file", "symlink"):
+            with self.subTest(art=art):
+                sperre = self.zaehler.with_name(self.zaehler.name + ".lock")
+                ziel = self.zaehler.with_name("fremde-sperre.txt")
+                ziel.write_text("geschützt", encoding="utf-8")
+                if art == "file":
+                    sperre.write_text("belegt", encoding="utf-8")
+                else:
+                    try:
+                        sperre.symlink_to(ziel)
+                    except (OSError, NotImplementedError):
+                        self.skipTest("Symlinks nicht verfügbar")
+                try:
+                    with self.assertRaisesRegex(KINichtVerfuegbar, "gesperrt"):
+                        lokal.KI(self.zaehler)._zaehle()
+                    self.assertFalse(self.zaehler.exists())
+                    self.assertEqual(ziel.read_text(encoding="utf-8"), "geschützt")
+                finally:
+                    sperre.unlink(missing_ok=True)
+
     def test_lokales_limit(self):
         with mock.patch.object(lokal, "MAX_AUFRUFE", 1), \
              mock.patch.object(lokal, "_request", side_effect=[
