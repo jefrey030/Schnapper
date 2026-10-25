@@ -113,6 +113,11 @@ class TestP3LokalerBericht(unittest.TestCase):
             p = mock.patch.object(dienst, name, value)
             p.start()
             self.addCleanup(p.stop)
+        # Corrupt-report fixture tests only the downstream report validator.
+        # Consent refusal itself is covered by separate MASTER 121 tests.
+        consent = mock.patch.object(dienst, "pruefe_freigabe", return_value="S-014")
+        consent.start()
+        self.addCleanup(consent.stop)
 
     def test_pilot_mit_korruptem_oder_uebergrossem_bericht_blockiert(self):
         for raw in ("{defekt", "[]", "0", " " * 1_000_010):
