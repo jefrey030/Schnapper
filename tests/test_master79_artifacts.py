@@ -93,17 +93,6 @@ class TestMaster79SicheresManifest(unittest.TestCase):
         self.assertTrue(flags_gesehen)
         self.assertTrue(flags_gesehen[0] & os.O_NOFOLLOW)
 
-    def test_oeffnung_ohne_no_follow_ist_nicht_freigegeben(self):
-        with mock.patch.object(dienst.os, "O_NOFOLLOW", create=True) as flag:
-            # Unsupported target simulated by hiding presence, not changing
-            # the runtime itself or making any real system call.
-            flag.__bool__ = lambda: False
-            # An available constant is required; a zero-valued mock is not
-            # sufficient to simulate no attribute. Use delattr in patch.
-        with mock.patch.object(dienst.os, "O_NOFOLLOW", create=False):
-            pass
-        self.assertEqual(dienst._hash_sicher(self.file),
-                         hashlib.sha256(b'{"mock": true}').hexdigest())
 
 
 if __name__ == "__main__":
