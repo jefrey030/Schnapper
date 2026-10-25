@@ -154,9 +154,16 @@ def pruefe_nachweise(bericht, lauf, schritte):
     if bericht.get("tests_ok") is not True or type(
         bericht.get("tests_anzahl")) is not int or bericht["tests_anzahl"] < 1:
         fehler.append("Unit-Tests nicht erfolgreich nachgewiesen.")
-    if len(schritte) != len(ROLES) + 1 or not all(
-        x.get("exitcode") == 0 for x in schritte):
-        fehler.append("Mindestens ein Agentenprozess/der Bericht ist fehlgeschlagen.")
+    # Jeder erfolgreiche Prozessbeleg muss genau zur ausgefuehrten Rolle
+    # passen. Nur fuenf Exitcodes=0 lassen auch duplizierte Rollen passieren.
+    erwartet = (*ROLES, "BERICHT")
+    if (not isinstance(schritte, list)
+            or len(schritte) != len(erwartet)
+            or any(not isinstance(s, dict) for s in schritte)
+            or tuple(s.get("rolle") for s in schritte) != erwartet
+            or any(type(s.get("exitcode")) is not int or s["exitcode"] != 0
+                   for s in schritte)):
+        fehler.append("Agentenprozessfolge unvollstaendig, vertauscht oder fehlgeschlagen.")
     return fehler
 
 
@@ -229,16 +236,26 @@ def einmal():
     }
     # Beleg-Hashes erlauben die spätere Prüfung der tatsächlich erzeugten Dateien.
     dateien = [report_path, lauf / "prozesse.json"]
-    dateien += [lauf / (rolle + ".json") for rolle in ROLES if (lauf / (rolle + ".json")).exists()]
-    # Den separaten Zaehler als Manifest-Artefakt aufnehmen, sofern lesbar.
-    # SHA256 zeigt nachtraegliche Veraenderungen, beweist aber KEINE reale KI.
+    # Auch ein Symlink mit bestehendem Ziel muss als unzulaessig erkannt
+    # werden; er darf niemals fuer das Manifest gelesen werden.
+    dateien += [lauf / (rolle + ".json") for rolle in ROLES
+                if (lauf / (rolle + ".json")).exists()
+                or (lauf / (rolle + ".json")).is_symlink()]
     zaehler = lauf / "ki_aufrufe.txt"
-    if zaehler.is_file() and not zaehler.is_symlink():
+    if zaehler.is_file() or zaehler.is_symlink():
         dateien.append(zaehler)
+    hashes = {}
+    try:
+        for p in dateien:
+            if p.is_symlink() or not p.is_file():
+                raise OSError("Fehlende Datei oder Symlink in Nachweisartefakten")
+            hashes[str(p.relative_to(ROOT))] = hashlib.sha256(p.read_bytes()).hexdigest()
+    except OSError:
+        print("BLOCKIERT: Nachweisdatei fehlt, ist ein Symlink oder nicht lesbar.")
+        return 1
     manifest = {
         "lauf": lauf.name, "zeit_utc": dt.datetime.now(dt.timezone.utc).isoformat(),
-        "dateien": {str(p.relative_to(ROOT)): hashlib.sha256(p.read_bytes()).hexdigest()
-                    for p in dateien},
+        "dateien": hashes,
         "ergebnis": ergebnis,
     }
     (lauf / "nachweise.json").write_text(
