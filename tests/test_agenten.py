@@ -79,7 +79,8 @@ class TestKostenbremsen(unittest.TestCase):
 
     def test_kostenschutz_nur_oeffentlich(self):
         wf = (ROOT / ".github/workflows/schnapper-hourly.yml").read_text(encoding="utf-8")
-        self.assertIn("github.event.repository.private == false", wf)
+        self.assertIn("toJSON(github.event.repository.private) == 'false'", wf)
+        self.assertNotIn("github.event.repository.private == false", wf)
         self.assertIn("vars.SCHNAPPER_OEFFENTLICH == 'true'", wf)
         self.assertIn("Repository ist privat", wf)
         tests_wf = (ROOT / ".github/workflows/tests.yml").read_text(encoding="utf-8")
