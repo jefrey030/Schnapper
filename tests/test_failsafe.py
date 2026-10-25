@@ -54,7 +54,15 @@ class TestFailClosedAgentReports(unittest.TestCase):
         self.assertIn("Keine offene Aufgabe", result["fehler"])
         self.assertNotIn("protokoll", result)
 
+    def _gueltige_command_vorrollen(self):
+        self._schreibe("LEAD", plan={"aufgabe_id": "S-000"})
+        self._schreibe("BRAIN", ki={"text": "Testvorschlag"})
+        self._schreibe("CHECK", urteil={"urteil": "bestanden"},
+                       werkzeug={"tests": {"ok": True, "anzahl": 2},
+                                 "geheimnis_funde": []})
+
     def test_command_rejects_missing_required_fields(self):
+        self._gueltige_command_vorrollen()
         fake = mock.Mock()
         fake.frage.return_value = {"text": '{"zusammenfassung":"ok"}', "modell": "test"}
         result = agent.command(self.lauf, fake)
@@ -71,8 +79,66 @@ class TestFailClosedAgentReports(unittest.TestCase):
             "modell": "test",
         }
         result = agent.command(self.lauf, fake)
+        fake.frage.assert_not_called()
+        self.assertEqual(result["status"], "ÜBERSPRUNGEN")
+        self.assertNotIn("protokoll", result)
+
+    def test_command_fehlerhafte_vorrollen_sparen_kosten(self):
+        for rolle in ("LEAD", "BRAIN", "CHECK"):
+            with self.subTest(rolle=rolle):
+                self._gueltige_command_vorrollen()
+                self._schreibe(rolle, status="NICHT EINSATZBEREIT")
+                fake = mock.Mock()
+                result = agent.command(self.lauf, fake)
+                fake.frage.assert_not_called()
+                self.assertEqual(result["status"], "ÜBERSPRUNGEN")
+
+    def test_command_fehlt_vorgang_ueberspringt_ki(self):
+        fake = mock.Mock()
+        result = agent.command(self.lauf, fake)
+        fake.frage.assert_not_called()
+        self.assertEqual(result["status"], "ÜBERSPRUNGEN")
+
+    def test_command_pruefung_negativ_ueberspringt_ki(self):
+        self._gueltige_command_vorrollen()
+        fake = mock.Mock()
+        for urteil, tests, funde in (
+            ("nachbessern", {"ok": True, "anzahl": 2}, []),
+            ("abgelehnt", {"ok": True, "anzahl": 2}, []),
+            ("bestanden", {"ok": False, "anzahl": 2}, []),
+            ("bestanden", {"ok": True, "anzahl": 0}, []),
+            ("bestanden", {"ok": True, "anzahl": 2}, None),
+            ("bestanden", {"ok": True, "anzahl": 2}, ["verdacht"]),
+        ):
+            with self.subTest(urteil=urteil, tests=tests, funde=funde):
+                self._schreibe("CHECK", urteil={"urteil": urteil},
+                               werkzeug={"tests": tests, "geheimnis_funde": funde})
+                result = agent.command(self.lauf, fake)
+                fake.frage.assert_not_called()
+                self.assertEqual(result["status"], "ÜBERSPRUNGEN")
+
+    def test_command_positiv_uebergabe_nur_ein_modellaufruf(self):
+        self._gueltige_command_vorrollen()
+        fake = mock.Mock()
+        fake.frage.return_value = {
+            "text": json.dumps({"zusammenfassung": "Test", "freigabe": "ja",
+                                "naechster_schritt": "Manuell pruefen"}),
+            "modell": "nur-test", "antwort_id": "mock-1",
+        }
+        result = agent.command(self.lauf, fake)
         self.assertEqual(result["status"], "OK")
-        self.assertEqual(result["protokoll"]["freigabe"], "nein")
+        self.assertEqual(result["protokoll"]["freigabe"], "ja")
+        fake.frage.assert_called_once()
+
+    def test_main_nicht_ok_rollen_werden_prozessfehler(self):
+        fake_erg = agent.basis("LEAD")
+        for status in ("NICHT EINSATZBEREIT", "KEINE AUFGABE", "FEHLER", "ÜBERSPRUNGEN"):
+            with self.subTest(status=status):
+                fake_erg["status"] = status
+                with mock.patch.object(agent, "KI"), mock.patch.dict(
+                    agent.AGENTEN, {"LEAD": lambda _ordner, _ki: dict(fake_erg)}
+                ):
+                    self.assertEqual(agent.main(["agent.py", "LEAD", str(self.lauf)]), 1)
 
     def test_four_model_replies_not_sufficient_when_one_agent_failed(self):
         self._schreibe("LEAD", plan={"aufgabe_id": "S-000"})
