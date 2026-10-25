@@ -27,7 +27,7 @@ class TestDienst(unittest.TestCase):
             self.addCleanup(p.stop)
 
     def test_fehlender_bericht_ist_blockiert(self):
-        with mock.patch.object(dienst.subprocess, "run",
+        with mock.patch.object(dienst, "rolle_starten",
                                return_value=SimpleNamespace(returncode=0,
                                                             stdout="", stderr="")) as run:
             self.assertEqual(dienst.einmal(), 1)
@@ -48,7 +48,7 @@ class TestDienst(unittest.TestCase):
                     "tests_ok": True,
                 }), encoding="utf-8")
             return SimpleNamespace(returncode=0, stdout="", stderr="")
-        with mock.patch.object(dienst.subprocess, "run", side_effect=fake):
+        with mock.patch.object(dienst, "rolle_starten", side_effect=fake):
             self.assertEqual(dienst.einmal(), 1)
 
     def test_vier_antworten_allein_genuegen_nicht_ohne_tests(self):
@@ -63,7 +63,7 @@ class TestDienst(unittest.TestCase):
                     "tests_ok": False,
                 }), encoding="utf-8")
             return SimpleNamespace(returncode=0, stdout="", stderr="")
-        with mock.patch.object(dienst.subprocess, "run", side_effect=fake):
+        with mock.patch.object(dienst, "rolle_starten", side_effect=fake):
             self.assertEqual(dienst.einmal(), 1)
 
 
@@ -137,7 +137,7 @@ class TestDienst(unittest.TestCase):
                 p.write_text(json.dumps(gesamt), encoding="utf-8")
             return SimpleNamespace(returncode=0, stdout="", stderr="")
 
-        with mock.patch.object(dienst.subprocess, "run", side_effect=fake):
+        with mock.patch.object(dienst, "rolle_starten", side_effect=fake):
             self.assertEqual(dienst.einmal(), 0)
         self.assertEqual(len(list((self.team / "work").glob("*/nachweise.json"))), 1)
 
@@ -180,7 +180,7 @@ class TestDienst(unittest.TestCase):
                 }), encoding="utf-8")
             return SimpleNamespace(returncode=0, stdout="", stderr="")
 
-        with mock.patch.object(dienst.subprocess, "run", side_effect=fake), \
+        with mock.patch.object(dienst, "rolle_starten", side_effect=fake), \
              mock.patch.object(dienst, "pruefe_nachweise",
                                return_value=["CHECK hat nicht bestanden"]), \
              mock.patch("builtins.print") as printed:
@@ -225,7 +225,7 @@ class TestDienst(unittest.TestCase):
                                    stdout="Debug: " + geheimnis if cmd[2] == "LEAD" else "",
                                    stderr="")
 
-        with mock.patch.object(dienst.subprocess, "run", side_effect=fake):
+        with mock.patch.object(dienst, "rolle_starten", side_effect=fake):
             self.assertEqual(dienst.einmal(), 1)
         self.assertEqual(aufrufe, ["LEAD", "BERICHT"])
         lauf = next((self.team / "work").glob("*/"))
@@ -243,7 +243,7 @@ class TestDienst(unittest.TestCase):
             return SimpleNamespace(returncode=1 if cmd[2] == "LEAD" else 0,
                                    stdout="", stderr="")
 
-        with mock.patch.object(dienst.subprocess, "run", side_effect=fake):
+        with mock.patch.object(dienst, "rolle_starten", side_effect=fake):
             self.assertEqual(dienst.einmal(), 1)
         self.assertEqual(aufrufe, ["LEAD", "BERICHT"])
 
@@ -251,7 +251,7 @@ class TestDienst(unittest.TestCase):
         stop = self.team / "work" / "STOP"
         stop.parent.mkdir(parents=True)
         stop.write_text("Stopp angeordnet", encoding="utf-8")
-        with mock.patch.object(dienst.subprocess, "run") as run:
+        with mock.patch.object(dienst, "rolle_starten") as run:
             self.assertEqual(dienst.einmal(), 2)
             run.assert_not_called()
 
