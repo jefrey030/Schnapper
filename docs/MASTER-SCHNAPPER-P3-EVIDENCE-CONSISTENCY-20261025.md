@@ -27,12 +27,25 @@ Die Implementierung in `team/local_service.py::pruefe_nachweise` validiert bisla
 6. Keine Änderungen auf `main`, keine externen KI-Aufrufe, kein Deploy, keine Käufe oder kostenpflichtigen Cloud-Kontingente. **Mock-Tests belegen keine echte KI.**
 
 ## Abnahme
-- [ ] Fünf Prozessbelege vollständig, eindeutig und geordnet geprüft
-- [ ] Rollenidentität und lokale Original-JSON als Teil des Gate abgeglichen
-- [ ] Aufgaben- und CHECK-/Testergebnisse im Gesamtbericht konsistent
-- [ ] Positive Fixture bleibt bestehen, negative Regressionen schlagen korrekt fehl
-- [ ] Python und Cloudflare GitHub Actions bei letzter SHA bestanden
-- [ ] SHA, Run, Testzahlen, Restrisiken und NO-GO dokumentiert
+- [x] Fünf Prozessbelege vollständig, eindeutig und geordnet geprüft
+- [x] Rollenidentität und lokale Original-JSON als Teil des Gate abgeglichen
+- [x] Aufgaben- und CHECK-/Testergebnisse im Gesamtbericht konsistent
+- [x] Positive Fixture bleibt bestehen, negative Regressionen schlagen korrekt fehl
+- [x] Code-SHA `d7d812948ec297333512ef62d1a0071802bf609a`: Python- und Cloudflare-CI bestanden; [Run 40211061895](https://github.com/jefrey030/Schnapper/actions/runs/40211061895)
+- [x] SHA, Run, 261 Python-Tests (1 Skip), 16/16 Cloudflare-Tests, Restrisiken und NO-GO dokumentiert
 
 ## Unveränderte Sperren
 Die bestehende PR #55 bleibt Draft; im Hauptbranch ist die Abschaltung des alten Stundenworkflows weiter nicht gemergt. Produktionsbetrieb, Ollama-Hostbetrieb, echte vier KI-Agenten und Remote-Betrieb bleiben unbestätigt. Die Freigabe für Merge und Produktion liegt beim Betreiber, nicht beim automatisierten Test.
+
+## Tatsächlich ausgeführter P3-Arbeitsblock
+
+**GitHub-Ziel:** [Draft #55](https://github.com/jefrey030/Schnapper/pull/55), Branch `integration/schnapper-p0-mainbased-20261025` (kein Merge auf `main`).
+
+1. **`team/local_service.py`:** Exakte Liste der fünf Prozessrollen in korrekter Reihenfolge sowie integer Exitcode 0 erzwungen. Falsch sortierte/duplizierte Rollen und boolesche/textuelle Exitcodes werden abgelehnt.
+2. **`team/local_service.py`:** `rolle` im Einzelprotokoll muss zum Dateinamen passen; symbolische Links als Rollennachweis sind blockiert.
+3. **`team/local_service.py`:** `bericht.aufgabe` und `selected_task.id` müssen `LEAD.plan.aufgabe_id` entsprechen. `CHECK.urteil`, `CHECK.werkzeug.tests` und Geheimnis-Scan müssen vollständig und konsistent mit den aggregierten Angaben sein; boolesche Testanzahlen sind nicht zulässig.
+4. **`tests/test_local_service.py`:** Bestehende positive Offline-Fixture um authentische *simulierte* Rollennamen/Übernahmefelder ergänzt; sieben neue Negativtests für Prozesskette, Aufgaben-Rotation, CHECK-Widersprüche, Geheimnisscan, Rollenidentität, Symlink und booleschen Testzähler.
+
+**Nachweis der geänderten Code-SHA:** `d7d812948ec297333512ef62d1a0071802bf609a`, [GitHub Actions #40211061895](https://github.com/jefrey030/Schnapper/actions/runs/40211061895): `python-tests` **261 ausgeführt, 1 übersprungen, 0 Fehlgeschlagen**; `cloudflare-tests` **16/16 bestanden, 0 übersprungen, 0 Fehlgeschlagen**. Beide Jobs `success`.
+
+**Sicherheitsgrenzen:** Diese Integritätschecks erkennen inkonsistente oder falsch zugeordnete Artefakte; sie sind **keine kryptografische Echtheitsprüfung** gegen einen Angreifer mit voller Schreibberechtigung. Die Tests sind reine Mocks, kein wirklicher Ollama-/Cloudflare-Vier-KI-Livebetrieb. Keine 0-€-Grenze überschritten. `main` weiterhin ohne diese Draft-Änderungen, keine Veröffentlichung, keine Freigabe. **Release NO-GO**.
