@@ -13,6 +13,12 @@ export const TASKS = Object.freeze([
 const MAX_OUTPUT_TOKENS = 160;
 const MAX_TEXT = 1500;
 const MAX_ERROR = 220;
+ // Recognize accidental credential-shaped strings before any storage/logging.
+ const SECRET_PATTERN = /(sk-ant-[A-Za-z0-9_-]{10,}|ghp_[A-Za-z0-9]{20,}|github_pat_[A-Za-z0-9_]{20,}|AKIA[0-9A-Z]{16}|-----BEGIN [A-Z ]*PRIVATE KEY-----)/;
+ function redactSecrets(value) {
+  return String(value).replace(new RegExp(SECRET_PATTERN.source, 'g'), '[REDACTED]');
+ }
+
 const PROMPTS = {
  LEAD:'Wähle exakt drei priorisierte Arbeitspakete für die Aufgabe, definiere messbare Abnahmekriterien.',
  BRAIN:'Analysiere LEADs Arbeitsauftrag. Liefere Datenfelder, technische Umsetzungsideen und Testfälle. Kein Code wurde geschrieben.',
@@ -47,6 +53,7 @@ function modelReply(response) {
  if(typeof response?.response!=='string') throw Error('Malformed model response');
  const text=response.response.trim();
  if(!text || text.length>MAX_TEXT*4) throw Error('Empty/oversized model response');
+ if(SECRET_PATTERN.test(text)) throw Error('Geheimnisindikator in Modellantwort; Antwort verworfen');
  return text.slice(0,MAX_TEXT);
 }
 function messages(role,task,outputs) {
@@ -95,7 +102,7 @@ export async function runSlot(env, timestamp) {
   await mark(env.DB,slot,'completed','',attempts);
   return {status:'ABGESCHLOSSEN',slot,task_id:task.id,attempted_calls:attempts,roles:outputs.map(({role,sha256})=>({role,sha256}))};
  } catch(error) {
-  const message='Lauf blockiert: '+String(error?.message || error).slice(0,180);
+  const message='Lauf blockiert: '+redactSecrets(error?.message || error).slice(0,180);
   try {await mark(env.DB,slot,'blocked',message,attempts);}catch{} // No paid fallback
   console.error(JSON.stringify({slot,status:'BLOCKIERT',attempted_calls:attempts,completed_roles:outputs.map(x=>x.role),error:message}));
   return {status:'BLOCKIERT',slot,attempted_calls:attempts,completed_roles:outputs.map(x=>x.role),reason:message};
