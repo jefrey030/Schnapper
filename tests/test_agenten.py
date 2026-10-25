@@ -70,19 +70,23 @@ class TestKostenbremsen(unittest.TestCase):
 
     def test_workflow_minimale_rechte(self):
         wf = (ROOT / ".github/workflows/schnapper-hourly.yml").read_text(encoding="utf-8")
-        self.assertIn("models: read", wf)
-        self.assertIn("timeout-minutes: 10", wf)
+        self.assertNotIn("models: read", wf)
+        self.assertNotIn("schedule:", wf)
+        self.assertIn("contents: read", wf)
+        self.assertIn("false &&", wf)
         self.assertIn("SCHNAPPER_PAUSE", wf)
+        self.assertNotIn("team/agent.py", wf)
+        self.assertNotIn("GITHUB_TOKEN", wf)
+        self.assertNotIn("git push", wf)
         self.assertNotIn("secrets.ANTHROPIC", wf)
-        for rolle in ("LEAD", "BRAIN", "CHECK", "COMMAND"):
-            self.assertIn(f"team/agent.py {rolle}", wf)
 
     def test_kostenschutz_nur_oeffentlich(self):
         wf = (ROOT / ".github/workflows/schnapper-hourly.yml").read_text(encoding="utf-8")
         self.assertIn("toJSON(github.event.repository.private) == 'false'", wf)
         self.assertNotIn("github.event.repository.private == false", wf)
         self.assertIn("vars.SCHNAPPER_OEFFENTLICH == 'true'", wf)
-        self.assertIn("Repository ist privat", wf)
+        self.assertIn("false &&", wf)
+        self.assertIn("contents: read", wf)
         tests_wf = (ROOT / ".github/workflows/tests.yml").read_text(encoding="utf-8")
         self.assertIn("github.event.repository.private == false", tests_wf)
 
@@ -94,6 +98,16 @@ class TestKostenbremsen(unittest.TestCase):
                 k._zaehle()
                 with self.assertRaises(ki.KINichtVerfuegbar):
                     k._zaehle()
+
+    def test_eingestellte_github_models_verursachen_keinen_netzaufruf(self):
+        with tempfile.TemporaryDirectory() as d:
+            zaehler = pathlib.Path(d) / "calls.txt"
+            with mock.patch.dict(os.environ, {"GITHUB_TOKEN": "nur-test-token"}), \\
+                 mock.patch.object(ki, "_http") as http:
+                with self.assertRaisesRegex(ki.KINichtVerfuegbar, "eingestellt"):
+                    ki.KI(zaehler).frage("system", "nutzer")
+                http.assert_not_called()
+            self.assertFalse(zaehler.exists())
 
     def test_modellwahl_bevorzugt_open_weight(self):
         kat = [{"id": "openai/gpt-4o-mini", "rate_limit_tier": "low"},
@@ -173,6 +187,7 @@ class TestAgenten(unittest.TestCase):
                  mock.patch.object(ki, "ERLAUBTER_HOST", "127.0.0.1"), \
                  mock.patch.object(ki, "INFERENZ_URL", basis_url + "/inference"), \
                  mock.patch.object(ki, "KATALOG_URL", basis_url + "/catalog"), \
+                 mock.patch.object(ki.KI, "modell", return_value="meta/Llama-3.3-70B-Instruct"), \
                  mock.patch.object(ki.KI.__init__, "__defaults__", (None, basis_url + "/inference", basis_url + "/catalog")), \
                  mock.patch.object(agent, "tests_ausfuehren", return_value={"ok": True, "anzahl": 3, "ausgabe_ende": ""}):
                 bericht = self.alle()
