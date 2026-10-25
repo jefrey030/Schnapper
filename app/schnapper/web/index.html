@@ -76,6 +76,12 @@
     <p id="barcode-lizenz" class="status"></p>
   </section>
 
+  <div class="export-reihe" aria-label="Aktuelle Treffer exportieren">
+    <span>Treffer herunterladen:</span>
+    <a id="export-csv" href="/api/export.csv" download="schnapper-treffer.csv">CSV für Tabellen</a>
+    <a id="export-json" href="/api/export.json" download="schnapper-treffer.json">JSON</a>
+  </div>
+
   <p id="status" class="status" aria-live="polite">Lade …</p>
   <details id="probleme" class="probleme" hidden>
     <summary id="probleme-titel"></summary>
