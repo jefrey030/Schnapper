@@ -34,5 +34,43 @@
 - Vor Livebetrieb: unabhängige Security-Review + Betreiberfreigabe + belegte 0-€-Umgebung.
 - Dokumentierte Rollen LEAD/BRAIN/CHECK/COMMAND sind Verantwortungsbereiche, keine spontan gestarteten externen KI-Instanzen.
 
-## 4. Ausführungsprotokoll
-Wird im selben Master nach tatsächlichen Commits und GitHub-Tests ergänzt. Abschluss nur mit beweisbarer finaler Commit-SHA.
+## 4. Ausführungsprotokoll – tatsächlich abgeschlossen
+
+### F1 ✅ Fehlerrobuste Kommandozeile
+In `app/schnapper/__main__.py` werden Suchgrenzen vor dem Dateiimport geprüft:
+- Höchstpreis muss positiv sein; unlesbare Preise werden mit verständlichem Fehler gemeldet.
+- Mindestrabatt muss endlich und zwischen 0 und 100 liegen; deutsches Dezimalkomma wird akzeptiert.
+- Nicht vorhandene Zustände werden vor jeglicher Datei-/Verlaufsänderung abgewiesen.
+- Fehlende/ungelesene Quelldateien führen zu kontrolliertem Exitcode `1`; Filterfehler zu `2`. Kein ungefangener Traceback in den getesteten Negativfällen.
+
+### F2 ✅ Preisverlauf konsistent und fehlersicher
+Die CLI ruft nun `Verlauf.importiere` statt `aufzeichnen` mit anschließendem separatem `speichern` auf. Die bestehende Transaktion setzt den Arbeitsspeicher nach Speicherfehler zurück. Im Negativtest wird keine reguläre Trefferausgabe ausgegeben. Wiederholtes Importieren derselben Beobachtung erzeugt keinen doppelten Verlaufspunkt.
+
+### F3 ✅ Durchgängiger Offline-MVP-Abnahmetest
+Die neue `tests/test_fertigstellung_mvp.py` enthält acht echte, isolierte `unittest`-Testmethoden. Geprüft: positive eigene CSV mit deutsch geschriebenem Preis-/Rabattfilter; 9 ungültige Filtervarianten; fehlende Eingabedatei; idempotenter Preisverlauf; simulierter Laufwerksfehler; lokale HTTP-Suche mit Preisgrenze und Verlauf; Upload mit Header-Pflicht und Sperrung einer ausgeschlossenen Quelle; Open-Prices-Freigabegate ohne echten Netzwerkabruf.
+
+**Wichtig:** Die Preisdaten der Tests sind synthetische eigene CSV-Beispiele, keine echten aktuellen Kleinanzeigen- oder eBay-Schnäppchen.
+
+### F4 ✅ Aktueller Code geprüft
+Erster erfolgreicher [GitHub Actions #40216433994](https://github.com/jefrey030/Schnapper/actions/runs/40216433994) für Code-SHA `8f974554dde0cc9d15196e91d9121af248e2c013`:
+- `python-tests` **292 Tests ausgeführt, 1 übersprungen, 0 fehlgeschlagen**.
+- `cloudflare-tests` **16/16 bestanden, 0 übersprungen, 0 fehlgeschlagen**.
+- Dokumentation einschließlich `README.md` aktualisiert; der **abschließende Dokumentations-Commit erhält einen neuen CI-Lauf** und ist nur dann separat als bestanden zu kennzeichnen, wenn dessen beide Jobs erfolgreich gemeldet wurden.
+
+### F5–F10 ❌/⏳ Offen – nicht durch Simulation ersetzbar
+- **F5:** Echte automatische Angebote benötigen Quelle mit nachgewiesenen Nutzungsrechten, freigegebener Schnittstelle und nachgewiesenen 0-€-Bedingungen. Unfreigegebene eBay-/Kleinanzeigen-Daten dürfen nicht angebunden werden.
+- **F6:** Unabhängige Sicherheitsreview, positive Freigabe-Gates und ausdrücklicher Merge-Beschluss fehlen. `main` bleibt unberührt.
+- **F7:** Echtes Android-Gerät und interaktive Browserprobe (Startbildschirm/Dateiupload/Merkliste) bisher **nicht** geprüft.
+- **F8:** Öffentliches Hosting inklusive Datenschutz, Betriebskosten, Zugriffs-/Lastschutz und Monitoring ist nicht abgenommen; kein Release.
+- **F9:** Vier echte KI-Modellantworten sowie Stunden- und Not-Aus-Liveprobe fehlen weiterhin.
+- **F10:** Stilllegung des Legacy-Cron auf `main` ist weiterhin nur im Draft #55 vorbereitet und benötigt Review-/Merge-Freigabe.
+
+## 5. Fertigstellungsstatus ohne erfundene Prozentzahl
+
+**Offline-MVP mit eigenen Daten:** Code korrigiert, Ende-zu-Ende-API-/CLI-Tests bestanden.  
+**Vollständig nutzbare automatische SCHNAPPER-Live-App:** **noch nicht fertig**.  
+**Autonomes Vier-KI-Team:** **nicht als aktiv nachgewiesen**.  
+**Release:** **NO-GO**; kein Merge/Deploy, 0 € neue Kosten.
+
+Die erreichte Teilleistung ist konkret verifiziert, aber die Anzahl grüner Unit-Tests ersetzt weder echte Datenquellen noch unabhängige Sicherheits- oder Endgerätetests.
+
