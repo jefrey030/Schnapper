@@ -102,8 +102,8 @@ class TestKostenbremsen(unittest.TestCase):
     def test_eingestellte_github_models_verursachen_keinen_netzaufruf(self):
         with tempfile.TemporaryDirectory() as d:
             zaehler = pathlib.Path(d) / "calls.txt"
-            with mock.patch.dict(os.environ, {"GITHUB_TOKEN": "nur-test-token"}), \\
-                 mock.patch.object(ki, "_http") as http:
+            with (mock.patch.dict(os.environ, {"GITHUB_TOKEN": "nur-test-token"}),
+                  mock.patch.object(ki, "_http") as http):
                 with self.assertRaisesRegex(ki.KINichtVerfuegbar, "eingestellt"):
                     ki.KI(zaehler).frage("system", "nutzer")
                 http.assert_not_called()
