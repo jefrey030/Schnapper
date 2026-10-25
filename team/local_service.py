@@ -158,9 +158,10 @@ def einmal():
     erfolgreich = not fehler
     ergebnis = {
         "lauf": lauf.name,
-        "vier_echte_ki_antworten": not any(
-            "KI-Nachweis" in x or "Antwort-ID" in x or "Agentendatei" in x
-            for x in fehler),
+        # Einzelne Fehlertext-Stichworte dürfen nicht als Beweis für vier
+        # gültige Antworten dienen. Nur die vollständig geprüfte lokale
+        # Pilotevidenz erlaubt diese positive technische Kennzahl.
+        "vier_echte_ki_antworten": erfolgreich,
         "tests_bestanden": bericht.get("tests_ok") is True,
         "prozesse_ok": all(s["exitcode"] == 0 for s in schritte),
         "status": "TECHNISCHER PILOT ERFOLGREICH" if erfolgreich else "BLOCKIERT",
