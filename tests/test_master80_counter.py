@@ -13,6 +13,7 @@ from unittest import mock
 sys.path.insert(0, str(pathlib.Path(__file__).resolve().parents[1] / "team"))
 import local_ollama as lokal
 from ki import KINichtVerfuegbar
+from test_local_ollama import gueltige_antwort
 
 
 class TestMaster80Zaehlerintegritaet(unittest.TestCase):
@@ -111,7 +112,9 @@ class TestMaster80Zaehlerintegritaet(unittest.TestCase):
         self.assertEqual(int(self.counter.read_text()), 6)
 
     def test_antwort_nutzt_reservierte_nummer_statt_nachlesen(self):
-        antwort = {"message": {"content": "Offline-Mock-Antwort"}}
+        antwort = gueltige_antwort(
+            model="qwen2.5:1.5b",
+            message={"role": "assistant", "content": "Offline-Mock-Antwort"})
         def fake(pfad, payload=None, timeout=10):
             if pfad == "/api/tags":
                 return {"models": [{"name": "qwen2.5:1.5b"}]}
@@ -126,7 +129,7 @@ class TestMaster80Zaehlerintegritaet(unittest.TestCase):
     def test_fehlgeschlagene_antwort_reservierung_nicht_wiederverwenden(self):
         with mock.patch.object(lokal, "_request", side_effect=[
                 {"models": [{"name": "qwen2.5:1.5b"}]},
-                {"message": {"content": ""}},
+                gueltige_antwort(model="qwen2.5:1.5b", message={"role": "assistant", "content": ""}),
         ]):
             with self.assertRaises(KINichtVerfuegbar):
                 self.ki.frage("system", "frage")
