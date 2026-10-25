@@ -28,6 +28,19 @@ Eine vorhandene Bedienlücke des offline nutzbaren SCHNAPPER beheben: Wer am Han
 - Keine externen Kosten, KI-API, veröffentlichte Webadresse, Änderung von `main` oder cronbezogene Freigabe.
 - Das bestehende localhost-Standardbinding bleibt. Bei explizitem `0.0.0.0` ist der lokale Server weiterhin **ohne Anmeldung** im selben Netzwerk erreichbar; vor öffentlicher Bereitstellung fehlt Authentifizierung und eine Security-Review.
 
-## Status
+## Implementierung und Abnahme
 
-Dieser Master erfordert tatsächliche Codeänderungen und einen erfolgreichen CI-Lauf auf der abschließenden SHA. Die Nachweise werden anschließend ergänzt. **Produktivfreigabe: NO-GO.**
+- **E1–E2 umgesetzt:** Responsive, aufklappbares Eingabeformular in `app/schnapper/web/index.html`, Layout in `app.css`, JavaScript-Funktion `eigenesAngebotErfassen` in `app.js`. Neue Suche und gespeicherte Preisalarme werden nach erfolgreichem HTTP-201 aktualisiert.
+- **E3 umgesetzt:** Nur `POST /api/eigenes-angebot` mit `X-Schnapper: 1`, JSON-Medientyp und maximal 4096 Byte Eingabe. Falscher Inhalt, fehlende Genehmigungskennung und überlange Daten werden abgewiesen.
+- **E4 umgesetzt:** `Angebot.aus_dict` prüft Preis, URL, Zustand und Felder. Backend erzwingt `quelle=eigene`, vergibt eine zufällige eindeutige ID und setzt einen eigenen UTC-Erfassungszeitpunkt.
+- **E5 umgesetzt:** `Zustand.manuell_hinzufuegen` verhindert doppelte (normalisierte, trackingbereinigte) URLs und beschränkt Listen auf 5000 Angebote.
+- **E6 umgesetzt:** Unter der bestehenden Importsperre wird zunächst der Preisverlauf gesichert; erst bei Erfolg wird der aktive Angebotsbestand atomar ausgetauscht.
+- **E7 umgesetzt:** Positive Rückmeldung, Fehlermeldung und Warnung „vor Serverneustart exportieren“ im Browser. Daten nur im RAM; keine Behauptung einer dauerhaften Speicherung.
+- **E8 umgesetzt:** `tests/test_manuelle_einzel_erfassung.py` hat **12 neue echte localhost-HTTP-Testmethoden**: Erfolg/Export, manipulierte Quellen/IDs/Uhrzeit, Tracking-Dubletten, Wiederholung, Header/Content-Type/Größenlimit, falsche JSON-Typen, ungültige Angebote, simulierten Speicherfehler, Mengenlimit, zwei gleichzeitige identische Einträge, statische Browserassets und unzulässige Pfade.
+- **E9:** Ganze Python-Testsuite plus Cloudflare-Tests werden mit GitHub Actions auf dem **finalen Branch-HEAD** bewertet. Die Abnahme gilt nur für die konkret geprüfte SHA.
+- **E10 beibehalten:** Keine Live-Quelle, Bezahl-API, echter Android-Gerätetest, authentifizierte öffentliche App oder vier tatsächlich autonome KI-Modelle. Kein Merge, kein Deployment und kein Eingriff in `main`.
+
+**Abgrenzung:** Mit dem Backend lassen sich eigene Angebote speichern, solange der lokale Server läuft. Für den echten Betrieb fehlen weiterhin verifizierte Live-Datenrechte, dauerhafte Speicherung/Backup, Authentifizierung vor öffentlicher Erreichbarkeit, reale Android-Bedienprüfung, unabhängige Sicherheitsreview und Betreiberfreigabe.
+
+**Produktivfreigabe: NO-GO.** Es werden keine erfundenen Fertigstellungsprozente oder Live-Erfolge verwendet.
+
