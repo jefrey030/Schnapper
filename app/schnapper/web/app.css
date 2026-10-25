@@ -27,6 +27,17 @@ main { max-width: 720px; margin: 0 auto; padding: 0 16px 48px; }
 
 .banner { margin: 16px 0 0; padding: 10px 12px; border-radius: 10px; background: var(--warn-grund); color: var(--warn); font-size: 14px; }
 
+.eigenes-angebot { margin: 16px 0 0; padding: 12px; background: var(--flaeche); border: 1px solid var(--linie); border-radius: 14px; }
+.eigenes-angebot summary { color: var(--akzent); font-weight: 700; cursor: pointer; min-height: 32px; }
+.eigenes-angebot summary:focus-visible { outline: 2px solid var(--akzent); outline-offset: 2px; }
+#eintrag-form { display: grid; gap: 12px; margin-top: 12px; }
+#eintrag-form label { display: grid; gap: 4px; min-width: 0; font-size: 13px; color: var(--leise); }
+#eintrag-form input, #eintrag-form select { min-width: 0; width: 100%; min-height: 44px; border: 1px solid var(--linie);
+  border-radius: 10px; background: var(--grund); color: var(--text); font: inherit; padding: 10px 12px; }
+#eintrag-form input:focus, #eintrag-form select:focus { outline: 2px solid var(--akzent); }
+.eintrag-zeile { display: grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); gap: 10px; }
+#eintrag-senden { padding: 10px 14px; }
+
 .filter { display: grid; gap: 10px; margin: 16px 0 8px; }
 .filter input, .filter select { width: 100%; font: inherit; color: inherit; background: var(--flaeche);
   border: 1px solid var(--linie); border-radius: 10px; padding: 10px 12px; min-height: 44px; }
