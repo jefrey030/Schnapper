@@ -134,9 +134,11 @@ class TestDienst(unittest.TestCase):
 
     def test_verify_cli_ist_lesend_und_startet_keine_agenten(self):
         lauf, _ = self._manifest_fixture()
-        with mock.patch.object(sys, "argv", ["local_service.py", "--verify", str(lauf)]), \\
-             mock.patch.object(dienst.subprocess, "run") as run, \\
-             mock.patch("builtins.print") as output:
+        with (
+            mock.patch.object(sys, "argv", ["local_service.py", "--verify", str(lauf)]),
+            mock.patch.object(dienst.subprocess, "run") as run,
+            mock.patch("builtins.print") as output,
+        ):
             self.assertEqual(dienst.start(), 0)
         run.assert_not_called()
         self.assertFalse((self.team / "work" / "local_runner.lock").exists())
