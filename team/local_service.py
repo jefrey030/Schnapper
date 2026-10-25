@@ -327,6 +327,28 @@ def einmal():
     return 0 if erfolgreich else 1
 
 
+def _oeffne_runner_sperre(p):
+    """Runner-Sperre nur ueber sicheren Dateideskriptor akzeptieren.
+
+    Kein vorheriges exists()/is_symlink(), das nachtraeglich ungueltig
+    werden koennte. Anders als der KI-Aufrufzaehler bleibt die Lockdatei
+    nach normalem Lauf und Crash bestehen (stabile Inode fuer flock).
+    """
+    if not hasattr(os, "O_NOFOLLOW"):
+        raise OSError("Runner-Lock auf dieser Plattform nicht abgesichert")
+    flags = (os.O_CREAT | os.O_RDWR | os.O_NOFOLLOW
+             | getattr(os, "O_NONBLOCK", 0) | getattr(os, "O_CLOEXEC", 0))
+    fd = os.open(str(p), flags, 0o600)
+    try:
+        info = os.fstat(fd)
+        if not stat.S_ISREG(info.st_mode) or info.st_nlink != 1:
+            raise OSError("Runner-Sperre ist keine eigene regulaere Datei")
+        return fd
+    except BaseException:
+        os.close(fd)
+        raise
+
+
 def start():
     p = argparse.ArgumentParser(description=__doc__)
     g = p.add_mutually_exclusive_group(required=True)
@@ -339,9 +361,8 @@ def start():
     # O_EXCL-Lockdateien bleiben nach Absturz liegen und verhindern jeden Neustart.
     # Das Lockfile bleibt absichtlich bestehen: unlink() waere eine Race-Condition
     # gegen einen bereits gestarteten zweiten Prozess.
-    flags = os.O_CREAT | os.O_RDWR | getattr(os, "O_NOFOLLOW", 0)
     try:
-        fd = os.open(str(sperre), flags, 0o600)
+        fd = _oeffne_runner_sperre(sperre)
     except OSError:
         print("BLOCKIERT: Sperrdatei kann nicht sicher geoeffnet werden.")
         return 2
@@ -351,9 +372,24 @@ def start():
         except OSError:
             print("BLOCKIERT: Ein anderer lokaler SCHNAPPER-Dienst ist aktiv.")
             return 2
+        # Ein nach der Oeffnung angelegter Hardlink darf niemals zu
+        # einem Schreibzugriff auf fremde gleichnamige Inodes fuehren.
+        # Inode-/Verzeichnis-Austausch durch privilegierte lokale Angreifer
+        # bleibt ausserhalb der unabhaengigen Attestierung.
+        info = os.fstat(fd)
+        if not stat.S_ISREG(info.st_mode) or info.st_nlink != 1:
+            print("BLOCKIERT: Runner-Sperre ist keine eigene regulaere Datei.")
+            return 2
         # PID nur zur Diagnose, nie als Freigabe- oder Authentizitaetsbeweis.
-        os.ftruncate(fd, 0)
-        os.write(fd, str(os.getpid()).encode("ascii"))
+        try:
+            os.ftruncate(fd, 0)
+            pid = str(os.getpid()).encode("ascii")
+            if os.write(fd, pid) != len(pid):
+                raise OSError("Unvollstaendiges Runner-PID-Protokoll")
+            os.fsync(fd)
+        except OSError:
+            print("BLOCKIERT: Runner-PID-Protokoll konnte nicht sicher geschrieben werden.")
+            return 2
         if args.once:
             return einmal()
         while True:
