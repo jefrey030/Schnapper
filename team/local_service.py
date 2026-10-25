@@ -6,6 +6,7 @@ Nur solange der eigene Rechner und Ollama laufen. Kein Remote-Server.
 """
 import argparse
 import datetime as dt
+import fcntl
 import hashlib
 import json
 import os
@@ -192,14 +193,25 @@ def start():
     args = p.parse_args()
     sperre = TEAM / "work" / "local_runner.lock"
     sperre.parent.mkdir(parents=True, exist_ok=True)
+    # Unix/Termux/macOS: kernel-seitige, nicht blockierende Sperre.
+    # O_EXCL-Lockdateien bleiben nach Absturz liegen und verhindern jeden Neustart.
+    # Das Lockfile bleibt absichtlich bestehen: unlink() waere eine Race-Condition
+    # gegen einen bereits gestarteten zweiten Prozess.
+    flags = os.O_CREAT | os.O_RDWR | getattr(os, "O_NOFOLLOW", 0)
     try:
-        fd = os.open(str(sperre), os.O_CREAT | os.O_EXCL | os.O_WRONLY, 0o600)
-    except FileExistsError:
-        print(f"BLOCKIERT: Ein Lauf könnte bereits aktiv sein ({sperre}).")
+        fd = os.open(str(sperre), flags, 0o600)
+    except OSError:
+        print("BLOCKIERT: Sperrdatei kann nicht sicher geoeffnet werden.")
         return 2
     try:
-        with os.fdopen(fd, "w") as f:
-            f.write(str(os.getpid()))
+        try:
+            fcntl.flock(fd, fcntl.LOCK_EX | fcntl.LOCK_NB)
+        except OSError:
+            print("BLOCKIERT: Ein anderer lokaler SCHNAPPER-Dienst ist aktiv.")
+            return 2
+        # PID nur zur Diagnose, nie als Freigabe- oder Authentizitaetsbeweis.
+        os.ftruncate(fd, 0)
+        os.write(fd, str(os.getpid()).encode("ascii"))
         if args.once:
             return einmal()
         while True:
@@ -220,7 +232,9 @@ def start():
     except KeyboardInterrupt:
         return 0
     finally:
-        sperre.unlink(missing_ok=True)
+        # close() gibt flock auch nach Exception/KeyboardInterrupt frei.
+        # Nicht loeschen: die Inode muss fuer alle Prozesse dieselbe bleiben.
+        os.close(fd)
 
 
 if __name__ == "__main__":
