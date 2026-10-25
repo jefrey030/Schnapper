@@ -263,6 +263,24 @@ def command(ordner, ki):
         erg.update(status="ÜBERSPRUNGEN",
                    fehler="Keine offene Aufgabe von LEAD; COMMAND-KI-Aufruf unterdrückt.")
         return erg
+    # Kein kostenrelevanter COMMAND-Aufruf, wenn irgendeine Vorrolle fehlt,
+    # einen Fehler meldet oder die unabhängige CHECK-Prüfung nicht bestanden hat.
+    if any((vorher.get(r) or {}).get("status") != "OK" for r in ROLES[:3]):
+        erg.update(status="ÜBERSPRUNGEN",
+                   fehler="LEAD/BRAIN/CHECK unvollständig oder fehlgeschlagen; kein COMMAND-KI-Aufruf.")
+        return erg
+    check_erg = vorher["CHECK"]
+    check_tools = check_erg.get("werkzeug") or {}
+    tests = check_tools.get("tests") or {}
+    if (not (vorher["LEAD"].get("plan") or {}).get("aufgabe_id")
+            or (check_erg.get("urteil") or {}).get("urteil") != "bestanden"
+            or tests.get("ok") is not True
+            or not isinstance(tests.get("anzahl"), int)
+            or tests["anzahl"] < 1
+            or check_tools.get("geheimnis_funde") != []):
+        erg.update(status="ÜBERSPRUNGEN",
+                   fehler="CHECK-/Test-/Geheimnisfreigabe fehlt oder ist negativ; kein COMMAND-KI-Aufruf.")
+        return erg
     kurz = {r: {"status": (v or {}).get("status"), "fehler": (v or {}).get("fehler"),
                 "ki_text": (((v or {}).get("ki") or {}).get("text") or "")[:2500]} for r, v in vorher.items()}
     antwort, fehler = ki_teil(ki, "COMMAND", json.dumps(kurz, ensure_ascii=False))
@@ -425,11 +443,10 @@ def main(argv):
         print(f"[{rolle}] KI-Antwort verarbeitet; Rohtext und Metadaten im Konsolenlog unterdrückt.")
     # Schon ki_teil verwirft verdächtige Antworten vor der Ablage. Auch in
     # diesem Fall müssen Folgerollen stoppen (nicht nur bei schreibseitigem Fund).
-    # Ein gewöhnlicher Rollenfehler wird weiterhin im Gesamtbericht protokolliert.
-    sicherheitsfehler = bool(erg.get("geheimnis_redigiert")) or str(erg.get("fehler") or "").startswith(
-        ("Geheimnisindikator in KI-Antwort", "Geheimnisindikator in KI-Eingabe")
-    )
-    return 1 if sicherheitsfehler else 0
+    # Jeder nicht erfolgreiche Rollenstatus stoppt den lokalen Scheduler
+    # unmittelbar. Ein ausgelassener oder nicht einsatzbereiter Agent darf
+    # nicht als erfolgreich abgeschlossener Prozess gemeldet werden.
+    return 0 if erg.get("status") == "OK" else 1
 
 
 if __name__ == "__main__":
