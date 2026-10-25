@@ -55,7 +55,7 @@
 - [x] Vorhandene Sicherheitsgates aus #21 in separatem Branch beibehalten.
 - [x] Alten Cron-Workflow statisch deaktiviert; anstelle einer unsicheren Legacy-Aufgabe nur gesperrter Platzhalter.
 - [x] Regressionen für Workflow- und Backend-Sperre aktualisiert.
-- [ ] Aktuelle Python- und Cloudflare-CI für **finalen Branch-HEAD** unabhängig bestätigt.
+- [x] Kombinierter Quellcode auf SHA `f7102bef8a966545c276ae9c2a616cf389179430` in [CI 40155423008](https://github.com/jefrey030/Schnapper/actions/runs/40155423008): Python 236 Tests (1 SKIP), Cloudflare 13/13 PASS, 0 FAIL. Ein reiner Dokumentationsabschluss-Commit benötigt ebenfalls einen neuen CI-Nachweis.
 - [ ] Externe Sicherheits-/Codeprüfung und manuelle Freigabe.
 - [ ] Echte lokale KI-/Staging-Durchführung (ausdrücklich nicht Teil dieses Masters).
 
@@ -87,3 +87,13 @@ Bei GitHub-Dateidirektvergleich des Integrationszweigs wurden 14 konkrete Beding
 **Wichtig zur CI:** Zum Zeitpunkt des Abgleichs zeigte GitHub für PR #54 und dessen Integrations-HEAD **noch keinen neuen abgeschlossenen Actions-Lauf**. Die zuvor erfolgreichen CI-Läufe von #21 und #53 beweisen den kombinierten Code **nicht**. CI-Gate deshalb `NOT_VERIFIED`, trotz positivem statischem Check.
 
 **Release-Entscheid:** `NO-GO`, kein Merge oder Deployment.
+
+## Ausführung der Gesamtintegration – belegter Abschlussstand
+
+- **Bereinigter Branch:** `integration/schnapper-p0-mainbased-20261025` (Basis `main` `6dbe114271b332ed9d4c282b50c4ce02b112ac49`, vor der Integrationsarbeit 0 Commits hinter main).
+- **Review-PR:** [#55](https://github.com/jefrey030/Schnapper/pull/55), `draft`, bei GitHub als `mergeable=true` gemeldet. Konfliktbehafteter Vorgänger #54 wird nicht mehr als Review-Kandidat empfohlen.
+- **Python-CI:** [Run 40155423008](https://github.com/jefrey030/Schnapper/actions/runs/40155423008), Commit `f7102bef8a966545c276ae9c2a616cf389179430`, 236 Tests ausgeführt, 1 übersprungen, **0 FAIL**.
+- **Cloudflare-CI:** Derselbe Lauf, **13 Tests, 13 PASS, 0 FAIL, 0 SKIP**.
+- **Statischer Nachweis:** Vorheriger Branchinhalt: 14/14 Sperrmerkmale im Quelltext vorhanden. Dieser Code wurde in die main-basierte Integration übertragen; der Testlauf bestätigt die Ausführung der vorhandenen Regressionen.
+- **Kein Nachweis:** vier unabhängige echte Modellantworten, laufender Ollama-Host, Live-Staging, externer Sicherheitsreview, produktives Cloudflare-D1, Nutzungsrechte produktiver Preisquellen.
+- **Freigabeentscheidung:** `NO-GO` für automatischen KI-Dauerbetrieb, Merge und Deployment ohne gesonderte unabhängige Abnahme und Betreiberentscheidung. **0 € zusätzliche Kosten veranlasst.**
