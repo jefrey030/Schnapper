@@ -39,7 +39,11 @@ def pruefe_nachweise(bericht, lauf, schritte):
         fehler.append("Bericht gehört nicht zu diesem Lauf.")
     if bericht.get("team_einsatzbereit") is not True:
         fehler.append("Vier-Agenten-Team im Bericht nicht einsatzbereit.")
-    if set(bericht.get("agenten_mit_echter_ki") or []) != set(ROLES):
+    gemeldete_rollen = bericht.get("agenten_mit_echter_ki")
+    if (not isinstance(gemeldete_rollen, list)
+            or any(not isinstance(r, str) for r in gemeldete_rollen)
+            or set(gemeldete_rollen) != set(ROLES)
+            or len(gemeldete_rollen) != len(ROLES)):
         fehler.append("KI-Nachweis für mindestens eine Rolle fehlt.")
     if bericht.get("ki_aufrufe") != 4:
         fehler.append("KI-Nachweis: erwartet genau vier lokale Modellaufrufe.")
@@ -78,6 +82,7 @@ def pruefe_nachweise(bericht, lauf, schritte):
         if not isinstance(a, dict):
             fehler.append(f"Ungültige Rolle im Gesamtbericht: {rolle}.")
             a = {}
+            agenten[rolle] = {}
         info = a.get("ki") or {}
         if not isinstance(info, dict):
             fehler.append(f"Ungültige KI-Metadaten: {rolle}.")
@@ -117,7 +122,9 @@ def pruefe_nachweise(bericht, lauf, schritte):
     if bericht.get("check_urteil") != "bestanden":
         fehler.append("CHECK hat nicht bestanden: keine positive Pilotabnahme.")
     command = (agenten.get("COMMAND") or {}).get("protokoll") or {}
-    if not isinstance(command, dict) or command.get("freigabe") != "ja" or not (
+    if not isinstance(command, dict):
+        command = {}
+    if command.get("freigabe") != "ja" or not (
         isinstance(command.get("naechster_schritt"), str) and
         command["naechster_schritt"].strip()
     ):
