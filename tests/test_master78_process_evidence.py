@@ -100,8 +100,8 @@ class TestMaster78Prozessbelege(unittest.TestCase):
             if unreadable_hash and path.name == "prozesse.json":
                 raise OSError("MOCK: Dateizugriff verweigert")
             return read_bytes(path)
-        with mock.patch.object(dienst.subprocess, "run", side_effect=fake), \\
-             mock.patch.object(pathlib.Path, "read_bytes", guarded_read), \\
+        with mock.patch.object(dienst.subprocess, "run", side_effect=fake), \
+             mock.patch.object(pathlib.Path, "read_bytes", guarded_read), \
              mock.patch("builtins.print") as printed:
             status = dienst.einmal()
         self.assertEqual(status, 1)
