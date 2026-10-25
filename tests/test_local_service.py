@@ -110,11 +110,88 @@ class TestDienst(unittest.TestCase):
                         for r in rollen
                     },
                 }), encoding="utf-8")
+                # Die positiven Artefakte werden ausdrücklich als MOCK erzeugt.
+                # Der Prüfer muss ihre Inhalte mit dem Bericht vergleichen.
+                agenten = json.loads(p.read_text(encoding="utf-8"))["agenten"]
+                for r in rollen:
+                    (lauf / (r + ".json")).write_text(
+                        json.dumps({"rolle": r, **agenten[r]}), encoding="utf-8")
+                # Im tatsächlichen Bericht steht kein separater "rolle"-Eintrag.
+                # Darum denselben Eintrag auch im Bericht setzen.
+                report = json.loads(p.read_text(encoding="utf-8"))
+                report["agenten"] = {
+                    r: {"rolle": r, **agenten[r]} for r in rollen
+                }
+                p.write_text(json.dumps(report), encoding="utf-8")
+                (lauf / "ki_aufrufe.txt").write_text("4", encoding="utf-8")
             return SimpleNamespace(returncode=0, stdout="", stderr="")
 
         with mock.patch.object(dienst.subprocess, "run", side_effect=fake):
             self.assertEqual(dienst.einmal(), 0)
         self.assertEqual(len(list((self.team / "work").glob("*/nachweise.json"))), 1)
+
+    def _konsistenter_mock_nachweis(self):
+        """Vollständiges lokales Testartefakt, KEIN realer KI-Lauf."""
+        lauf = self.team / "work" / "mock-konsistent"
+        lauf.mkdir(parents=True)
+        rollen = ("LEAD", "BRAIN", "CHECK", "COMMAND")
+        vorschlag = self.team / "proposals" / "fake.md"
+        vorschlag.parent.mkdir(parents=True)
+        vorschlag.write_text("Simuliertes Artefakt", encoding="utf-8")
+        agenten = {}
+        for r in rollen:
+            eintrag = {
+                "rolle": r, "status": "OK", "ki_echt": True,
+                "plan": {"aufgabe_id": "S-000"} if r == "LEAD" else None,
+                "vorschlag_datei": "team/proposals/fake.md" if r == "BRAIN" else None,
+                "protokoll": {"freigabe": "ja", "naechster_schritt": "Manuell prüfen"}
+                    if r == "COMMAND" else None,
+                "ki": {"laufzeit": "Ollama lokal (keine bezahlte KI-API)",
+                       "modell": "qwen2.5:1.5b",
+                       "text": "SIMULIERTER Unit-Test",
+                       "antwort_id": "lokal-mock-" + r.lower()},
+            }
+            agenten[r] = eintrag
+            (lauf / (r + ".json")).write_text(json.dumps(eintrag), encoding="utf-8")
+        (lauf / "ki_aufrufe.txt").write_text("4", encoding="utf-8")
+        bericht = {
+            "lauf": lauf.name, "team_einsatzbereit": True,
+            "agenten_mit_echter_ki": list(rollen),
+            "ki_aufrufe": 4, "check_urteil": "bestanden",
+            "tests_ok": True, "tests_anzahl": 3,
+            "agenten": agenten,
+        }
+        schritte = [{"rolle": r, "exitcode": 0} for r in (*rollen, "BERICHT")]
+        return lauf, bericht, schritte
+
+    def test_bericht_und_rollendatei_muessen_uebereinstimmen(self):
+        lauf, bericht, schritte = self._konsistenter_mock_nachweis()
+        self.assertEqual(dienst.pruefe_nachweise(bericht, lauf, schritte), [])
+        # Positive Berichtsfelder durften vorher den tatsächlichen Rolleninhalt
+        # ignorieren; der geänderte JSON-Inhalt muss nun zur Sperre führen.
+        datei = lauf / "LEAD.json"
+        daten = json.loads(datei.read_text(encoding="utf-8"))
+        daten["ki"]["antwort_id"] = "lokal-manipuliert"
+        datei.write_text(json.dumps(daten), encoding="utf-8")
+        fehler = dienst.pruefe_nachweise(bericht, lauf, schritte)
+        self.assertTrue(any("Abweichung zwischen Bericht und Agentendatei" in f
+                            for f in fehler))
+
+    def test_beschaedigte_rollendatei_blockiert(self):
+        lauf, bericht, schritte = self._konsistenter_mock_nachweis()
+        (lauf / "BRAIN.json").write_text("{ungültig", encoding="utf-8")
+        fehler = dienst.pruefe_nachweise(bericht, lauf, schritte)
+        self.assertTrue(any("beschädigt/nicht lesbar" in f for f in fehler))
+
+    def test_lokaler_aufrufzaehler_darf_nicht_nur_im_bericht_stehen(self):
+        lauf, bericht, schritte = self._konsistenter_mock_nachweis()
+        self.assertEqual(dienst.pruefe_nachweise(bericht, lauf, schritte), [])
+        (lauf / "ki_aufrufe.txt").unlink()
+        fehler = dienst.pruefe_nachweise(bericht, lauf, schritte)
+        self.assertTrue(any("KI-Aufrufzähler fehlt" in f for f in fehler))
+        (lauf / "ki_aufrufe.txt").write_text("3", encoding="utf-8")
+        fehler = dienst.pruefe_nachweise(bericht, lauf, schritte)
+        self.assertTrue(any("KI-Aufrufzähler fehlt" in f for f in fehler))
 
     def test_falsche_laufzeit_oder_doppelte_ids_blockieren(self):
         lauf = self.team / "work" / "fake"
