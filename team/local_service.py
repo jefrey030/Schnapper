@@ -60,7 +60,10 @@ def pruefe_nachweise(bericht, lauf, schritte):
         if not isinstance(a, dict):
             fehler.append(f"Agentendaten {rolle}: kein JSON-Objekt.")
             a = {}
-        if not datei.exists():
+        # Einzelbelege dürfen keine Symlinks auf fremde lokale Dateien sein.
+        if datei.is_symlink():
+            fehler.append(f"Agentendatei {rolle}.json ist ein unzulässiger symbolischer Link.")
+        elif not datei.exists():
             fehler.append(f"Agentendatei fehlt: {rolle}.json")
         else:
             try:
@@ -148,8 +151,9 @@ def pruefe_nachweise(bericht, lauf, schritte):
         command["naechster_schritt"].strip()
     ):
         fehler.append("COMMAND hat kein gültiges Abschlussprotokoll erstellt.")
-    if bericht.get("tests_ok") is not True or not isinstance(
-        bericht.get("tests_anzahl"), int) or bericht["tests_anzahl"] < 1:
+    if (bericht.get("tests_ok") is not True
+            or type(bericht.get("tests_anzahl")) is not int
+            or bericht["tests_anzahl"] < 1):
         fehler.append("Unit-Tests nicht erfolgreich nachgewiesen.")
     erwartet = (*ROLES, "BERICHT")
     if (len(schritte) != len(erwartet)
