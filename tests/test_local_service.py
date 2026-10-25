@@ -105,7 +105,15 @@ class TestDienst(unittest.TestCase):
                             "ki": {"laufzeit": "Ollama lokal (keine bezahlte KI-API)",
                                    "modell": "qwen2.5:1.5b",
                                    "text": "simulierte Antwort (nur im Unit Test)",
-                                   "antwort_id": "lokal-" + r.lower()},
+                                   "antwort_id": "lokal-" + r.lower(),
+                                   "antwort_id_typ": "nur-lokale-kennung",
+                                   "ollama_beleg": {
+                                       "modell_antwort": "qwen2.5:1.5b",
+                                       "done": True, "done_reason": "stop",
+                                       "rolle": "assistant",
+                                       "created_at": "2026-10-25T13:00:00Z",
+                                       "prompt_eval_count": 11, "eval_count": 4,
+                                   }},
                         }
                         for r in rollen
                     },
@@ -208,6 +216,64 @@ class TestDienst(unittest.TestCase):
             {"lauf": lauf.name, "agenten": {"LEAD": {"rolle": "LEAD"}}},
             lauf, [])
         self.assertTrue(any("nicht vertrauenswürdig (Symlink): LEAD.json" in x for x in fehler))
+
+
+    def test_lokal_id_allein_ohne_ollama_antwortbeleg_blockiert(self):
+        lauf = self.team / "work" / "nur_lokale_uuid"
+        lauf.mkdir(parents=True)
+        (lauf / "ki_aufrufe.txt").write_text("4", encoding="utf-8")
+        rollen = ("LEAD", "BRAIN", "CHECK", "COMMAND")
+        agenten = {
+            r: {
+                "rolle": r, "status": "OK", "ki_echt": True,
+                "ki": {"laufzeit": "Ollama lokal (keine bezahlte KI-API)",
+                       "modell": "qwen2.5:1.5b", "text": "nur Mock",
+                       "antwort_id": "lokal-" + r.lower(),
+                       "antwort_id_typ": "nur-lokale-kennung"},
+            } for r in rollen
+        }
+        for rolle in rollen:
+            (lauf / (rolle + ".json")).write_text(
+                json.dumps(agenten[rolle]), encoding="utf-8")
+        bericht = {
+            "lauf": lauf.name, "team_einsatzbereit": True,
+            "agenten_mit_echter_ki": list(rollen),
+            "ki_aufrufe": 4, "agenten": agenten,
+        }
+        schritte = [{"rolle": r, "exitcode": 0} for r in (*rollen, "BERICHT")]
+        fehler = dienst.pruefe_nachweise(bericht, lauf, schritte)
+        self.assertTrue(any("Ollama-Abschlussbeleg" in x for x in fehler))
+
+    def test_falscher_ollama_beleg_wird_abgewiesen(self):
+        lauf = self.team / "work" / "falsches_antwortmodell"
+        lauf.mkdir(parents=True)
+        (lauf / "ki_aufrufe.txt").write_text("4", encoding="utf-8")
+        rollen = ("LEAD", "BRAIN", "CHECK", "COMMAND")
+        agenten = {}
+        for r in rollen:
+            agenten[r] = {
+                "rolle": r, "status": "OK", "ki_echt": True,
+                "ki": {
+                    "laufzeit": "Ollama lokal (keine bezahlte KI-API)",
+                    "modell": "qwen2.5:1.5b", "text": "Mock",
+                    "antwort_id": "lokal-" + r.lower(),
+                    "antwort_id_typ": "nur-lokale-kennung",
+                    "ollama_beleg": {
+                        "modell_antwort": "falsches:modell", "done": True,
+                        "done_reason": "stop", "rolle": "assistant",
+                        "created_at": "2026-10-25T13:00:00Z",
+                        "prompt_eval_count": 10, "eval_count": 4,
+                    },
+                },
+            }
+            (lauf / (r + ".json")).write_text(
+                json.dumps(agenten[r]), encoding="utf-8")
+        bericht = {"lauf": lauf.name, "team_einsatzbereit": True,
+                   "agenten_mit_echter_ki": list(rollen),
+                   "ki_aufrufe": 4, "agenten": agenten}
+        schritte = [{"rolle": r, "exitcode": 0} for r in (*rollen, "BERICHT")]
+        fehler = dienst.pruefe_nachweise(bericht, lauf, schritte)
+        self.assertEqual(sum("Ollama-Abschlussbeleg" in x for x in fehler), 4)
 
     def test_falsche_laufzeit_oder_doppelte_ids_blockieren(self):
         lauf = self.team / "work" / "fake"
