@@ -45,11 +45,43 @@ def pruefe_nachweise(bericht, lauf, schritte):
         fehler.append("KI-Nachweis: erwartet genau vier lokale Modellaufrufe.")
     antwort_ids = []
     agenten = bericht.get("agenten") or {}
+    if not isinstance(agenten, dict):
+        fehler.append("Ungültiger Agentenbericht: agenten muss ein Objekt sein.")
+        agenten = {}
+    # Eigenmeldungen im Gesamtbericht sind kein Beleg: die vier individuellen
+    # persistierten JSON-Dateien müssen byteunabhängig inhaltlich dazu passen.
+    # Auch der vom Adapter fortgeschriebene Aufrufzähler ist Pflicht.
+    zaehler = lauf / "ki_aufrufe.txt"
+    try:
+        if zaehler.is_symlink():
+            raise ValueError("Symbolischer Zählerlink")
+        echte_aufrufe = int(zaehler.read_text(encoding="utf-8"))
+    except (OSError, ValueError):
+        echte_aufrufe = None
+    if echte_aufrufe != 4:
+        fehler.append("Aufrufzähler fehlt oder stimmt nicht mit vier Aufrufen überein.")
     for rolle in ROLES:
-        if not (lauf / (rolle + ".json")).exists():
-            fehler.append(f"Agentendatei fehlt: {rolle}.json")
+        rollen_datei = lauf / (rolle + ".json")
+        if rollen_datei.is_symlink():
+            fehler.append(f"Agentendatei nicht vertrauenswürdig (Symlink): {rolle}.json")
+        else:
+            try:
+                rolle_von_disk = json.loads(rollen_datei.read_text(encoding="utf-8"))
+            except (OSError, ValueError):
+                fehler.append(f"Agentendatei fehlt oder ungültig: {rolle}.json")
+            else:
+                if (not isinstance(rolle_von_disk, dict)
+                        or rolle_von_disk.get("rolle") != rolle
+                        or rolle_von_disk != agenten.get(rolle)):
+                    fehler.append(f"Agentendatei und Gesamtbericht widersprechen sich: {rolle}.json")
         a = agenten.get(rolle) or {}
+        if not isinstance(a, dict):
+            fehler.append(f"Ungültige Rolle im Gesamtbericht: {rolle}.")
+            a = {}
         info = a.get("ki") or {}
+        if not isinstance(info, dict):
+            fehler.append(f"Ungültige KI-Metadaten: {rolle}.")
+            info = {}
         if a.get("ki_echt") is not True or a.get("status") != "OK":
             fehler.append(f"KI-Nachweis {rolle}: kein bestätigter OK-Lauf.")
         if info.get("laufzeit") != "Ollama lokal (keine bezahlte KI-API)":
@@ -142,7 +174,13 @@ def einmal():
     if not report_path.exists():
         print(f"BLOCKIERT: Stundenbericht fehlt. Details: {lauf}/prozesse.json")
         return 1
-    bericht = json.loads(report_path.read_text(encoding="utf-8"))
+    try:
+        bericht = json.loads(report_path.read_text(encoding="utf-8"))
+        if not isinstance(bericht, dict):
+            raise ValueError("Bericht muss ein JSON-Objekt sein")
+    except (OSError, ValueError):
+        print("BLOCKIERT: Stundenbericht ungültig oder nicht lesbar.")
+        return 1
     fehler = pruefe_nachweise(bericht, lauf, schritte)
     erfolgreich = not fehler
     ergebnis = {
