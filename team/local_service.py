@@ -69,6 +69,7 @@ def pruefe_nachweise(bericht, lauf, schritte):
         if not isinstance(a, dict):
             fehler.append(f"Agentenbericht {rolle} ist kein Objekt.")
             a = {}
+            agenten[rolle] = {}
         if datei.is_symlink():
             fehler.append(f"Agentendatei {rolle}.json darf kein Symlink sein.")
         elif not datei.is_file():
