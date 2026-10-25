@@ -30,10 +30,23 @@ Ein einzelner nicht erfolgreicher Agent darf nie einen erfolgreichen Prozesscode
 6. Vier auf GitHub verteilte Rollen sind **Aufträge**, keine autonom laufenden KI-Instanzen.
 
 ## Abnahme
-- [ ] COMMAND blockiert Modellaufrufe bei fehlender/fehlgeschlagener Vorgängerkette
-- [ ] COMMAND blockiert bei negativem oder ungeprüftem CHECK/Test/Secret-Scan
-- [ ] Prozessstatus nonzero für jede nicht erfolgreiche Agentenrolle, inklusive leerer Warteschlange
-- [ ] Positiver Testfall für vier gültige Mock-Rollen weiterhin grün
-- [ ] Python-/Cloudflare-CI auf exakter Commit-SHA erfolgreich
-- [ ] Finaler Run mit echten Testzahlen/SKIPs dokumentiert
-- [ ] Unabhängige Security-/Release-Freigabe verbleibt **NO-GO**
+- [x] COMMAND blockiert Modellaufrufe bei fehlender/fehlgeschlagener Vorgängerkette
+- [x] COMMAND blockiert bei negativem oder ungeprüftem CHECK/Test/Secret-Scan
+- [x] Prozessstatus nonzero für jede nicht erfolgreiche Agentenrolle, inklusive leerer Warteschlange
+- [x] Positiver Testfall für vier gültige Mock-Rollen weiterhin grün
+- [x] Python-/Cloudflare-CI auf Code-SHA `7e57f2738e10293d8ff7bb8e99f786e1be6f46a1` erfolgreich – [Run 40198664505](https://github.com/jefrey030/Schnapper/actions/runs/40198664505)
+- [x] Finaler Code-Lauf: 244 Python-Tests (1 Skip), 16 Cloudflare-Tests (0 Skips), 0 Testfehler. Nachfolgender Dokumentationscommit erhält eigenen CI-Test.
+- [x] Unabhängige Security-/Release-Freigabe verbleibt **NO-GO**
+
+## Ausgeführte Codearbeiten und tatsächliche Testergebnisse
+
+- `team/agent.py`: Bei fehlender/fehlerhafter LEAD-, BRAIN- oder CHECK-Vorrolle, fehlender Aufgaben-ID, negativem oder ungültigem CHECK-Urteil, fehlenden/fehlgeschlagenen Unit-Tests oder fehlendem/positivem Geheimnisscan wird COMMAND **vor der Modellinferenz** `ÜBERSPRUNGEN`. Kein KI-Anruf erfolgt in solchen Fällen.
+- `team/agent.py::main`: Status `OK` gibt Exitcode 0, alle anderen Rollenstatus geben Exitcode 1. Der lokale Scheduler kann Folgerollen so beim ersten gewöhnlichen Rollenfehler stoppen. `BERICHT` bleibt als dokumentierender Sonderfall separat aufrufbar.
+- `tests/test_failsafe.py`: Mock-Regressionen für ungültige Vorrollen, fehlende Dateien, negatives CHECK-Urteil, fehlerhafte/mangelnde Tests, Secret-Scan-Ausfall, positive COMMAND-Voraussetzungen und nonzero-Codes.
+- `tests/test_agenten.py`: Offline-Probelauf mit nicht erreichbarer KI erwartet jetzt nonzero der Agenten; unabhängiger Gesamtbericht wird weiterhin erstellt. Positiver Vierfach-Mocklauf bleibt nutzbar.
+- `team/local_service.py`: `vier_echte_ki_antworten` wird bei **jedem** technischen Pilotfehler `false`. Die frühere Fehlermeldungs-Stichwortsuche konnte ansonsten eine positive Kennzahl trotz negativer CHECK-/Prozessprüfung erzeugen.
+- `tests/test_local_service.py`: Neue Regression für negativen CHECK-Pilotstatus trotz im Mock behaupteter positiver KI-Antwortzahl.
+
+**Nachweis des kombinierten Codes:** [GitHub Actions #40198664505](https://github.com/jefrey030/Schnapper/actions/runs/40198664505), SHA `7e57f2738e10293d8ff7bb8e99f786e1be6f46a1`: Python **244 Tests**, davon **1 SKIP**, **0 FAIL**; Cloudflare-Worker **16 Tests, 16 PASS, 0 FAIL, 0 SKIP**. Beide CI-Jobs melden `success`.
+
+**Abgrenzung:** Alle KI-Testantworten sind Offline-Simulationen. Es fand kein realer Modellaufruf, kein Deployment und kein Merge statt. Der ältere Legacy-Cron ist auf `main` bis zu einer gesonderten Review-/Merge-Freigabe weiterhin aktiv. Ein grüner Testlauf bedeutet **nicht** automatisch echte Vier-KI-Bereitschaft. **NO-GO** bleibt bestehen.
