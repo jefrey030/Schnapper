@@ -238,7 +238,8 @@ async function barcodeSuchen(ev) {
 function aktuellerWunsch() {
   const f = new FormData($("filter"));
   const w = { text: String(f.get("text") || "").trim(), max_preis: String(f.get("max_preis") || "").trim(),
-              min_rabatt: String(f.get("min_rabatt") || "").trim(), zustand: String(f.get("zustand") || "") };
+              min_rabatt: String(f.get("min_rabatt") || "").trim(), zustand: String(f.get("zustand") || ""),
+              quelle: String(f.get("quelle") || "").trim(), kategorie: String(f.get("kategorie") || "").trim() };
   return w.text && (w.max_preis || w.min_rabatt) ? w : null;
 }
 
@@ -253,6 +254,8 @@ function wunschText(w, mitText = true) {
   if (w.max_preis) teile.push(`bis ${w.max_preis} €`);
   if (w.min_rabatt) teile.push(`ab ${w.min_rabatt} % billiger`);
   if (w.zustand) teile.push(ZUSTAND[w.zustand] || w.zustand);
+  if (w.quelle) teile.push(`Quelle: ${w.quelle}`);
+  if (w.kategorie) teile.push(`Kategorie: ${w.kategorie}`);
   return teile.join(" · ");
 }
 
@@ -276,6 +279,8 @@ function alarmQuery(w) {
   if (w.max_preis) p.set("max_preis", w.max_preis);
   if (w.min_rabatt) p.set("min_rabatt", w.min_rabatt);
   if (w.zustand) p.set("zustand", w.zustand);
+  if (w.quelle) p.set("quelle", w.quelle);
+  if (w.kategorie) p.set("kategorie", w.kategorie);
   return p.toString();
 }
 
