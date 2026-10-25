@@ -1,4 +1,5 @@
 """Kostenfreie lokale KI: Tests OHNE Modell-Download und OHNE Netzwerkanfrage."""
+import datetime as dt
 import os
 import pathlib
 import tempfile
@@ -16,7 +17,7 @@ def gueltige_antwort(**aenderungen):
     """Nur synthetische Ollama-JSON-Fixture, kein echter Modellaufruf."""
     basis = {
         "model": "qwen2.5:3b",
-        "created_at": "2026-10-25T13:00:00Z",
+        "created_at": dt.datetime.now(dt.timezone.utc).isoformat(),
         "message": {"role": "assistant", "content": "Testtext"},
         "done": True, "done_reason": "stop",
         "prompt_eval_count": 12, "eval_count": 4,
@@ -93,6 +94,34 @@ class TestLokaleKI(unittest.TestCase):
                 with self.assertRaisesRegex(KINichtVerfuegbar, fehlertext):
                     lokal.KI(self.zaehler).frage("System", "Test")
                 self.assertEqual(int(self.zaehler.read_text()), 1)
+
+    def test_alte_und_zukuenftige_ollama_antworten_blockieren(self):
+        jetzt = dt.datetime.now(dt.timezone.utc)
+        zeiten = [
+            (jetzt - dt.timedelta(hours=2)).isoformat(),
+            (jetzt + dt.timedelta(minutes=15)).isoformat(),
+        ]
+        for zeit in zeiten:
+            with self.subTest(antwortzeit=zeit), mock.patch.object(
+                lokal, "_request", side_effect=[
+                    {"models": [{"name": "qwen2.5:3b"}]},
+                    gueltige_antwort(created_at=zeit),
+                ]
+            ):
+                self.zaehler.unlink(missing_ok=True)
+                with self.assertRaisesRegex(KINichtVerfuegbar, "veraltet"):
+                    lokal.KI(self.zaehler).frage("S", "N")
+                # Der Versuch ist gezählt, aber nicht als Erfolg akzeptiert.
+                self.assertEqual(self.zaehler.read_text(encoding="utf-8"), "1")
+
+    def test_aktuelle_antwort_wird_angenommen(self):
+        with mock.patch.object(lokal, "_request", side_effect=[
+            {"models": [{"name": "qwen2.5:3b"}]},
+            gueltige_antwort(),
+        ]):
+            info = lokal.KI(self.zaehler).frage("S", "N")
+        self.assertEqual(info["ollama_beleg"]["modell_antwort"], "qwen2.5:3b")
+        self.assertEqual(info["antwort_id_typ"], "nur-lokale-kennung")
 
     def test_fehlformatierte_katalogeintraege_blockieren_ohne_absturz(self):
         with mock.patch.object(lokal, "_request", return_value={
