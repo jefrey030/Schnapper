@@ -5,12 +5,14 @@ kein Proxy, kein Download und kein Wechsel zu Cloud-/Bezahlanbietern.
 Bei fehlendem lokalen Modell wird der KI-Lauf ehrlich blockiert.
 """
 import datetime as dt
+import errno
 import fcntl
 import json
 import os
 import pathlib
 import re
 import stat
+import time
 import urllib.error
 import urllib.request
 import uuid
@@ -19,6 +21,28 @@ from ki import KINichtVerfuegbar, MAX_AUFRUFE
 
 LOKAL = "http://127.0.0.1:11434"
 MODELL_DEFAULT = "qwen2.5:1.5b"
+# Unabhaengig von Umgebungsfehlern niemals ueber sechs Reservierungen.
+MAX_SICHERE_AUFRUFE = 6
+LOCK_WARTEZEIT_SEKUNDEN = 2.0
+
+
+def _hole_zaehlersperre(fd):
+    """Dateisperre nur begrenzt erwarten; sonst blockiert statt Endlosschleife."""
+    ende = time.monotonic() + LOCK_WARTEZEIT_SEKUNDEN
+    while True:
+        try:
+            fcntl.flock(fd, fcntl.LOCK_EX | fcntl.LOCK_NB)
+            return
+        except OSError as exc:
+            if exc.errno not in (errno.EAGAIN, errno.EWOULDBLOCK, errno.EACCES):
+                raise
+            verbleibend = ende - time.monotonic()
+            if verbleibend <= 0:
+                raise KINichtVerfuegbar(
+                    "Lokale Zaehlerdatei belegt: Wartezeit ueberschritten.") from None
+            time.sleep(min(0.02, verbleibend))
+
+
 class KeineWeiterleitungen(urllib.request.HTTPRedirectHandler):
     def redirect_request(self, req, fp, code, msg, headers, newurl):
         raise KINichtVerfuegbar("Ollama darf keine HTTP-Weiterleitungen verwenden.")
@@ -88,6 +112,12 @@ class KI:
         """
         if not hasattr(os, "O_NOFOLLOW"):
             raise KINichtVerfuegbar("Sichere lokale Zaehleroeffnung nicht unterstuetzt.")
+        # MAX_AUFRUFE kommt aus der Umgebung/Offline-Testpatches:
+        # ein zu hoher, boolescher oder sonst ungültiger Wert muss sperren.
+        if (type(MAX_AUFRUFE) is not int
+                or not 1 <= MAX_AUFRUFE <= MAX_SICHERE_AUFRUFE):
+            raise KINichtVerfuegbar(
+                "Ungültiges KI-Aufruflimit: höchstens sechs lokal erlaubt.")
         try:
             self.zaehler.parent.mkdir(parents=True, exist_ok=True)
             fd = os.open(
@@ -101,7 +131,7 @@ class KI:
                 info = os.fstat(datei.fileno())
                 if not stat.S_ISREG(info.st_mode) or info.st_nlink != 1:
                     raise OSError("Zaehler ist keine eigene regulaere Datei")
-                fcntl.flock(datei.fileno(), fcntl.LOCK_EX)
+                _hole_zaehlersperre(datei.fileno())
                 roh = datei.read(9)
                 if (len(roh) > 8 or
                         (roh and re.fullmatch(rb"[0-9]{1,8}", roh) is None)):
