@@ -13,6 +13,8 @@ die gesehenen Preise (URL, Zeitpunkt, Preis) lokal in DATEI festgehalten.
 from __future__ import annotations
 
 import argparse
+import datetime as dt
+import uuid
 import csv
 import io
 import json
@@ -26,7 +28,7 @@ from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from urllib.parse import parse_qs, urlsplit
 
 from .adapter import finde_in
-from .angebot import ZUSTAENDE, AngebotFehler, geld
+from .angebot import ZUSTAENDE, Angebot, AngebotFehler, geld, normalisiere_url
 from .einlesen import Importergebnis, lies_datei, lies_text
 from .quellen import QuellenFehler, Register
 from .suche import SORTIERUNGEN, Filter
@@ -41,6 +43,8 @@ DATEIEN = {"/": ("index.html", "text/html; charset=utf-8"),
            "/icon-512.png": ("icon-512.png", "image/png"),
            "/icon-maskable-512.png": ("icon-maskable-512.png", "image/png")}
 MAX_UPLOAD = 5 * 1024 * 1024
+MAX_MANUELL = 4096
+MAX_ANGEBOTE = 5000
 SICHERHEIT = {
     "Content-Security-Policy": "default-src 'none'; script-src 'self'; style-src 'self'; connect-src 'self'; "
                                "img-src 'self' data:; manifest-src 'self'; base-uri 'none'; form-action 'none'; frame-ancestors 'none'",
@@ -80,6 +84,25 @@ class Zustand:
             # Atomarer Verlauf: keine ungespeicherten/verworfenen Beobachtungen
             # im RAM belassen; das Angebot wird erst danach aktiviert.
             self.verlauf.importiere(geladen.angebote)
+
+    def manuell_hinzufuegen(self, angebot: Angebot):
+        """Eigene Erfassung nur nach Validierung und erfolgreichem Verlaufsspeichern."""
+        with self._import_lock:
+            with self._lock:
+                bisher, name, beispiel = self._daten
+                if len(bisher.angebote) >= MAX_ANGEBOTE:
+                    raise ValueError("Maximal 5000 Angebote pro Liste. Bitte vorher exportieren.")
+                url = normalisiere_url(angebot.url)
+                if any(a.id == angebot.id or normalisiere_url(a.url) == url
+                       for a in bisher.angebote):
+                    raise ValueError("Diese Angebotsadresse ist bereits in der Liste.")
+                zusammen = Importergebnis(
+                    angebote=[*bisher.angebote, angebot], fehler=list(bisher.fehler))
+            # Erst persistieren, dann die aktive Liste austauschen.
+            # Falls der Verlaufsschreibvorgang scheitert, bleibt die Liste unverändert.
+            self.preise_merken(Importergebnis(angebote=[angebot]))
+            with self._lock:
+                self._daten = (zusammen, name, beispiel)
 
 
 def filter_aus_query(q: dict) -> tuple[Filter, str]:
@@ -230,11 +253,49 @@ def baue_handler(zustand: Zustand):
 
         def do_POST(self):
             ziel = urlsplit(self.path).path
-            if ziel not in ("/api/import", "/api/openprices"):
+            if ziel not in ("/api/import", "/api/openprices", "/api/eigenes-angebot"):
                 return self._json(HTTPStatus.NOT_FOUND, {"fehler": "Nicht gefunden"})
             # Schutz gegen fremde Webseiten, die im Hintergrund Daten hochladen wollen
             if self.headers.get("X-Schnapper") != "1":
                 return self._json(HTTPStatus.FORBIDDEN, {"fehler": "Anfrage nicht erlaubt"})
+            if ziel == "/api/eigenes-angebot":
+                if self.headers.get("Content-Type", "").split(";", 1)[0].strip().lower() != "application/json":
+                    return self._json(HTTPStatus.UNSUPPORTED_MEDIA_TYPE,
+                                      {"fehler": "Nur application/json erlaubt"})
+                try:
+                    laenge = int(self.headers.get("Content-Length", ""))
+                except ValueError:
+                    return self._json(HTTPStatus.LENGTH_REQUIRED, {"fehler": "Länge fehlt"})
+                if not 1 <= laenge <= MAX_MANUELL:
+                    return self._json(HTTPStatus.REQUEST_ENTITY_TOO_LARGE,
+                                      {"fehler": "Eintrag leer oder größer als 4 KB"})
+                try:
+                    eingabe = json.loads(self.rfile.read(laenge))
+                except (json.JSONDecodeError, UnicodeDecodeError, ValueError):
+                    return self._json(HTTPStatus.BAD_REQUEST, {"fehler": "Ungültiges JSON"})
+                if not isinstance(eingabe, dict):
+                    return self._json(HTTPStatus.BAD_REQUEST, {"fehler": "Eintrag muss ein Objekt sein"})
+                if len(str(eingabe.get("url", ""))) > 2048 or len(str(eingabe.get("kategorie", ""))) > 80:
+                    return self._json(HTTPStatus.BAD_REQUEST, {"fehler": "URL oder Kategorie zu lang"})
+                # Niemals eine vom Browser behauptete Quelle, Zeit oder ID akzeptieren.
+                daten = {k: eingabe.get(k) for k in
+                         ("titel", "preis", "versand", "referenzpreis", "zustand", "kategorie", "url")}
+                daten.update(id="eigene-" + uuid.uuid4().hex, quelle="eigene",
+                             erfasst_am=dt.datetime.now(dt.timezone.utc).isoformat())
+                try:
+                    angebot = Angebot.aus_dict(daten)
+                except AngebotFehler as exc:
+                    return self._json(HTTPStatus.BAD_REQUEST, {"fehler": str(exc)})
+                try:
+                    zustand.manuell_hinzufuegen(angebot)
+                except ValueError as exc:
+                    return self._json(HTTPStatus.CONFLICT, {"fehler": str(exc)})
+                except OSError:
+                    return self._json(HTTPStatus.INTERNAL_SERVER_ERROR,
+                                      {"fehler": "Nicht übernommen: Preisverlauf konnte nicht gespeichert werden"})
+                return self._json(HTTPStatus.CREATED,
+                                  {"hinzugefuegt": angebot.id, "quelle": "eigene",
+                                   "hinweis": "Nur im lokalen Arbeitsspeicher. Liste per CSV exportieren."})
             if ziel == "/api/openprices":
                 from .openprices import (LIZENZ, OpenPricesAdapter,
                                          OpenPricesFehler, OpenPricesGesperrt)
