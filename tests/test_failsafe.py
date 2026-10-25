@@ -42,6 +42,18 @@ class TestFailClosedAgentReports(unittest.TestCase):
         self.assertTrue(result["ki_echt"])
         self.assertNotIn("urteil", result)
 
+    def test_command_ohne_offene_aufgabe_vermeidet_ki_aufruf(self):
+        self._schreibe("LEAD", status="KEINE AUFGABE", ki_echt=False,
+                       fehler="Keine offenen Aufgaben in team/tasks.json.")
+        fake = mock.Mock()
+        fake.frage.side_effect = AssertionError("Unnötiger COMMAND-Modellaufruf")
+        result = agent.command(self.lauf, fake)
+        fake.frage.assert_not_called()
+        self.assertEqual(result["status"], "ÜBERSPRUNGEN")
+        self.assertFalse(result["ki_echt"])
+        self.assertIn("Keine offene Aufgabe", result["fehler"])
+        self.assertNotIn("protokoll", result)
+
     def test_command_rejects_missing_required_fields(self):
         fake = mock.Mock()
         fake.frage.return_value = {"text": '{"zusammenfassung":"ok"}', "modell": "test"}
