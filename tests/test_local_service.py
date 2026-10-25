@@ -96,7 +96,7 @@ class TestDienst(unittest.TestCase):
                     "tests_anzahl": 3,
                     "agenten": {
                         r: {
-                            "status": "OK", "ki_echt": True,
+                            "rolle": r, "status": "OK", "ki_echt": True,
                             "plan": {"aufgabe_id": "S-000"} if r == "LEAD" else None,
                             "vorschlag_datei": "team/proposals/fake.md" if r == "BRAIN" else None,
                             "protokoll": {"freigabe": "ja",
@@ -110,11 +110,79 @@ class TestDienst(unittest.TestCase):
                         for r in rollen
                     },
                 }), encoding="utf-8")
+                gespeicherter_bericht = json.loads(p.read_text(encoding="utf-8"))
+                for r in rollen:
+                    (lauf / (r + ".json")).write_text(
+                        json.dumps(gespeicherter_bericht["agenten"][r]), encoding="utf-8")
+                (lauf / "ki_aufrufe.txt").write_text("4", encoding="utf-8")
             return SimpleNamespace(returncode=0, stdout="", stderr="")
 
         with mock.patch.object(dienst.subprocess, "run", side_effect=fake):
             self.assertEqual(dienst.einmal(), 0)
         self.assertEqual(len(list((self.team / "work").glob("*/nachweise.json"))), 1)
+
+    def test_gesamtbericht_darf_abweichende_agentendatei_nicht_freigeben(self):
+        lauf = self.team / "work" / "integritaetsprobe"
+        lauf.mkdir(parents=True)
+        (lauf / "ki_aufrufe.txt").write_text("4", encoding="utf-8")
+        rollen = ("LEAD", "BRAIN", "CHECK", "COMMAND")
+        agenten = {
+            r: {"rolle": r, "status": "OK", "ki_echt": True,
+                "ki": {"laufzeit": "Ollama lokal (keine bezahlte KI-API)",
+                       "modell": "qwen2.5:1.5b", "text": "Test",
+                       "antwort_id": "lokal-" + r}}
+            for r in rollen
+        }
+        for r in rollen:
+            datei = lauf / (r + ".json")
+            content = dict(agenten[r])
+            if r == "CHECK":
+                content["status"] = "FEHLER"
+            datei.write_text(json.dumps(content), encoding="utf-8")
+        bericht = {
+            "lauf": lauf.name, "team_einsatzbereit": True,
+            "agenten_mit_echter_ki": list(rollen), "ki_aufrufe": 4,
+            "tests_ok": True, "tests_anzahl": 5,
+            "check_urteil": "bestanden", "agenten": agenten,
+        }
+        schritte = [{"rolle": r, "exitcode": 0} for r in (*rollen, "BERICHT")]
+        fehler = dienst.pruefe_nachweise(bericht, lauf, schritte)
+        self.assertTrue(any("widersprechen sich: CHECK.json" in x for x in fehler))
+
+    def test_aufrufzaehler_muss_persistent_und_genau_vier_sein(self):
+        lauf = self.team / "work" / "zaehlerprobe"
+        lauf.mkdir(parents=True)
+        bericht = {"lauf": lauf.name, "team_einsatzbereit": True,
+                   "ki_aufrufe": 4}
+        for wert in (None, "3", "5", "ungültig"):
+            pfad = lauf / "ki_aufrufe.txt"
+            if wert is None:
+                pfad.unlink(missing_ok=True)
+            else:
+                pfad.write_text(wert, encoding="utf-8")
+            fehler = dienst.pruefe_nachweise(bericht, lauf, [])
+            self.assertTrue(any("Aufrufzähler fehlt" in x for x in fehler), wert)
+
+    def test_kaputte_agenten_json_blockiert_ohne_ausnahme(self):
+        lauf = self.team / "work" / "kaputtes_json"
+        lauf.mkdir(parents=True)
+        (lauf / "ki_aufrufe.txt").write_text("4", encoding="utf-8")
+        (lauf / "LEAD.json").write_text("{", encoding="utf-8")
+        fehler = dienst.pruefe_nachweise(
+            {"lauf": lauf.name, "agenten": {"LEAD": {"rolle": "LEAD"}}},
+            lauf, [])
+        self.assertTrue(any("Agentendatei fehlt oder ungültig: LEAD.json" in x for x in fehler))
+
+    def test_unlesbarer_stundenbericht_ist_blockiert(self):
+        def fake(cmd, **kwargs):
+            if cmd[2] == "BERICHT":
+                lauf = pathlib.Path(cmd[3])
+                pfad = self.team / "runs" / (lauf.name + ".json")
+                pfad.parent.mkdir(parents=True, exist_ok=True)
+                pfad.write_text("{defekt", encoding="utf-8")
+            return SimpleNamespace(returncode=0, stdout="", stderr="")
+        with mock.patch.object(dienst.subprocess, "run", side_effect=fake):
+            self.assertEqual(dienst.einmal(), 1)
 
     def test_falsche_laufzeit_oder_doppelte_ids_blockieren(self):
         lauf = self.team / "work" / "fake"
