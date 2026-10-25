@@ -27,13 +27,26 @@ Die nachgewiesene Fehlerprotokoll-Schwachstelle des Cloudflare-Workers absichern
 - Statische Tests sind keine realen Modellantworten. Vier KI-Rollen auf GitHub-Issues sind Arbeitsrollen, keine selbstständig gestarteten KI-Instanzen.
 
 ## Abnahmeprotokoll (wird nach Ausführung ergänzt)
-- [ ] Echtes Commit mit Secret-Redaction und Ablehnung verdächtiger Modellantworten
-- [ ] Regression: synthetischer Token in Modellantwort nicht in Report gespeichert
-- [ ] Regression: synthetischer Token in Fehler nicht im zurückgegebenen Status, D1-Markierung oder Konsolen-Log
-- [ ] GitHub CI `python-tests` erfolgreich (Testzahl und SKIP nennen)
-- [ ] GitHub CI `cloudflare-tests` erfolgreich (Testzahl nennen)
-- [ ] Finalen Branch-HEAD, Run-IDs und offene Blocker dokumentiert
-- [ ] Unabhängige Produktions-/Security-Abnahme offenhalten (**NO-GO**)
+- [x] Echtes Commit mit Secret-Redaction und Ablehnung verdächtiger Modellantworten
+- [x] Regression: synthetischer Token in Modellantwort nicht in Report gespeichert
+- [x] Regression: synthetischer Token in Fehler nicht im zurückgegebenen Status, D1-Markierung oder Konsolen-Log
+- [x] GitHub CI `python-tests`: 238 Tests, 1 SKIP, 0 FAIL – [Run 40197764731](https://github.com/jefrey030/Schnapper/actions/runs/40197764731)
+- [x] GitHub CI `cloudflare-tests`: 16/16 Tests PASS – [Run 40197764731](https://github.com/jefrey030/Schnapper/actions/runs/40197764731)
+- [x] Geprüfte Code-SHA `1c6a61bce27bb9f04a9913098f9d0f21a53f40cb` und CI #40197764731 dokumentiert; Dokumentationscommit selbst wird zusätzlich nachgeprüft
+- [x] Unabhängige Produktions-/Security-Abnahme ausdrücklich offen (**NO-GO**)
 
 ## Release-Sperren
 #55 bleibt Review-Draft. `main`-Cron und Backend-Stilllegung sind erst nach überprüftem und ausdrücklich freigegebenem Merge behoben. Cloudflare- und Ollama-Betrieb sind ohne echte Host-/Kontrollnachweise nicht freigegeben. `GitHub Actions: success` ersetzt keine Sicherheitsprüfung der Produktion.
+
+## Erledigter zweiter Sicherheitsblock
+
+**Zusätzlicher Befund:** `team/local_service.py` kontrollierte bisher nur das Vorhandensein einer Agentendatei, nicht ihre inhaltliche Übereinstimmung mit dem aggregierten Bericht. So konnte sogar eine Mock-Testdatei mit bloßem Rollennamen einen positiven lokalen Pilot-Gate passieren, wenn der Sammelbericht andere positive Fakten behauptete. Dies ist ein Nachweis-Konsistenzproblem, keine behauptete Fernzugriffslücke.
+
+**Implementiert:** Für jede der vier Rollen wird der konkrete JSON-Inhalt der Datei gelesen und mit dem jeweiligen Agentenobjekt im Sammelbericht verglichen. Fehlende, ungültige und widersprüchliche Dateien blockieren den positiven Pilot-Nachweis. Der frühere positive Test wurde auf tatsächlich konsistente Mock-Dateien umgestellt; zwei negative Tests prüfen Unterschiede und unlesbares JSON.
+
+**Nachweise:** [PR #55](https://github.com/jefrey030/Schnapper/pull/55), überprüfte Commit-SHA `1c6a61bce27bb9f04a9913098f9d0f21a53f40cb`, [GitHub Actions #40197764731](https://github.com/jefrey030/Schnapper/actions/runs/40197764731):
+- `python-tests`: 238 Tests, OK, 1 übersprungen, 0 Fehler.
+- `cloudflare-tests`: 16 Tests, 16 bestanden, 0 Fehler.
+- Die fünf neuen Regressionen sind reine lokale Simulationen mit künstlichen Zeichenfolgen; keine realen Tokens oder Cloud-Modelle wurden benötigt.
+
+**Grenzen / offene Entscheidung:** Übereinstimmende Dateien allein belegen keine kryptografisch authentifizierten Modellantworten. Der Public-Repository-`main`-Stundenjob ist weiterhin nicht abgeschaltet, weil der Draft nicht gemergt wurde. Realer Ollama-Betrieb, Staging, Produktionsbetrieb, Testtarif und vollständige unabhängige Sicherheitsprüfung sind nicht nachgewiesen. Release-Status bleibt **NO-GO**. 0 € Zusatzkosten.
