@@ -110,11 +110,39 @@ class TestDienst(unittest.TestCase):
                         for r in rollen
                     },
                 }), encoding="utf-8")
+                # Positive Fixture: On-disk role files must match the aggregate
+                # report; stand-in process logs alone are insufficient.
+                belege = json.loads(p.read_text(encoding="utf-8"))["agenten"]
+                for r in rollen:
+                    (lauf / (r + ".json")).write_text(
+                        json.dumps(belege[r]), encoding="utf-8")
             return SimpleNamespace(returncode=0, stdout="", stderr="")
 
         with mock.patch.object(dienst.subprocess, "run", side_effect=fake):
             self.assertEqual(dienst.einmal(), 0)
         self.assertEqual(len(list((self.team / "work").glob("*/nachweise.json"))), 1)
+
+    def test_agentenbericht_und_einzeldatei_muessen_uebereinstimmen(self):
+        lauf = self.team / "work" / "inkonsistent"
+        lauf.mkdir(parents=True)
+        (lauf / "LEAD.json").write_text(
+            json.dumps({"rolle": "LEAD", "status": "FEHLER"}), encoding="utf-8")
+        bericht = {
+            "lauf": lauf.name,
+            "agenten": {"LEAD": {"rolle": "LEAD", "status": "OK"}},
+        }
+        fehler = dienst.pruefe_nachweise(bericht, lauf, [])
+        self.assertTrue(any("widersprechen" in e for e in fehler))
+
+    def test_ungueltige_agentendatei_ist_keine_freigabe(self):
+        lauf = self.team / "work" / "unlesbar"
+        lauf.mkdir(parents=True)
+        (lauf / "LEAD.json").write_text("{nicht-json", encoding="utf-8")
+        fehler = dienst.pruefe_nachweise(
+            {"lauf": lauf.name, "agenten": {"LEAD": {"status": "OK"}}},
+            lauf, []
+        )
+        self.assertTrue(any("unlesbar/ungültig" in e for e in fehler))
 
     def test_falsche_laufzeit_oder_doppelte_ids_blockieren(self):
         lauf = self.team / "work" / "fake"
