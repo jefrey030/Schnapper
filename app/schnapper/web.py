@@ -13,6 +13,8 @@ die gesehenen Preise (URL, Zeitpunkt, Preis) lokal in DATEI festgehalten.
 from __future__ import annotations
 
 import argparse
+import csv
+import io
 import json
 import pathlib
 import sys
@@ -126,6 +128,38 @@ def als_json(ergebnis, name: str, beispiel: bool, verlauf: Verlauf | None = None
     }
 
 
+CSV_FELDER = (
+    "id", "titel", "gesamtpreis", "preis", "versand", "rabatt_prozent",
+    "zustand", "quelle", "kategorie", "url", "erfasst_am", "warnungen",
+)
+
+
+def exportiere_csv(daten: dict) -> bytes:
+    """Gefilterte Treffer als sicheres, Excel-kompatibles UTF-8-CSV.
+
+    Fremde Freitextfelder nie als Tabellenformel interpretieren lassen.
+    Es werden nur geprüfte Treffer und feste Spaltennamen exportiert.
+    """
+    ausgabe = io.StringIO(newline="")
+    schreiber = csv.writer(ausgabe, delimiter=";", lineterminator="\\r\\n")
+    schreiber.writerow(CSV_FELDER)
+    for treffer in daten["treffer"]:
+        zellen = []
+        for feld in CSV_FELDER:
+            wert = treffer.get(feld)
+            if feld == "warnungen":
+                wert = " | ".join(wert or [])
+            text = "" if wert is None else str(wert)
+            text = text.replace("\\r", " ").replace("\\n", " ").replace("\\t", " ")
+            # Spreadsheet-Programme koennen Formeln in untrusted Zellen
+            # ausfuehren; fuehrendes Apostroph erzwingt Textbehandlung.
+            if text.lstrip(" \\ufeff").startswith(("=", "+", "-", "@")):
+                text = "'" + text
+            zellen.append(text)
+        schreiber.writerow(zellen)
+    return ("\\ufeff" + ausgabe.getvalue()).encode("utf-8")
+
+
 def baue_handler(zustand: Zustand):
     class Handler(BaseHTTPRequestHandler):
         server_version = "SCHNAPPER"
@@ -134,10 +168,13 @@ def baue_handler(zustand: Zustand):
         def log_message(self, fmt, *args):  # keine Suchbegriffe/IPs ins Protokoll
             pass
 
-        def _senden(self, status, inhalt: bytes, typ: str):
+        def _senden(self, status, inhalt: bytes, typ: str, download=None):
             self.send_response(status)
             self.send_header("Content-Type", typ)
             self.send_header("Content-Length", str(len(inhalt)))
+            if download is not None:
+                # Nur feste, von SCHNAPPER definierte Dateinamen.
+                self.send_header("Content-Disposition", f'attachment; filename="{download}"')
             for k, v in SICHERHEIT.items():
                 self.send_header(k, v)
             self.end_headers()
@@ -155,14 +192,24 @@ def baue_handler(zustand: Zustand):
             if teile.path in DATEIEN:
                 datei, typ = DATEIEN[teile.path]
                 return self._senden(HTTPStatus.OK, (STATISCH / datei).read_bytes(), typ)
-            if teile.path == "/api/suche":
+            if teile.path in ("/api/suche", "/api/export.csv", "/api/export.json"):
                 try:
                     f, sortierung = filter_aus_query(parse_qs(teile.query))
                 except ValueError as exc:
                     return self._json(HTTPStatus.BAD_REQUEST, {"fehler": str(exc)})
                 geladen, name, beispiel = zustand.lesen()
-                return self._json(HTTPStatus.OK, als_json(finde_in(geladen, f, sortierung), name, beispiel,
-                                                         zustand.verlauf))
+                daten = als_json(finde_in(geladen, f, sortierung), name, beispiel,
+                                 zustand.verlauf)
+                if teile.path == "/api/export.csv":
+                    return self._senden(
+                        HTTPStatus.OK, exportiere_csv(daten),
+                        "text/csv; charset=utf-8", "schnapper-treffer.csv")
+                if teile.path == "/api/export.json":
+                    roh = (json.dumps(daten, ensure_ascii=False, indent=2) + "\\n").encode("utf-8")
+                    return self._senden(
+                        HTTPStatus.OK, roh, "application/json; charset=utf-8",
+                        "schnapper-treffer.json")
+                return self._json(HTTPStatus.OK, daten)
             if teile.path == "/api/quellen":
                 return self._json(HTTPStatus.OK, {"quellen": [
                     {"kennung": q.kennung, "name": q.name, "entscheidung": q.entscheidung, "hinweis": q.hinweis}
