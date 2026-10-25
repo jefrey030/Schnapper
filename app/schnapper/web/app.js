@@ -192,6 +192,46 @@ async function hochladen(ev) {
   } catch { $("status").textContent = "Hochladen fehlgeschlagen."; }
 }
 
+// ---------- Eigene Angebote ohne Datei erfassen ----------
+async function eigenesAngebotErfassen(ev) {
+  ev.preventDefault();
+  const form = $("eintrag-form");
+  const knopf = $("eintrag-senden");
+  const status = $("eintrag-status");
+  const f = new FormData(form);
+  const daten = {
+    titel: String(f.get("titel") || "").trim(),
+    preis: String(f.get("preis") || "").trim(),
+    versand: String(f.get("versand") || "").trim(),
+    referenzpreis: String(f.get("referenzpreis") || "").trim(),
+    zustand: String(f.get("zustand") || "gebraucht"),
+    kategorie: String(f.get("kategorie") || "").trim(),
+    url: String(f.get("url") || "").trim(),
+  };
+  knopf.disabled = true;
+  status.textContent = "Prüfe das Angebot …";
+  try {
+    const antwort = await fetch("/api/eigenes-angebot", {
+      method: "POST",
+      headers: { "X-Schnapper": "1", "Content-Type": "application/json" },
+      body: JSON.stringify(daten),
+    });
+    const ergebnis = await antwort.json();
+    if (!antwort.ok) {
+      status.textContent = ergebnis.fehler || "Eintrag konnte nicht übernommen werden.";
+      return;
+    }
+    form.reset();
+    await suchen();
+    await alarmePruefen();
+    status.textContent = "Eigenes Angebot ergänzt. Bitte bei Bedarf die Liste als CSV sichern. Aktive Suchfilter können es ausblenden.";
+  } catch {
+    status.textContent = "Server nicht erreichbar. Eintrag nicht bestätigt.";
+  } finally {
+    knopf.disabled = false;
+  }
+}
+
 async function barcodeSuchen(ev) {
   ev.preventDefault();
   const ean = $("barcode").value.trim();
@@ -387,6 +427,7 @@ function zeige(ansicht) {
 }
 
 document.addEventListener("DOMContentLoaded", () => {
+  $("eintrag-form").addEventListener("submit", eigenesAngebotErfassen);
   $("barcode-form").addEventListener("submit", barcodeSuchen);
   $("filter").addEventListener("input", spaeter);
   $("filter").addEventListener("submit", (e) => { e.preventDefault(); suchen(); });
