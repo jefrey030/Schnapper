@@ -91,21 +91,20 @@ class TestMaster78Prozessbelege(unittest.TestCase):
                 (report_dir / (lauf.name + ".json")).write_text(
                     json.dumps(daten), encoding="utf-8")
             return SimpleNamespace(returncode=0, stdout="", stderr="")
-        read_bytes = pathlib.Path.read_bytes
-        read_symlink = []
-        def guarded_read(path):
-            if path.is_symlink():
-                read_symlink.append(path)
-                raise AssertionError("Symlink darf nicht gehasht werden")
+        # MASTER 79 liest ueber einen sicheren OS-Deskriptor, nicht mehr
+        # ueber pathlib.Path.read_bytes. I/O-Fehler gezielt dort simulieren.
+        hash_original = dienst._hash_sicher
+        def guarded_hash(path):
             if unreadable_hash and path.name == "prozesse.json":
                 raise OSError("MOCK: Dateizugriff verweigert")
-            return read_bytes(path)
+            return hash_original(path)
         with mock.patch.object(dienst.subprocess, "run", side_effect=fake), \
-             mock.patch.object(pathlib.Path, "read_bytes", guarded_read), \
+             mock.patch.object(dienst, "_hash_sicher", side_effect=guarded_hash), \
              mock.patch("builtins.print") as printed:
             status = dienst.einmal()
         self.assertEqual(status, 1)
-        self.assertFalse(read_symlink, read_symlink)
+        self.assertEqual(extern.read_text(encoding="utf-8"),
+                         "private fixture; kein Geheimnis")
         self.assertIn("BLOCKIERT", str(printed.call_args_list))
 
     def test_manifest_folgt_keinem_rollen_symlink(self):
