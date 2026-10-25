@@ -112,6 +112,8 @@ def pruefe_nachweise(bericht, lauf, schritte):
                 ) if isinstance(antwortzeit, str) else None
             except ValueError:
                 zeit = None
+            alter = ((dt.datetime.now(dt.timezone.utc) - zeit).total_seconds()
+                     if zeit is not None and zeit.tzinfo is not None else None)
             if (beleg.get("modell_antwort") != modell
                     or beleg.get("done") is not True
                     or beleg.get("done_reason") != "stop"
@@ -120,8 +122,8 @@ def pruefe_nachweise(bericht, lauf, schritte):
                     or beleg["prompt_eval_count"] < 0
                     or type(beleg.get("eval_count")) is not int
                     or beleg["eval_count"] < 1
-                    or zeit is None or zeit.tzinfo is None):
-                fehler.append(f"Ollama-Abschlussbeleg für {rolle} ungültig.")
+                    or alter is None or not -120 <= alter <= 600):
+                fehler.append(f"Ollama-Abschlussbeleg für {rolle} ungültig oder veraltet.")
         identifier = info.get("antwort_id")
         if not isinstance(identifier, str) or not identifier.startswith("lokal-"):
             fehler.append(f"Antwort-ID von {rolle} fehlt oder ist unzulässig.")
@@ -218,13 +220,17 @@ def einmal():
     erfolgreich = not fehler
     ergebnis = {
         "lauf": lauf.name,
-        "vier_echte_ki_antworten": not any(
-            "KI-Nachweis" in x or "Antwort-ID" in x or "Agentendatei" in x
-            for x in fehler),
+        # Eigene UUIDs und lokale JSON-Dateien sind nicht unabhängig
+        # attestierbar. Dieser bisher irreführende Wahrheitswert darf niemals
+        # allein aus dem Wortlaut von Fehlermeldungen ermittelt werden.
+        "vier_echte_ki_antworten": False,
+        "lokale_antwortbelege_vollstaendig": erfolgreich,
         "tests_bestanden": bericht.get("tests_ok") is True,
         "prozesse_ok": all(s["exitcode"] == 0 for s in schritte),
-        "status": "TECHNISCHER PILOT ERFOLGREICH" if erfolgreich else "BLOCKIERT",
-        "hinweis": "Technischer KI-Nachweis ist keine Freigabe für App-Änderungen.",
+        "status": ("LOKALER PILOT FORMAL BESTANDEN (ECHTHEIT UNVERIFIZIERT)"
+                   if erfolgreich else "BLOCKIERT"),
+        "hinweis": ("Lokale JSON-Konsistenz ist kein unabhängiger Nachweis "
+                    "echter Modellantworten und keine Freigabe für App-Änderungen."),
         "fehler": fehler,
         "protokoll": str(report_path.relative_to(ROOT)),
     }
