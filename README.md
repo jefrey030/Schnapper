@@ -187,6 +187,35 @@ Implementierung schließt **nur** den Offline-Testblocker S-005/T3;
 Liveangebote/eBay-Zugang bleiben bewusst gesperrt, bis Nutzungsrechte
 und Kosten überprüfbar freigegeben sind.
 
+## Gefilterte Treffer herunterladen (lokaler CSV-/JSON-Export)
+
+Im Suchbildschirm unter **„Treffer herunterladen“** kann dieselbe Auswahl
+wie in der aktuellen Suche als `CSV für Tabellen` oder als `JSON` gespeichert
+werden. Suchbegriff, höchster Preis, Mindestrabatt, Zustand, Sortierung sowie
+Warn-/Alter-Filter werden für beide Dateien übernommen.
+
+- CSV (`/api/export.csv`) ist UTF-8 mit BOM, Semikolon und einer Kopfzeile.
+  Spalten: ID, Titel, Gesamtpreis, Einzelpreis, Versand, **Referenzpreis**,
+  Rabatt, Zustand, Quelle, Kategorie, URL, Erfassungszeit und Warnungen.
+- Fremde Freitextwerte werden für Tabellenprogramme entschärft:
+  Formel-Anfänge und Zeilensteuerzeichen werden nicht unverändert als
+  ausführbare Tabellenformeln übernommen. Das schützt die exportierte
+  Tabelle, kann aber bei ungewöhnlichen Zeichen Text beim erneuten Import
+  verändern; für verlustfreie strukturierte Weiterverarbeitung ist JSON besser.
+- JSON (`/api/export.json`) enthält dieselben geprüften Treffer wie
+  `/api/suche`, einschließlich Herkunftshinweisen, Preisverlauf,
+  Importwarnungen und dem Kennzeichen für Beispieldaten.
+- Bei ungültigen Filtern liefern Export-Routen dieselben HTTP-400-Fehler
+  wie die Suche. Bei null Treffern liefern sie eine leere JSON-Liste bzw.
+  eine CSV-Datei mit Kopfzeile.
+- Lokaler Testnachweis: `tests/test_export_fertigstellung.py` mit echten
+  localhost-HTTP-Anfragen und simulierten Tabellenformeln; keine externen
+  Webseiten, eBay-/Open-Prices-Abfragen oder kostenpflichtigen Zugriffe.
+
+**Kein Beleg für Livepreise:** Ein Export enthält ausschließlich die gerade
+geladenen, bereits erlaubten Angebote. Selbst angelegte Listen bleiben
+Eigenangaben; `mock`-Angebote sind keine echten Angebote.
+
 ## Weitere Dokumente
 - `docs/SCHNAPPER-MASTERPLAN.md` – alle offenen Punkte mit Status, Nachweis und offenen Entscheidungen
 - `docs/EIGENE-ANGEBOTE.md` – echte, selbst gefundene Angebote eintragen und laden (Vorlage: `app/vorlagen/meine-angebote.csv`)
