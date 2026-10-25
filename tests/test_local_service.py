@@ -27,7 +27,7 @@ class TestDienst(unittest.TestCase):
             self.addCleanup(p.stop)
 
     def test_fehlender_bericht_ist_blockiert(self):
-        with mock.patch.object(dienst.subprocess, "run",
+        with mock.patch.object(dienst, "rolle_starten",
                                return_value=SimpleNamespace(returncode=0,
                                                             stdout="", stderr="")) as run:
             self.assertEqual(dienst.einmal(), 1)
@@ -48,7 +48,7 @@ class TestDienst(unittest.TestCase):
                     "tests_ok": True,
                 }), encoding="utf-8")
             return SimpleNamespace(returncode=0, stdout="", stderr="")
-        with mock.patch.object(dienst.subprocess, "run", side_effect=fake):
+        with mock.patch.object(dienst, "rolle_starten", side_effect=fake):
             self.assertEqual(dienst.einmal(), 1)
 
     def test_vier_antworten_allein_genuegen_nicht_ohne_tests(self):
@@ -63,7 +63,7 @@ class TestDienst(unittest.TestCase):
                     "tests_ok": False,
                 }), encoding="utf-8")
             return SimpleNamespace(returncode=0, stdout="", stderr="")
-        with mock.patch.object(dienst.subprocess, "run", side_effect=fake):
+        with mock.patch.object(dienst, "rolle_starten", side_effect=fake):
             self.assertEqual(dienst.einmal(), 1)
 
 
@@ -118,7 +118,7 @@ class TestDienst(unittest.TestCase):
                         json.dumps(belege[r]), encoding="utf-8")
             return SimpleNamespace(returncode=0, stdout="", stderr="")
 
-        with mock.patch.object(dienst.subprocess, "run", side_effect=fake):
+        with mock.patch.object(dienst, "rolle_starten", side_effect=fake):
             self.assertEqual(dienst.einmal(), 0)
         self.assertEqual(len(list((self.team / "work").glob("*/nachweise.json"))), 1)
 
@@ -161,7 +161,7 @@ class TestDienst(unittest.TestCase):
                 }), encoding="utf-8")
             return SimpleNamespace(returncode=0, stdout="", stderr="")
 
-        with mock.patch.object(dienst.subprocess, "run", side_effect=fake), \
+        with mock.patch.object(dienst, "rolle_starten", side_effect=fake), \
              mock.patch.object(dienst, "pruefe_nachweise",
                                return_value=["CHECK hat nicht bestanden"]), \
              mock.patch("builtins.print") as printed:
@@ -206,7 +206,7 @@ class TestDienst(unittest.TestCase):
                                    stdout="Debug: " + geheimnis if cmd[2] == "LEAD" else "",
                                    stderr="")
 
-        with mock.patch.object(dienst.subprocess, "run", side_effect=fake):
+        with mock.patch.object(dienst, "rolle_starten", side_effect=fake):
             self.assertEqual(dienst.einmal(), 1)
         self.assertEqual(aufrufe, ["LEAD", "BERICHT"])
         lauf = next((self.team / "work").glob("*/"))
@@ -224,15 +224,90 @@ class TestDienst(unittest.TestCase):
             return SimpleNamespace(returncode=1 if cmd[2] == "LEAD" else 0,
                                    stdout="", stderr="")
 
-        with mock.patch.object(dienst.subprocess, "run", side_effect=fake):
+        with mock.patch.object(dienst, "rolle_starten", side_effect=fake):
             self.assertEqual(dienst.einmal(), 1)
         self.assertEqual(aufrufe, ["LEAD", "BERICHT"])
+
+    def test_stop_waehrend_laufender_rolle_beendet_kindprozess(self):
+        # Rein simulierter Prozess; keine Ollama-/Netzwerk-Anfrage.
+        stop = self.team / "work" / "STOP"
+        stop.parent.mkdir(parents=True)
+        proc = mock.MagicMock()
+        proc.__enter__.return_value = proc
+        proc.poll.return_value = None
+        proc.returncode = 0
+
+        def kommunikation(*, timeout):
+            if not stop.exists():
+                stop.write_text("Not-Aus während der Rolle", encoding="utf-8")
+                raise dienst.subprocess.TimeoutExpired("simulierter-agent", timeout)
+            return "", ""
+
+        proc.communicate.side_effect = kommunikation
+        with mock.patch.object(dienst.subprocess, "Popen", return_value=proc):
+            result = dienst.rolle_starten(
+                ["python", "fake-agent"], cwd=self.root, env={},
+                capture_output=True, text=True, timeout=10, check=False)
+        self.assertEqual(result.returncode, -4)
+        self.assertEqual(result.stdout, "")
+        self.assertEqual(result.stderr, "")
+        proc.terminate.assert_called_once()
+        proc.kill.assert_not_called()
+
+    def test_timeout_beendet_kindprozess_ohne_erfolg(self):
+        proc = mock.MagicMock()
+        proc.__enter__.return_value = proc
+        proc.poll.return_value = None
+        proc.communicate.return_value = ("", "")
+        with mock.patch.object(dienst.subprocess, "Popen", return_value=proc):
+            with self.assertRaises(dienst.subprocess.TimeoutExpired):
+                dienst.rolle_starten(
+                    ["python", "fake-agent"], cwd=self.root, env={},
+                    capture_output=True, text=True, timeout=0, check=False)
+        proc.kill.assert_called_once()
+
+    def test_bericht_darf_nach_not_aus_noch_protokollieren(self):
+        stop = self.team / "work" / "STOP"
+        stop.parent.mkdir(parents=True)
+        stop.write_text("Stop", encoding="utf-8")
+        proc = mock.MagicMock()
+        proc.__enter__.return_value = proc
+        proc.returncode = 0
+        proc.communicate.return_value = ("Ergebnis", "")
+        with mock.patch.object(dienst.subprocess, "Popen", return_value=proc):
+            result = dienst.rolle_starten(
+                ["python", "fake-bericht"], cwd=self.root, env={},
+                capture_output=True, text=True, timeout=10, check=False,
+                stop_on_flag=False)
+        self.assertEqual(result.returncode, 0)
+        self.assertEqual(result.stdout, "Ergebnis")
+        proc.terminate.assert_not_called()
+
+    def test_stop_in_rolle_verhindert_folgerollen(self):
+        stop = self.team / "work" / "STOP"
+        stop.parent.mkdir(parents=True)
+        aufrufe = []
+
+        def fake(cmd, **kwargs):
+            aufrufe.append(cmd[2])
+            if cmd[2] == "LEAD":
+                stop.write_text("Stop im Lauf", encoding="utf-8")
+                return SimpleNamespace(returncode=-4, stdout="", stderr="")
+            return SimpleNamespace(returncode=0, stdout="", stderr="")
+
+        with mock.patch.object(dienst, "rolle_starten", side_effect=fake):
+            self.assertEqual(dienst.einmal(), 1)
+        self.assertEqual(aufrufe, ["LEAD", "BERICHT"])
+        lauf = next((self.team / "work").glob("*/"))
+        eintraege = json.loads((lauf / "prozesse.json").read_text(encoding="utf-8"))
+        self.assertEqual(eintraege[0]["exitcode"], -4)
+        self.assertTrue(all(x["exitcode"] == -2 for x in eintraege[1:4]))
 
     def test_betreiber_not_aus_verhindert_neuen_lauf(self):
         stop = self.team / "work" / "STOP"
         stop.parent.mkdir(parents=True)
         stop.write_text("Stopp angeordnet", encoding="utf-8")
-        with mock.patch.object(dienst.subprocess, "run") as run:
+        with mock.patch.object(dienst, "rolle_starten") as run:
             self.assertEqual(dienst.einmal(), 2)
             run.assert_not_called()
 
