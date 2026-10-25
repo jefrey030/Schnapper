@@ -40,16 +40,38 @@ def pruefe_nachweise(bericht, lauf, schritte):
         fehler.append("Bericht gehört nicht zu diesem Lauf.")
     if bericht.get("team_einsatzbereit") is not True:
         fehler.append("Vier-Agenten-Team im Bericht nicht einsatzbereit.")
-    if set(bericht.get("agenten_mit_echter_ki") or []) != set(ROLES):
+    gemeldete_rollen = bericht.get("agenten_mit_echter_ki")
+    if (not isinstance(gemeldete_rollen, list)
+            or len(gemeldete_rollen) != len(ROLES)
+            or any(not isinstance(r, str) for r in gemeldete_rollen)
+            or set(gemeldete_rollen) != set(ROLES)):
         fehler.append("KI-Nachweis für mindestens eine Rolle fehlt.")
     if bericht.get("ki_aufrufe") != 4:
         fehler.append("KI-Nachweis: erwartet genau vier lokale Modellaufrufe.")
+    # Der Bericht ist keine eigene Quelle für den Modellaufrufzähler.
+    zaehler = lauf / "ki_aufrufe.txt"
+    try:
+        if zaehler.is_symlink():
+            raise ValueError("Symlink als Zähler nicht vertrauenswürdig")
+        lokaler_zaehler = int(zaehler.read_text(encoding="utf-8").strip())
+    except (OSError, UnicodeError, ValueError):
+        lokaler_zaehler = None
+    if lokaler_zaehler != 4:
+        fehler.append("Lokaler KI-Aufrufzähler fehlt, ist ungültig oder nicht vier.")
     antwort_ids = []
     agenten = bericht.get("agenten") or {}
+    if not isinstance(agenten, dict):
+        fehler.append("Agentenbericht muss ein JSON-Objekt sein.")
+        agenten = {}
     for rolle in ROLES:
         datei = lauf / (rolle + ".json")
         a = agenten.get(rolle) or {}
-        if not datei.exists():
+        if not isinstance(a, dict):
+            fehler.append(f"Agentenbericht {rolle} ist kein Objekt.")
+            a = {}
+        if datei.is_symlink():
+            fehler.append(f"Agentendatei {rolle}.json darf kein Symlink sein.")
+        elif not datei.is_file():
             fehler.append(f"Agentendatei fehlt: {rolle}.json")
         else:
             try:
@@ -59,9 +81,13 @@ def pruefe_nachweise(bericht, lauf, schritte):
             else:
                 # Ein aggregierter Bericht darf keinen anderen Inhalt als das
                 # zugehörige einzelne Rollenprotokoll als Beleg ausgeben.
-                if not isinstance(einzeln, dict) or einzeln != a:
+                if (not isinstance(einzeln, dict)
+                        or einzeln.get("rolle") != rolle or einzeln != a):
                     fehler.append(f"Agentenbericht {rolle}: Datei und Gesamtbericht widersprechen sich.")
         info = a.get("ki") or {}
+        if not isinstance(info, dict):
+            fehler.append(f"KI-Metadaten {rolle} sind kein Objekt.")
+            info = {}
         if a.get("ki_echt") is not True or a.get("status") != "OK":
             fehler.append(f"KI-Nachweis {rolle}: kein bestätigter OK-Lauf.")
         if info.get("laufzeit") != "Ollama lokal (keine bezahlte KI-API)":
@@ -82,6 +108,8 @@ def pruefe_nachweise(bericht, lauf, schritte):
     # strukturierte Übergaben erzeugen, sonst dreht die Rotation ins Leere.
     lead = agenten.get("LEAD") or {}
     plan = lead.get("plan") or {}
+    if not isinstance(plan, dict):
+        plan = {}
     if not isinstance(plan, dict) or not isinstance(
         plan.get("aufgabe_id"), str) or not plan.get("aufgabe_id"):
         fehler.append("LEAD hat keinen gültigen Aufgabenauftrag erstellt.")
@@ -94,16 +122,36 @@ def pruefe_nachweise(bericht, lauf, schritte):
         ordner = (TEAM / "proposals").resolve()
         if not datei.is_relative_to(ordner) or not datei.is_file():
             fehler.append("BRAIN-Vorschlag fehlt oder liegt außerhalb von team/proposals.")
-    if bericht.get("check_urteil") != "bestanden":
+    check = agenten.get("CHECK") or {}
+    pruefurteil = check.get("urteil") or {}
+    if not isinstance(pruefurteil, dict):
+        pruefurteil = {}
+    if (bericht.get("check_urteil") != "bestanden"
+            or pruefurteil.get("urteil") != "bestanden"):
         fehler.append("CHECK hat nicht bestanden: keine positive Pilotabnahme.")
+    werkzeug = check.get("werkzeug") or {}
+    if not isinstance(werkzeug, dict):
+        werkzeug = {}
+    if werkzeug.get("geheimnis_funde") != []:
+        fehler.append("CHECK-Geheimnisscan fehlt oder hat Funde.")
+    tests = werkzeug.get("tests") or {}
+    if not isinstance(tests, dict):
+        tests = {}
+    if (tests.get("ok") is not True
+            or type(tests.get("anzahl")) is not int
+            or tests["anzahl"] < 1
+            or tests["anzahl"] != bericht.get("tests_anzahl")):
+        fehler.append("CHECK-Tests fehlen, sind ungültig oder widersprechen dem Bericht.")
     command = (agenten.get("COMMAND") or {}).get("protokoll") or {}
-    if not isinstance(command, dict) or command.get("freigabe") != "ja" or not (
+    if not isinstance(command, dict):
+        command = {}
+    if command.get("freigabe") != "ja" or not (
         isinstance(command.get("naechster_schritt"), str) and
         command["naechster_schritt"].strip()
     ):
         fehler.append("COMMAND hat kein gültiges Abschlussprotokoll erstellt.")
-    if bericht.get("tests_ok") is not True or not isinstance(
-        bericht.get("tests_anzahl"), int) or bericht["tests_anzahl"] < 1:
+    if bericht.get("tests_ok") is not True or type(
+        bericht.get("tests_anzahl")) is not int or bericht["tests_anzahl"] < 1:
         fehler.append("Unit-Tests nicht erfolgreich nachgewiesen.")
     if len(schritte) != len(ROLES) + 1 or not all(
         x.get("exitcode") == 0 for x in schritte):
@@ -154,7 +202,15 @@ def einmal():
     if not report_path.exists():
         print(f"BLOCKIERT: Stundenbericht fehlt. Details: {lauf}/prozesse.json")
         return 1
-    bericht = json.loads(report_path.read_text(encoding="utf-8"))
+    try:
+        if report_path.is_symlink():
+            raise ValueError("Symlinkbericht")
+        bericht = json.loads(report_path.read_text(encoding="utf-8"))
+        if not isinstance(bericht, dict):
+            raise ValueError("Bericht muss ein JSON-Objekt sein")
+    except (OSError, UnicodeError, ValueError):
+        print("BLOCKIERT: Stundenbericht ungültig oder nicht lesbar.")
+        return 1
     fehler = pruefe_nachweise(bericht, lauf, schritte)
     erfolgreich = not fehler
     ergebnis = {
