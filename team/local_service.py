@@ -268,7 +268,14 @@ def einmal():
         for p in dateien:
             hashes[str(p.relative_to(ROOT))] = _hash_sicher(p)
     except OSError:
-        print("BLOCKIERT: Pflichtnachweis fehlt, ist unsicher oder nicht lesbar.")
+        # Fehlende Pflichtartefakte duerfen weder einen Erfolg noch eine
+        # Ausnahme ausgeben. Auch bei einem ansonsten positiven MOCK-Bericht
+        # bleibt das strukturierte Ergebnis eindeutig BLOCKIERT.
+        ergebnis["vier_echte_ki_antworten"] = False
+        ergebnis["status"] = "BLOCKIERT"
+        ergebnis["fehler"].append(
+            "Pflichtnachweis fehlt, ist unsicher oder nicht lesbar.")
+        print(json.dumps(ergebnis, ensure_ascii=False))
         return 1
     manifest = {
         "lauf": lauf.name, "zeit_utc": dt.datetime.now(dt.timezone.utc).isoformat(),
