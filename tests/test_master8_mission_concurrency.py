@@ -49,6 +49,7 @@ class MissionConcurrentRegression(unittest.TestCase):
             self.assertEqual(target.read_text(encoding="utf-8"), "UNVERÄNDERT")
             link.unlink()
             sperr = root / "missionen.json.lock"
+            sperr.unlink(missing_ok=True)
             sperr.symlink_to(target)
             with self.assertRaises(MissionsFehler):
                 Missionsspeicher.laden(link).erstellen(name="Test", suche="Test")
