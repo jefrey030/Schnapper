@@ -10,7 +10,7 @@ from __future__ import annotations
 import datetime as dt
 import json
 import stat
-from contextlib import contextmanager
+from contextlib import contextmanager, ExitStack
 import os
 import pathlib
 import re
@@ -188,24 +188,31 @@ class Missionsspeicher:
         if os.name != "posix":
             raise MissionsFehler("Sichere parallele Missionsspeicherung benötigt POSIX")
         import fcntl
+        # Verzeichnis-/Lock-Fehler nur beim Öffnen übersetzen.
+        # Eine OSError aus dem eigentlichen Schreibvorgang muss als OSError
+        # an den Aufrufer gelangen: wichtig für Backup/Fehlerbehandlung.
+        stack = ExitStack()
         try:
-            with verzeichnis(self.pfad) as (ordner, name):
+            try:
+                ordner, name = stack.enter_context(verzeichnis(self.pfad))
                 fd = os.open(name + ".lock", os.O_RDWR | os.O_CREAT |
                              os.O_CLOEXEC | os.O_NOFOLLOW, 0o600, dir_fd=ordner)
+            except OSError as exc:
+                raise MissionsFehler("Sichere Missionsdatei / Verzeichnissperre nicht zugänglich") from exc
+            try:
+                info = os.fstat(fd)
+                if not stat.S_ISREG(info.st_mode) or info.st_nlink != 1 or info.st_mode & 0o077:
+                    raise MissionsFehler("Missionssperre ist nicht privat oder regulär")
+                fcntl.flock(fd, fcntl.LOCK_EX)
+                self._ordner_fd = ordner
                 try:
-                    info = os.fstat(fd)
-                    if not stat.S_ISREG(info.st_mode) or info.st_nlink != 1 or info.st_mode & 0o077:
-                        raise MissionsFehler("Missionssperre ist nicht privat oder regulär")
-                    fcntl.flock(fd, fcntl.LOCK_EX)
-                    self._ordner_fd = ordner
-                    try:
-                        yield
-                    finally:
-                        self._ordner_fd = None
+                    yield
                 finally:
-                    os.close(fd)
-        except OSError as exc:
-            raise MissionsFehler("Sichere Missionsdatei / Verzeichnissperre nicht zugänglich") from exc
+                    self._ordner_fd = None
+            finally:
+                os.close(fd)
+        finally:
+            stack.close()
 
     def _auffrischen(self) -> list[Mission]:
         # Nur innerhalb der gesperrten Transaktion aufrufen.
