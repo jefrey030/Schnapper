@@ -21,6 +21,14 @@ import uuid
 from agent import GEHEIMNIS_MUSTER  # Dieselben Token-Indikatoren wie in Agentenberichten
 from ki import KINichtVerfuegbar
 from operator_approval import pruefe_freigabe
+from safe_artifacts import (
+    create_directory as _sicheren_ordner_erstellen,
+    entry_exists as _artefakt_vorhanden,
+    parent_fd as _sicherer_elternordner,
+    read_bytes as _sicheres_artefakt_lesen,
+    write_bytes as _sicheres_artefakt_schreiben,
+    write_text as _sicherer_artefakt_text_schreiben,
+)
 
 ROOT = pathlib.Path(__file__).resolve().parent.parent
 TEAM = ROOT / "team"
@@ -30,7 +38,10 @@ STOP_DATEI = TEAM / "work" / "STOP"
 
 def gestoppt():
     """Betreiber-Not-Aus: Flag-Datei blockiert den nächsten Prozess und Stundenlauf."""
-    return (TEAM / "work" / "STOP").exists() or (TEAM / "work" / "STOP").is_symlink()
+    try:
+        return _artefakt_vorhanden(TEAM / "work" / "STOP")
+    except OSError:
+        return True
 
 
 def pruefe_nachweise(bericht, lauf, schritte, beleg_hashes=None):
@@ -61,8 +72,6 @@ def pruefe_nachweise(bericht, lauf, schritte, beleg_hashes=None):
     # Der Bericht ist keine eigene Quelle für den Modellaufrufzähler.
     zaehler = lauf / "ki_aufrufe.txt"
     try:
-        if zaehler.is_symlink():
-            raise ValueError("Symlink als Zähler nicht vertrauenswürdig")
         zaehler_bytes = _lese_sicher(zaehler)
         lokaler_zaehler = int(zaehler_bytes.decode("utf-8").strip())
         if beleg_hashes is not None:
@@ -84,25 +93,23 @@ def pruefe_nachweise(bericht, lauf, schritte, beleg_hashes=None):
             fehler.append(f"Agentenbericht {rolle} ist kein Objekt.")
             a = {}
             agenten[rolle] = {}
-        if datei.is_symlink():
-            fehler.append(f"Agentendatei {rolle}.json darf kein Symlink sein (symbolischer Link).")
-        elif not datei.is_file():
-            fehler.append(f"Agentendatei fehlt: {rolle}.json")
+        try:
+            rollen_bytes = _lese_sicher(datei)
+            einzeln = json.loads(rollen_bytes)
+            if beleg_hashes is not None:
+                beleg_hashes[str(datei.relative_to(ROOT))] = hashlib.sha256(
+                    rollen_bytes).hexdigest()
+        except (OSError, UnicodeError, ValueError):
+            fehler.append(
+                f"Agentendatei {rolle}.json fehlt, ist ein Symlink/symbolischer Link, "
+                "verlinkt, unlesbar/ungültig oder unsicher."
+            )
         else:
-            try:
-                rollen_bytes = _lese_sicher(datei)
-                einzeln = json.loads(rollen_bytes)
-                if beleg_hashes is not None:
-                    beleg_hashes[str(datei.relative_to(ROOT))] = hashlib.sha256(
-                        rollen_bytes).hexdigest()
-            except (OSError, UnicodeError, ValueError):
-                fehler.append(f"Agentendatei {rolle}.json unlesbar/ungültig.")
-            else:
-                # Ein aggregierter Bericht darf keinen anderen Inhalt als das
-                # zugehörige einzelne Rollenprotokoll als Beleg ausgeben.
-                if (not isinstance(einzeln, dict)
-                        or einzeln.get("rolle") != rolle or einzeln != a):
-                    fehler.append(f"Agentenbericht {rolle}: Datei und Gesamtbericht widersprechen sich.")
+            # Ein aggregierter Bericht darf keinen anderen Inhalt als das
+            # zugehörige einzelne Rollenprotokoll als Beleg ausgeben.
+            if (not isinstance(einzeln, dict)
+                    or einzeln.get("rolle") != rolle or einzeln != a):
+                fehler.append(f"Agentenbericht {rolle}: Datei und Gesamtbericht widersprechen sich.")
         info = a.get("ki") or {}
         if not isinstance(info, dict):
             fehler.append(f"KI-Metadaten {rolle} sind kein Objekt.")
@@ -166,9 +173,14 @@ def pruefe_nachweise(bericht, lauf, schritte, beleg_hashes=None):
     if not isinstance(pfad, str) or not pfad.startswith("team/proposals/"):
         fehler.append("BRAIN hat keine Vorschlagsdatei nachgewiesen.")
     else:
-        datei = (ROOT / pfad).resolve()
-        ordner = (TEAM / "proposals").resolve()
-        if not datei.is_relative_to(ordner) or not datei.is_file():
+        datei = ROOT / pfad
+        ordner = TEAM / "proposals"
+        try:
+            innerhalb = datei.resolve(strict=True).is_relative_to(ordner.resolve(strict=True))
+            _lese_sicher(datei)
+        except (OSError, RuntimeError, ValueError):
+            innerhalb = False
+        if not innerhalb:
             fehler.append("BRAIN-Vorschlag fehlt oder liegt außerhalb von team/proposals.")
     if (bericht.get("aufgabe") != plan.get("aufgabe_id")
             or not isinstance(bericht.get("selected_task"), dict)
@@ -220,26 +232,12 @@ def pruefe_nachweise(bericht, lauf, schritte, beleg_hashes=None):
     return fehler
 
 
-def _lese_sicher(p):
-    """Nachweisbytes ueber einen einzigen sicheren Dateideskriptor lesen.
-
-    Auf POSIX keine Symlink-Folgeverfolgung (auch nicht bei einem Austausch
-    zwischen Vorabpruefung und open). Nur regulaere Dateien bis 2 MB; ein
-    FIFO/Device darf niemals einen unendlichen Lesezugriff ausloesen.
-    Integritaet, aber keine unabhaengige Modell-Attestierung.
-    """
-    if not hasattr(os, "O_NOFOLLOW"):
-        raise OSError("O_NOFOLLOW fehlt: Artefaktnachweis nicht abgesichert")
-    flags = os.O_RDONLY | os.O_NOFOLLOW | getattr(os, "O_CLOEXEC", 0)
-    flags |= getattr(os, "O_NONBLOCK", 0)
-    fd = os.open(str(p), flags)
-    with os.fdopen(fd, "rb") as datei:
-        if not stat.S_ISREG(os.fstat(datei.fileno()).st_mode):
-            raise OSError("Nachweisartefakt ist keine regulaere Datei")
-        daten = datei.read(2_000_001)
-        if len(daten) > 2_000_000:
-            raise OSError("Nachweisartefakt ueberschreitet 2 MB")
-    return daten
+def _lese_sicher(p, limit=2_000_000):
+    """Liest begrenzte Artefakte über dirfd-Anker ohne Link-Folgen."""
+    try:
+        return _sicheres_artefakt_lesen(p, limit=limit)
+    except ValueError as exc:
+        raise OSError("Nachweisartefakt überschreitet 2 MB") from exc
 
 
 def _hash_sicher(p):
@@ -348,11 +346,10 @@ def pruefe_manifest(lauf):
 
     manifest_pfad = lauf_real / "nachweise.json"
     try:
-        if manifest_pfad.is_symlink() or not manifest_pfad.is_file():
-            raise ValueError("Nachweis fehlt oder ist ein Link")
-        if manifest_pfad.stat().st_size > 100_000:
+        manifest_bytes = _lese_sicher(manifest_pfad, limit=100_000)
+        if len(manifest_bytes) > 100_000:
             raise ValueError("Nachweis über Größenlimit")
-        manifest = json.loads(_lese_sicher(manifest_pfad))
+        manifest = json.loads(manifest_bytes)
     except (OSError, UnicodeError, ValueError):
         return {"status": "BLOCKIERT", "lauf": lauf_real.name,
                 "dateien_geprueft": 0,
@@ -380,9 +377,23 @@ def pruefe_manifest(lauf):
     pfade = [TEAM / "runs" / (lauf_real.name + ".json"),
              lauf_real / "prozesse.json"]
     rollendateien = [lauf_real / (rolle + ".json") for rolle in ROLES]
-    pfade += [p for p in rollendateien if p.is_file() or p.is_symlink()]
+    for p in rollendateien:
+        try:
+            _lese_sicher(p)
+            pfade.append(p)
+        except OSError:
+            if status == "TECHNISCHER PILOT ERFOLGREICH":
+                pfade.append(p)
+                fehler.append(
+                    "Agentenbelege sind unvollständig: Rollen-Datei fehlt, ist verlinkt oder unlesbar."
+                )
     counter = lauf_real / "ki_aufrufe.txt"
-    if status == "TECHNISCHER PILOT ERFOLGREICH" or counter.exists() or counter.is_symlink():
+    try:
+        _lese_sicher(counter)
+        counter_vorhanden = True
+    except OSError:
+        counter_vorhanden = False
+    if status == "TECHNISCHER PILOT ERFOLGREICH" or counter_vorhanden:
         pfade.append(counter)
     if status == "TECHNISCHER PILOT ERFOLGREICH" and len(pfade) != 7:
         fehler.append("Agentenbelege für erfolgreichen Lauf unvollständig.")
@@ -398,11 +409,9 @@ def pruefe_manifest(lauf):
             fehler.append("SHA-256-Fingerabdruck fehlt oder ist ungültig: " + p.name)
             continue
         try:
-            if p.is_symlink() or not p.is_file() or p.stat().st_size > 1_000_000:
-                raise ValueError("Ungültige Nachweisdatei")
-            calculated = _hash_sicher(p)
+            calculated = hashlib.sha256(_lese_sicher(p, limit=1_000_000)).hexdigest()
         except (OSError, ValueError):
-            fehler.append("Datei fehlt, ist verlinkt oder zu groß: " + p.name)
+            fehler.append("Dateiliste: Datei fehlt, ist ein Symlink/verlinkt oder zu groß: " + p.name)
             continue
         geprueft += 1
         if calculated != expected:
@@ -424,7 +433,7 @@ def einmal():
         return 2
     stempel = dt.datetime.now(dt.timezone.utc).strftime("%Y%m%dT%H%M%SZ")
     lauf = TEAM / "work" / (stempel + "-" + uuid.uuid4().hex[:6])
-    lauf.mkdir(parents=True, exist_ok=False)
+    _sicheren_ordner_erstellen(lauf)
     env = os.environ.copy()
     # Kein Rückfall auf GitHub Models, Cloudflare oder andere KI-Anbieter.
     env["SCHNAPPER_KI_BACKEND"] = "ollama"
@@ -465,14 +474,9 @@ def einmal():
     prozess_pfad = lauf / "prozesse.json"
     prozess_roh = json.dumps(schritte, ensure_ascii=False, indent=2).encode("utf-8")
     prozess_hash_erwartet = hashlib.sha256(prozess_roh).hexdigest()
-    prozess_pfad.write_bytes(prozess_roh)
+    _sicheres_artefakt_schreiben(prozess_pfad, prozess_roh)
     report_path = TEAM / "runs" / (lauf.name + ".json")
-    if not report_path.exists():
-        print(f"BLOCKIERT: Stundenbericht fehlt. Details: {lauf}/prozesse.json")
-        return 1
     try:
-        if report_path.is_symlink():
-            raise ValueError("Symlinkbericht")
         bericht_bytes = _lese_sicher(report_path)
         bericht = json.loads(bericht_bytes)
         if not isinstance(bericht, dict):
@@ -540,8 +544,10 @@ def einmal():
         "dateien": hashes,
         "ergebnis": ergebnis,
     }
-    (lauf / "nachweise.json").write_text(
-        json.dumps(manifest, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
+    _sicherer_artefakt_text_schreiben(
+        lauf / "nachweise.json",
+        json.dumps(manifest, ensure_ascii=False, indent=2) + "\n",
+    )
     integritaet = pruefe_manifest(lauf)
     if integritaet["status"] != "INTEGRITAET_OK":
         # Auch ein vorher positiver Agentenbericht zählt dann nicht als
@@ -566,15 +572,16 @@ def _oeffne_runner_sperre(p):
         raise OSError("Runner-Lock auf dieser Plattform nicht abgesichert")
     flags = (os.O_CREAT | os.O_RDWR | os.O_NOFOLLOW
              | getattr(os, "O_NONBLOCK", 0) | getattr(os, "O_CLOEXEC", 0))
-    fd = os.open(str(p), flags, 0o600)
-    try:
-        info = os.fstat(fd)
-        if not stat.S_ISREG(info.st_mode) or info.st_nlink != 1:
-            raise OSError("Runner-Sperre ist keine eigene regulaere Datei")
-        return fd
-    except BaseException:
-        os.close(fd)
-        raise
+    with _sicherer_elternordner(p, create=True) as (directory, name):
+        fd = os.open(name, flags, 0o600, dir_fd=directory)
+        try:
+            info = os.fstat(fd)
+            if not stat.S_ISREG(info.st_mode) or info.st_nlink != 1:
+                raise OSError("Runner-Sperre ist keine eigene regulaere Datei")
+            return fd
+        except BaseException:
+            os.close(fd)
+            raise
 
 
 def start():
@@ -591,7 +598,6 @@ def start():
         print(json.dumps(pruefung, ensure_ascii=False))
         return 0 if pruefung["status"] == "INTEGRITAET_OK" else 1
     sperre = TEAM / "work" / "local_runner.lock"
-    sperre.parent.mkdir(parents=True, exist_ok=True)
     # Unix/Termux/macOS: kernel-seitige, nicht blockierende Sperre.
     # O_EXCL-Lockdateien bleiben nach Absturz liegen und verhindern jeden Neustart.
     # Das Lockfile bleibt absichtlich bestehen: unlink() waere eine Race-Condition

@@ -19,6 +19,7 @@ import uuid
 
 from ki import KINichtVerfuegbar, MAX_AUFRUFE
 from operator_approval import pruefe_freigabe
+from safe_artifacts import parent_fd
 
 LOKAL = "http://127.0.0.1:11434"
 MODELL_DEFAULT = "qwen2.5:1.5b"
@@ -171,38 +172,38 @@ class KI:
             raise KINichtVerfuegbar(
                 "Ungültiges KI-Aufruflimit: höchstens sechs lokal erlaubt.")
         try:
-            self.zaehler.parent.mkdir(parents=True, exist_ok=True)
-            fd = os.open(
-                str(self.zaehler),
-                os.O_CREAT | os.O_RDWR | os.O_NOFOLLOW
-                | getattr(os, "O_CLOEXEC", 0) | getattr(os, "O_NONBLOCK", 0),
-                0o600,
-            )
-            with os.fdopen(fd, "r+b") as datei:
-                # Auch FIFO, Verzeichnis, Geraetedatei und Hardlink abweisen.
-                info = os.fstat(datei.fileno())
-                if not stat.S_ISREG(info.st_mode) or info.st_nlink != 1:
-                    raise OSError("Zaehler ist keine eigene regulaere Datei")
-                _hole_zaehlersperre(datei.fileno())
-                roh = datei.read(9)
-                if (len(roh) > 8 or
-                        (roh and re.fullmatch(rb"[0-9]{1,8}", roh) is None)):
-                    raise ValueError("Nichtnumerischer oder zu grosser Zaehler")
-                bisher = int(roh) if roh else 0
-                if bisher >= MAX_AUFRUFE:
-                    raise KINichtVerfuegbar(
-                        f"Maximal {MAX_AUFRUFE} lokale KI-Aufrufe pro Stundenlauf.")
-                nummer = bisher + 1
-                if nummer > 99_999_999:
-                    raise ValueError("Zaehlergrenze ueberschritten")
-                # Feste Breite vermeidet Truncate-Zwischenzustand.
-                datei.seek(0)
-                written = datei.write(f"{nummer:08d}".encode("ascii"))
-                if written != 8:
-                    raise OSError("Unvollstaendige Zaehler-Schreiboperation")
-                datei.flush()
-                os.fsync(datei.fileno())
-                return nummer
+            with parent_fd(self.zaehler, create=True) as (directory, name):
+                fd = os.open(
+                    name,
+                    os.O_CREAT | os.O_RDWR | os.O_NOFOLLOW
+                    | getattr(os, "O_CLOEXEC", 0) | getattr(os, "O_NONBLOCK", 0),
+                    0o600, dir_fd=directory,
+                )
+                with os.fdopen(fd, "r+b") as datei:
+                    # Auch FIFO, Verzeichnis, Geraetedatei und Hardlink abweisen.
+                    info = os.fstat(datei.fileno())
+                    if not stat.S_ISREG(info.st_mode) or info.st_nlink != 1:
+                        raise OSError("Zaehler ist keine eigene regulaere Datei")
+                    _hole_zaehlersperre(datei.fileno())
+                    roh = datei.read(9)
+                    if (len(roh) > 8 or
+                            (roh and re.fullmatch(rb"[0-9]{1,8}", roh) is None)):
+                        raise ValueError("Nichtnumerischer oder zu grosser Zaehler")
+                    bisher = int(roh) if roh else 0
+                    if bisher >= MAX_AUFRUFE:
+                        raise KINichtVerfuegbar(
+                            f"Maximal {MAX_AUFRUFE} lokale KI-Aufrufe pro Stundenlauf.")
+                    nummer = bisher + 1
+                    if nummer > 99_999_999:
+                        raise ValueError("Zaehlergrenze ueberschritten")
+                    # Feste Breite vermeidet Truncate-Zwischenzustand.
+                    datei.seek(0)
+                    written = datei.write(f"{nummer:08d}".encode("ascii"))
+                    if written != 8:
+                        raise OSError("Unvollstaendige Zaehler-Schreiboperation")
+                    datei.flush()
+                    os.fsync(datei.fileno())
+                    return nummer
         except (OSError, ValueError) as exc:
             raise KINichtVerfuegbar("Lokaler KI-Aufrufzaehler unsicher oder nicht lesbar.") from exc
 

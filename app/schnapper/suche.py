@@ -3,7 +3,7 @@ from __future__ import annotations
 
 import datetime as dt
 from dataclasses import dataclass, field
-from decimal import Decimal
+from decimal import Decimal, InvalidOperation
 
 from .angebot import Angebot, normalisiere_titel, warnungen
 
@@ -18,6 +18,8 @@ class Filter:
     zustaende: set[str] = field(default_factory=set)
     quellen: set[str] = field(default_factory=set)
     kategorie: str = ""
+    region: str = ""
+    entfernung_km: Decimal | None = None
     ohne_verdacht: bool = True
     ohne_veraltet: bool = False
     max_alter_stunden: int = 24
@@ -46,6 +48,18 @@ def passt(angebot: Angebot, f: Filter, hinweise: list[str]) -> bool:
         return False
     if f.kategorie and angebot.kategorie.lower() != f.kategorie.lower():
         return False
+    if f.region:
+        region = angebot.extra.get("region")
+        if not isinstance(region, str) or f.region.casefold() not in region.casefold():
+            return False
+    if f.entfernung_km is not None:
+        entfernung = angebot.extra.get("entfernung_km")
+        try:
+            km = Decimal(str(entfernung))
+        except (InvalidOperation, TypeError, ValueError):
+            return False
+        if not km.is_finite() or km < 0 or km > f.entfernung_km:
+            return False
     if f.ohne_verdacht and any(h.startswith("betrugsverdacht") for h in hinweise):
         return False
     if f.ohne_veraltet and any(h.startswith("veraltet") for h in hinweise):

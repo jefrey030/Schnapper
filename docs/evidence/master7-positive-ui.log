@@ -1,0 +1,710 @@
+SCHNAPPER positive UI test
+URL=http://127.0.0.1:8789/
+CDP=9224
+Fixture=/tmp/schnapper-master7-positive/beispiele/angebote.csv
+Fixture exists=true bytes=198
+Fixture CSV:
+id;titel;preis;versand;referenzpreis;zustand;quelle;kategorie;url;erfasst_am
+e2e-demo-1;Frische Demo Kamera;20,00;1,00;30,00;neu;eigene;foto;https://angebote.example/demo/e2e-1;2026-10-26T21:16:42Z
+
+Marker {"beispieldaten":true,"enthaelt_testdaten":false,"ingested":1,"invalid":[],"hit":{"id":"e2e-demo-1","titel":"Frische Demo Kamera","preis":"20.00","versand":"1.00","gesamtpreis":"21.00","referenzpreis":"30.00","rabatt_prozent":"30.0","zustand":"neu","quelle":"eigene","kategorie":"foto","region":null,"entfernung_km":null,"url":"https://angebote.example/demo/e2e-1","erfasst_am":"2026-10-26T21:16:42+00:00","warnungen":[],"verlauf":null}}
+TITLE SCHNAPPER URL http://127.0.0.1:8789/
+
+--- positive-initial ---
+S
+SCHNAPPER
+Eigene Liste
+LUPE
+WARENKORB
+PREISDETEKTIV
+MISSION
+BLITZ
+Einstellungen
+
+Vorführung mit ausgedachten Beispieldaten – keine echten Angebote.
+
+Bis €
+Ab % billiger
+Zustand
+alle
+neu
+wie neu
+gebraucht
+defekt
+Sortieren
+größte Ersparnis
+günstigster Preis
+neueste
+Region (nur wenn in Angebotsdaten vorhanden)
+Umkreis in km
+Veraltete Preise ausblenden
+Verdächtige Angebote zeigen
+⚡ Preisalarm für diese Suche
+＋ Als Mission speichern
+
+Preisalarme brauchen Suchbegriff und Höchstpreis oder Mindestrabatt.
+
+Region und Umkreis filtern nur Angebote mit echten Standortfeldern. Es wird kein Standort geraten.
+
+Ladenpreise per Barcode
+
+Open Prices: freiwillig gemeldete Ladenpreise, nicht garantiert aktuell. Kostenlos, nur nach lokaler Freigabe. Die Ergebnisse bleiben getrennt von deiner Angebotsliste.
+
+Produkt-Barcode
+Ladenpreise suchen
+
+Noch keine Preisabfrage.
+
+1 Treffer aus 1 Angeboten · Liste: angebote.csv
+
+−30 %
+21,00 €
+☆
+Frische Demo Kamera
+
+neu · eigene · inkl. 1,00 € Versand · sonst 30,00 €
+
+Zum Angebot ↗
+CLICK LUPE: {"text":"LUPE","disabled":false}
+LUPE query submitted "Frische Demo Kamera"
+
+--- positive-search ---
+S
+SCHNAPPER
+Eigene Liste
+LUPE
+WARENKORB
+PREISDETEKTIV
+MISSION
+BLITZ
+Einstellungen
+
+Vorführung mit ausgedachten Beispieldaten – keine echten Angebote.
+
+Bis €
+Ab % billiger
+Zustand
+alle
+neu
+wie neu
+gebraucht
+defekt
+Sortieren
+größte Ersparnis
+günstigster Preis
+neueste
+Region (nur wenn in Angebotsdaten vorhanden)
+Umkreis in km
+Veraltete Preise ausblenden
+Verdächtige Angebote zeigen
+⚡ Preisalarm für diese Suche
+＋ Als Mission speichern
+
+Preisalarme brauchen Suchbegriff und Höchstpreis oder Mindestrabatt.
+
+Region und Umkreis filtern nur Angebote mit echten Standortfeldern. Es wird kein Standort geraten.
+
+Ladenpreise per Barcode
+
+Open Prices: freiwillig gemeldete Ladenpreise, nicht garantiert aktuell. Kostenlos, nur nach lokaler Freigabe. Die Ergebnisse bleiben getrennt von deiner Angebotsliste.
+
+Produkt-Barcode
+Ladenpreise suchen
+
+Noch keine Preisabfrage.
+
+1 Treffer aus 1 Angeboten · Liste: angebote.csv
+
+−30 %
+21,00 €
+☆
+Frische Demo Kamera
+
+neu · eigene · inkl. 1,00 € Versand · sonst 30,00 €
+
+Zum Angebot ↗
+SEARCH ASSERTIONS {"text":"S\nSCHNAPPER\nEigene Liste\nLUPE\nWARENKORB\nPREISDETEKTIV\nMISSION\nBLITZ\nEinstellungen\n\nVorführung mit ausgedachten Beispieldaten – keine echten Angebote.\n\nBis €\nAb % billiger\nZustand\nalle\nneu\nwie neu\ngebraucht\ndefekt\nSortieren\ngrößte Ersparnis\ngünstigster Preis\nneueste\nRegion (nur wenn in Angebotsdaten vorhanden)\nUmkreis in km\nVeraltete Preise ausblenden\nVerdächtige Angebote zeigen\n⚡ Preisalarm für diese Suche\n＋ Als Mission speichern\n\nPreisalarme brauchen Suchbegriff und Höchstpreis oder Mindestrabatt.\n\nRegion und Umkreis filtern nur Angebote mit echten Standortfeldern. Es wird kein Standort geraten.\n\nLadenpreise per Barcode\n\nOpen Prices: freiwillig gemeldete Ladenpreise, nicht garantiert aktuell. Kostenlos, nur nach lokaler Freigabe. Die Ergebnisse bleiben getrennt von deiner Angebotsliste.\n\nProdukt-Barcode\nLadenpreise suchen\n\nNoch keine Preisabfrage.\n\n1 Treffer aus 1 Angeboten · Liste: angebote.csv\n\n−30 %\n21,00 €\n☆\nFrische Demo Kamera\n\nneu · eigene · inkl. 1,00 € Versand · sonst 30,00 €\n\nZum Angebot ↗","banner":true,"visible":["Frische Demo Kamera"]}
+SAVE {"title":"Frische Demo Kamera","aria":"Von der Merkliste nehmen"}
+
+--- positive-saved ---
+S
+SCHNAPPER
+Eigene Liste
+LUPE
+WARENKORB 1
+PREISDETEKTIV
+MISSION
+BLITZ
+Einstellungen
+
+Vorführung mit ausgedachten Beispieldaten – keine echten Angebote.
+
+Bis €
+Ab % billiger
+Zustand
+alle
+neu
+wie neu
+gebraucht
+defekt
+Sortieren
+größte Ersparnis
+günstigster Preis
+neueste
+Region (nur wenn in Angebotsdaten vorhanden)
+Umkreis in km
+Veraltete Preise ausblenden
+Verdächtige Angebote zeigen
+⚡ Preisalarm für diese Suche
+＋ Als Mission speichern
+
+Preisalarme brauchen Suchbegriff und Höchstpreis oder Mindestrabatt.
+
+Region und Umkreis filtern nur Angebote mit echten Standortfeldern. Es wird kein Standort geraten.
+
+Ladenpreise per Barcode
+
+Open Prices: freiwillig gemeldete Ladenpreise, nicht garantiert aktuell. Kostenlos, nur nach lokaler Freigabe. Die Ergebnisse bleiben getrennt von deiner Angebotsliste.
+
+Produkt-Barcode
+Ladenpreise suchen
+
+Noch keine Preisabfrage.
+
+1 Treffer aus 1 Angeboten · Liste: angebote.csv
+
+−30 %
+21,00 €
+★
+Frische Demo Kamera
+
+neu · eigene · inkl. 1,00 € Versand · sonst 30,00 €
+
+Zum Angebot ↗
+CLICK WARENKORB: {"text":"WARENKORB 1","disabled":false}
+
+--- positive-cart ---
+S
+SCHNAPPER
+Eigene Liste
+LUPE
+WARENKORB 1
+PREISDETEKTIV
+MISSION
+BLITZ
+Einstellungen
+
+Lokal auf diesem Gerät gespeicherte Angebote. Markiere mehrere Angebote, um sie im Preisdetektiv zu vergleichen.
+
+Ausgewählte Angebote vergleichen
+
+Preis unverändert
+21,00 €
+★
+Frische Demo Kamera
+
+neu · eigene · gemerkt am 26.10.2026
+
+Zum Angebot ↗
+Für Vergleich auswählen
+Comparison selection checked true
+CLICK PREISDETEKTIV: {"text":"PREISDETEKTIV","disabled":false}
+COMPARISON
+S
+SCHNAPPER
+Eigene Liste
+LUPE
+WARENKORB 1
+PREISDETEKTIV
+MISSION
+BLITZ
+Einstellungen
+
+Vergleich nur mit geladenen Angeboten und lokal gespeicherten Preisbeobachtungen. Ohne Referenzdaten gibt es kein erfundenes Urteil.
+
+Frische Demo Kamera
+
+Gesamtpreis inkl. angegebener Versandkosten: 21,00 €
+
+Quelle: eigene · Versand: 1,00 € · Preis aus aktuell geladener Liste · niedrigster ausgewählter Gesamtpreis
+
+Kein belastbarer lokaler Preisverlauf vorhanden.
+
+Angegebener Referenzpreis: 30,00 € — kein unabhängig bestätigter Marktpreis.
+
+Angebot öffnen ↗
+TOTAL 21,00 INCLUDES SHIPPING=true
+
+--- positive-comparison ---
+S
+SCHNAPPER
+Eigene Liste
+LUPE
+WARENKORB 1
+PREISDETEKTIV
+MISSION
+BLITZ
+Einstellungen
+
+Vergleich nur mit geladenen Angeboten und lokal gespeicherten Preisbeobachtungen. Ohne Referenzdaten gibt es kein erfundenes Urteil.
+
+Frische Demo Kamera
+
+Gesamtpreis inkl. angegebener Versandkosten: 21,00 €
+
+Quelle: eigene · Versand: 1,00 € · Preis aus aktuell geladener Liste · niedrigster ausgewählter Gesamtpreis
+
+Kein belastbarer lokaler Preisverlauf vorhanden.
+
+Angegebener Referenzpreis: 30,00 € — kein unabhängig bestätigter Marktpreis.
+
+Angebot öffnen ↗
+CLICK MISSION: {"text":"MISSION","disabled":false}
+MISSION SAVE {"v":{"name":"E2E Frische Demo Kamera","suche":"Frische Demo Kamera","max_preis":"100","intervall_minuten":"15"},"auto":false}
+
+--- positive-mission ---
+S
+SCHNAPPER
+Eigene Liste
+LUPE
+WARENKORB 1
+PREISDETEKTIV
+MISSION
+BLITZ
+Einstellungen
+
+Suchaufträge werden lokal gespeichert. Automatik läuft nur, solange die App geöffnet und sichtbar ist; kein Hintergrundlauf nach dem Schließen.
+
+Suchauftrag erstellen
+Name
+Suchbegriffe
+Höchstpreis inkl. Versand (€)
+Mindestrabatt (%)
+Region
+Umkreis (km)
+Prüfintervall (Minuten)
+Zustand
+alle
+neu
+wie neu
+gebraucht
+defekt
+Automatisch prüfen, solange diese App sichtbar geöffnet ist
+Mission speichern
+
+Mission „E2E Frische Demo Kamera“ lokal gespeichert.
+
+Deine Missionen
+Aktiv
+Jetzt prüfen
+Pausieren
+Bearbeiten
+Löschen
+E2E Frische Demo Kamera
+
+Frische Demo Kamera · bis 100.00 € inkl. Versand · 15 Min.
+
+Noch kein Lauf
+
+Letzte Prüfläufe
+RUN BUTTONS [{"text":"Jetzt prüfen","disabled":false}]
+RUN #1 clicked Jetzt prüfen
+
+--- positive-run-one ---
+S
+SCHNAPPER
+Eigene Liste
+LUPE
+WARENKORB 1
+PREISDETEKTIV
+MISSION
+BLITZ
+Einstellungen
+
+Suchaufträge werden lokal gespeichert. Automatik läuft nur, solange die App geöffnet und sichtbar ist; kein Hintergrundlauf nach dem Schließen.
+
+Suchauftrag erstellen
+Name
+Suchbegriffe
+Höchstpreis inkl. Versand (€)
+Mindestrabatt (%)
+Region
+Umkreis (km)
+Prüfintervall (Minuten)
+Zustand
+alle
+neu
+wie neu
+gebraucht
+defekt
+Automatisch prüfen, solange diese App sichtbar geöffnet ist
+Mission speichern
+
+Lauf 9c38b09d02ce47cfbb36384c9da2d1c1: 1 Treffer, 1 neue BLITZ-Einträge (lokal gespeichert).
+
+Deine Missionen
+Aktiv
+Jetzt prüfen
+Pausieren
+Bearbeiten
+Löschen
+E2E Frische Demo Kamera
+
+Frische Demo Kamera · bis 100.00 € inkl. Versand · 15 Min.
+
+Letzter Lauf: 26.10.2026, 21:19:44 · letzter Nachweis: 1 Treffer
+
+DEMO-Beispieldaten – keine echten Angebote
+21,00 € · Frische Demo Kamera
+Letzte Prüfläufe
+26.10.2026, 21:19:44 · Job 9c38b09d02ce47cfbb36384c9da2d1c1 · abgeschlossen · 1 Treffer · 1 neue BLITZ-Einträge
+RUN #1 body
+S
+SCHNAPPER
+Eigene Liste
+LUPE
+WARENKORB 1
+PREISDETEKTIV
+MISSION
+BLITZ
+Einstellungen
+
+Suchaufträge werden lokal gespeichert. Automatik läuft nur, solange die App geöffnet und sichtbar ist; kein Hintergrundlauf nach dem Schließen.
+
+Suchauftrag erstellen
+Name
+Suchbegriffe
+Höchstpreis inkl. Versand (€)
+Mindestrabatt (%)
+Region
+Umkreis (km)
+Prüfintervall (Minuten)
+Zustand
+alle
+neu
+wie neu
+gebraucht
+defekt
+Automatisch prüfen, solange diese App sichtbar geöffnet ist
+Mission speichern
+
+Lauf 9c38b09d02ce47cfbb36384c9da2d1c1: 1 Treffer, 1 neue BLITZ-Einträge (lokal gespeichert).
+
+Deine Missionen
+Aktiv
+Jetzt prüfen
+Pausieren
+Bearbeiten
+Löschen
+E2E Frische Demo Kamera
+
+Frische Demo Kamera · bis 100.00 € inkl. Versand · 15 Min.
+
+Letzter Lauf: 26.10.2026, 21:19:44 · letzter Nachweis: 1 Treffer
+
+DEMO-Beispieldaten – keine echten Angebote
+21,00 € · Frische Demo Kamera
+Letzte Prüfläufe
+26.10.2026, 21:19:44 · Job 9c38b09d02ce47cfbb36384c9da2d1c1 · abgeschlossen · 1 Treffer · 1 neue BLITZ-Einträge
+CLICK BLITZ: {"text":"BLITZ","disabled":false}
+
+--- positive-blitz-first ---
+S
+SCHNAPPER
+Eigene Liste
+LUPE
+WARENKORB 1
+PREISDETEKTIV
+MISSION
+BLITZ ⚡1
+Einstellungen
+
+BLITZ zeigt lokal gespeicherte, deduplizierte Treffer. Ein Eintrag in der Queue ist kein Nachweis für eine zugestellte Push-Nachricht.
+
+Neue Treffer
+Neu
+Als gesehen markieren
+Frische Demo Kamera
+
+E2E Frische Demo Kamera · 21,00 € · Quelle: eigene · 26.10.2026, 21:19:44 · DEMO-Beispieldaten
+
+Zum Angebot ↗
+Preisalarme
+
+Preisalarme prüfen die aktuell geladene Liste, wenn du BLITZ öffnest. Es gibt keine Hintergrundüberwachung nach dem Schließen.
+
+Noch kein Preisalarm. Lege in LUPE einen an.
+BLITZ #1 {"text":"S\nSCHNAPPER\nEigene Liste\nLUPE\nWARENKORB 1\nPREISDETEKTIV\nMISSION\nBLITZ ⚡1\nEinstellungen\n\nBLITZ zeigt lokal gespeicherte, deduplizierte Treffer. Ein Eintrag in der Queue ist kein Nachweis für eine zugestellte Push-Nachricht.\n\nNeue Treffer\nNeu\nAls gesehen markieren\nFrische Demo Kamera\n\nE2E Frische Demo Kamera · 21,00 € · Quelle: eigene · 26.10.2026, 21:19:44 · DEMO-Beispieldaten\n\nZum Angebot ↗\nPreisalarme\n\nPreisalarme prüfen die aktuell geladene Liste, wenn du BLITZ öffnest. Es gibt keine Hintergrundüberwachung nach dem Schließen.\n\nNoch kein Preisalarm. Lege in LUPE einen an.","buttons":[{"text":"LUPE","aria":null,"title":""},{"text":"WARENKORB 1","aria":null,"title":""},{"text":"PREISDETEKTIV","aria":null,"title":""},{"text":"MISSION","aria":null,"title":""},{"text":"BLITZ ⚡1","aria":null,"title":""},{"text":"Einstellungen","aria":null,"title":""},{"text":"⚡ Preisalarm für diese Suche","aria":null,"title":""},{"text":"＋ Als Mission speichern","aria":null,"title":""},{"text":"Ladenpreise suchen","aria":null,"title":""},{"text":"★","aria":"Von der Merkliste nehmen","title":"Gemerkt"},{"text":"Ausgewählte Angebote vergleichen","aria":null,"title":""},{"text":"★","aria":"Von der Merkliste nehmen","title":"Gemerkt"},{"text":"Mission speichern","aria":null,"title":""},{"text":"Bearbeitung abbrechen","aria":null,"title":""},{"text":"Jetzt prüfen","aria":null,"title":""},{"text":"Pausieren","aria":null,"title":""},{"text":"Bearbeiten","aria":null,"title":""},{"text":"Löschen","aria":null,"title":""},{"text":"Als gesehen markieren","aria":null,"title":""},{"text":"Sicherung herunterladen","aria":null,"title":""},{"text":"Browser-Benachrichtigungen freigeben","aria":null,"title":""}],"visible":["Neu\nAls gesehen markieren\nFrische Demo Kamera\n\nE2E Frische Demo Kamera · 21,00 € · Quelle: eigene · 26.10.2026, 21:19:44 · DEMO-Beispieldaten\n\nZum Angebot ↗"]}
+INITIAL SCREencast frame count=23
+MARK SEEN ACTION clicked mark seen
+
+--- positive-blitz-seen ---
+S
+SCHNAPPER
+Eigene Liste
+LUPE
+WARENKORB 1
+PREISDETEKTIV
+MISSION
+BLITZ
+Einstellungen
+
+BLITZ zeigt lokal gespeicherte, deduplizierte Treffer. Ein Eintrag in der Queue ist kein Nachweis für eine zugestellte Push-Nachricht.
+
+Neue Treffer
+Gesehen
+Frische Demo Kamera
+
+E2E Frische Demo Kamera · 21,00 € · Quelle: eigene · 26.10.2026, 21:19:44 · DEMO-Beispieldaten
+
+Zum Angebot ↗
+Preisalarme
+
+Preisalarme prüfen die aktuell geladene Liste, wenn du BLITZ öffnest. Es gibt keine Hintergrundüberwachung nach dem Schließen.
+
+Noch kein Preisalarm. Lege in LUPE einen an.
+AFTER MARK SEEN ASSERTIONS {"seenText":true,"newItems":"Neue Treffer\nGesehen\nFrische Demo Kamera\n\nE2E Frische Demo Kamera · 21,00 € · Quelle: eigene · 26.10.2026, 21:19:44 · DEMO-Beispieldaten\n\nZum Angebot ↗\nPreisalarme","body":"S\nSCHNAPPER\nEigene Liste\nLUPE\nWARENKORB 1\nPREISDETEKTIV\nMISSION\nBLITZ\nEinstellungen\n\nBLITZ zeigt lokal gespeicherte, deduplizierte Treffer. Ein Eintrag in der Queue ist kein Nachweis für eine zugestellte Push-Nachricht.\n\nNeue Treffer\nGesehen\nFrische Demo Kamera\n\nE2E Frische Demo Kamera · 21,00 € · Quelle: eigene · 26.10.2026, 21:19:44 · DEMO-Beispieldaten\n\nZum Angebot ↗\nPreisalarme\n\nPreisalarme prüfen die aktuell geladene Liste, wenn du BLITZ öffnest. Es gibt keine Hintergrundüberwachung nach dem Schließen.\n\nNoch kein Preisalarm. Lege in LUPE einen an."}
+CLICK MISSION for repeat {"text":"MISSION","disabled":false}
+MISSION RUN #2 clicked
+
+--- positive-mission-run-two ---
+S
+SCHNAPPER
+Eigene Liste
+LUPE
+WARENKORB 1
+PREISDETEKTIV
+MISSION
+BLITZ
+Einstellungen
+
+Suchaufträge werden lokal gespeichert. Automatik läuft nur, solange die App geöffnet und sichtbar ist; kein Hintergrundlauf nach dem Schließen.
+
+Suchauftrag erstellen
+Name
+Suchbegriffe
+Höchstpreis inkl. Versand (€)
+Mindestrabatt (%)
+Region
+Umkreis (km)
+Prüfintervall (Minuten)
+Zustand
+alle
+neu
+wie neu
+gebraucht
+defekt
+Automatisch prüfen, solange diese App sichtbar geöffnet ist
+Mission speichern
+
+Lauf b3ffda76e3864158a57dd20cb5998786: 1 Treffer, 0 neue BLITZ-Einträge (lokal gespeichert).
+
+Deine Missionen
+Aktiv
+Jetzt prüfen
+Pausieren
+Bearbeiten
+Löschen
+E2E Frische Demo Kamera
+
+Frische Demo Kamera · bis 100.00 € inkl. Versand · 15 Min.
+
+Letzter Lauf: 26.10.2026, 21:20:08 · letzter Nachweis: 1 Treffer
+
+DEMO-Beispieldaten – keine echten Angebote
+21,00 € · Frische Demo Kamera
+Letzte Prüfläufe
+26.10.2026, 21:20:08 · Job b3ffda76e3864158a57dd20cb5998786 · abgeschlossen · 1 Treffer · 0 neue BLITZ-Einträge
+26.10.2026, 21:19:44 · Job 9c38b09d02ce47cfbb36384c9da2d1c1 · abgeschlossen · 1 Treffer · 1 neue BLITZ-Einträge
+SECOND RUN SUMMARY S
+SCHNAPPER
+Eigene Liste
+LUPE
+WARENKORB 1
+PREISDETEKTIV
+MISSION
+BLITZ
+Einstellungen
+
+Suchaufträge werden lokal gespeichert. Automatik läuft nur, solange die App geöffnet und sichtbar ist; kein Hintergrundlauf nach dem Schließen.
+
+Suchauftrag erstellen
+Name
+Suchbegriffe
+Höchstpreis inkl. Versand (€)
+Mindestrabatt (%)
+Region
+Umkreis (km)
+Prüfintervall (Minuten)
+Zustand
+alle
+neu
+wie neu
+gebraucht
+defekt
+Automatisch prüfen, solange diese App sichtbar geöffnet ist
+Mission speichern
+
+Lauf b3ffda76e3864158a57dd20cb5998786: 1 Treffer, 0 neue BLITZ-Einträge (lokal gespeichert).
+
+Deine Missionen
+Aktiv
+Jetzt prüfen
+Pausieren
+Bearbeiten
+Löschen
+E2E Frische Demo Kamera
+
+Frische Demo Kamera · bis 100.00 € inkl. Versand · 15 Min.
+
+Letzter Lauf: 26.10.2026, 21:20:08 · letzter Nachweis: 1 Treffer
+
+DEMO-Beispieldaten – keine echten Angebote
+21,00 € · Frische Demo Kamera
+Letzte Prüfläufe
+26.10.2026, 21:20:08 · Job b3ffda76e3864158a57dd20cb5998786 · abgeschlossen · 1 Treffer · 0 neue BLITZ-Einträge
+26.10.2026, 21:19:44 · Job 9c38b09d02ce47cfbb36384c9da2d1c1 · abgeschlossen · 1 Treffer · 1 neue BLITZ-Einträge
+CLICK BLITZ after duplicate run {"text":"BLITZ","disabled":false}
+
+--- positive-blitz-after-duplicate ---
+S
+SCHNAPPER
+Eigene Liste
+LUPE
+WARENKORB 1
+PREISDETEKTIV
+MISSION
+BLITZ
+Einstellungen
+
+BLITZ zeigt lokal gespeicherte, deduplizierte Treffer. Ein Eintrag in der Queue ist kein Nachweis für eine zugestellte Push-Nachricht.
+
+Neue Treffer
+Gesehen
+Frische Demo Kamera
+
+E2E Frische Demo Kamera · 21,00 € · Quelle: eigene · 26.10.2026, 21:19:44 · DEMO-Beispieldaten
+
+Zum Angebot ↗
+Preisalarme
+
+Preisalarme prüfen die aktuell geladene Liste, wenn du BLITZ öffnest. Es gibt keine Hintergrundüberwachung nach dem Schließen.
+
+Noch kein Preisalarm. Lege in LUPE einen an.
+BLITZ AFTER DUPLICATE RUN {"text":"S\nSCHNAPPER\nEigene Liste\nLUPE\nWARENKORB 1\nPREISDETEKTIV\nMISSION\nBLITZ\nEinstellungen\n\nBLITZ zeigt lokal gespeicherte, deduplizierte Treffer. Ein Eintrag in der Queue ist kein Nachweis für eine zugestellte Push-Nachricht.\n\nNeue Treffer\nGesehen\nFrische Demo Kamera\n\nE2E Frische Demo Kamera · 21,00 € · Quelle: eigene · 26.10.2026, 21:19:44 · DEMO-Beispieldaten\n\nZum Angebot ↗\nPreisalarme\n\nPreisalarme prüfen die aktuell geladene Liste, wenn du BLITZ öffnest. Es gibt keine Hintergrundüberwachung nach dem Schließen.\n\nNoch kein Preisalarm. Lege in LUPE einen an.","buttons":["LUPE","WARENKORB 1","PREISDETEKTIV","MISSION","BLITZ","Einstellungen","⚡ Preisalarm für diese Suche","＋ Als Mission speichern","Ladenpreise suchen","★","Ausgewählte Angebote vergleichen","★","Mission speichern","Bearbeitung abbrechen","Jetzt prüfen","Pausieren","Bearbeiten","Löschen","Als gesehen markieren","Sicherung herunterladen","Browser-Benachrichtigungen freigeben"]}
+RELOAD URL http://127.0.0.1:8789/
+CLICK cart after reload {"text":"WARENKORB 1","disabled":false}
+
+--- positive-cart-after-reload ---
+S
+SCHNAPPER
+Eigene Liste
+LUPE
+WARENKORB 1
+PREISDETEKTIV
+MISSION
+BLITZ
+Einstellungen
+
+Lokal auf diesem Gerät gespeicherte Angebote. Markiere mehrere Angebote, um sie im Preisdetektiv zu vergleichen.
+
+Ausgewählte Angebote vergleichen
+
+Preis unverändert
+21,00 €
+★
+Frische Demo Kamera
+
+neu · eigene · gemerkt am 26.10.2026
+
+Zum Angebot ↗
+Für Vergleich auswählen
+CLICK mission after reload {"text":"MISSION","disabled":false}
+
+--- positive-mission-after-reload ---
+S
+SCHNAPPER
+Eigene Liste
+LUPE
+WARENKORB 1
+PREISDETEKTIV
+MISSION
+BLITZ
+Einstellungen
+
+Suchaufträge werden lokal gespeichert. Automatik läuft nur, solange die App geöffnet und sichtbar ist; kein Hintergrundlauf nach dem Schließen.
+
+Suchauftrag erstellen
+Name
+Suchbegriffe
+Höchstpreis inkl. Versand (€)
+Mindestrabatt (%)
+Region
+Umkreis (km)
+Prüfintervall (Minuten)
+Zustand
+alle
+neu
+wie neu
+gebraucht
+defekt
+Automatisch prüfen, solange diese App sichtbar geöffnet ist
+Mission speichern
+
+Deine Missionen
+Aktiv
+Jetzt prüfen
+Pausieren
+Bearbeiten
+Löschen
+E2E Frische Demo Kamera
+
+Frische Demo Kamera · bis 100.00 € inkl. Versand · 15 Min.
+
+Letzter Lauf: 26.10.2026, 21:20:08 · letzter Nachweis: 1 Treffer
+
+DEMO-Beispieldaten – keine echten Angebote
+21,00 € · Frische Demo Kamera
+Letzte Prüfläufe
+26.10.2026, 21:20:08 · Job b3ffda76e3864158a57dd20cb5998786 · abgeschlossen · 1 Treffer · 0 neue BLITZ-Einträge
+26.10.2026, 21:19:44 · Job 9c38b09d02ce47cfbb36384c9da2d1c1 · abgeschlossen · 1 Treffer · 1 neue BLITZ-Einträge
+CLICK blitz after reload {"text":"BLITZ","disabled":false}
+
+--- positive-blitz-after-reload ---
+S
+SCHNAPPER
+Eigene Liste
+LUPE
+WARENKORB 1
+PREISDETEKTIV
+MISSION
+BLITZ
+Einstellungen
+
+BLITZ zeigt lokal gespeicherte, deduplizierte Treffer. Ein Eintrag in der Queue ist kein Nachweis für eine zugestellte Push-Nachricht.
+
+Neue Treffer
+Gesehen
+Frische Demo Kamera
+
+E2E Frische Demo Kamera · 21,00 € · Quelle: eigene · 26.10.2026, 21:19:44 · DEMO-Beispieldaten
+
+Zum Angebot ↗
+Preisalarme
+
+Preisalarme prüfen die aktuell geladene Liste, wenn du BLITZ öffnest. Es gibt keine Hintergrundüberwachung nach dem Schließen.
+
+Noch kein Preisalarm. Lege in LUPE einen an.
+PERSISTENCE VERIFY AFTER RELOAD {"url":"http://127.0.0.1:8789/","cartBadge":"WARENKORB 1","seenEntry":true,"newHeader":true,"missionPresent":true,"body":"S\nSCHNAPPER\nEigene Liste\nLUPE\nWARENKORB 1\nPREISDETEKTIV\nMISSION\nBLITZ\nEinstellungen\n\nBLITZ zeigt lokal gespeicherte, deduplizierte Treffer. Ein Eintrag in der Queue ist kein Nachweis für eine zugestellte Push-Nachricht.\n\nNeue Treffer\nGesehen\nFrische Demo Kamera\n\nE2E Frische Demo Kamera · 21,00 € · Quelle: eigene · 26.10.2026, 21:19:44 · DEMO-Beispieldaten\n\nZum Angebot ↗\nPreisalarme\n\nPreisalarme prüfen die aktuell geladene Liste, wenn du BLITZ öffnest. Es gibt keine Hintergrundüberwachung nach dem Schließen.\n\nNoch kein Preisalarm. Lege in LUPE einen an."}
+FINAL CDP FRAME COUNT=39
+
+FINAL ACCEPTANCE SUMMARY
+- The configured isolated fixture was found at /tmp/schnapper-master7-positive/beispiele/angebote.csv (not /tmp/beispiele itself, which was absent). It is the single explicitly synthetic row e2e-demo-1, title Frische Demo Kamera, price 20.00, shipping 1.00, reference 30.00, timestamp 2026-10-26T21:16:42Z. Local search marker reported beispieldaten=true, enthaelt_testdaten=false, one ingested row, zero invalid.
+- LUPE: banner “Vorführung mit ausgedachten Beispieldaten – keine echten Angebote.”; exactly “1 Treffer aus 1 Angeboten”; only visible result Frische Demo Kamera. Saved it to cart; WARENKORB badge 1.
+- PREISDETEKTIV: “Gesamtpreis inkl. angegebener Versandkosten: 21,00 €”; source eigene, Versand 1,00 €, total matches 20.00 + 1.00.
+- Manual mission “E2E Frische Demo Kamera” saved with keyword Frische Demo Kamera, max 100.00 € including shipping, interval 15 minutes; auto checkbox was false. First “Jetzt prüfen” completed with exactly 1 hit and 1 new BLITZ entry; summary job 9c38b09d02ce47cfbb36384c9da2d1c1.
+- BLITZ presented one “Neu” item Frische Demo Kamera at 21,00 € and the explicit caution “Ein Eintrag in der Queue ist kein Nachweis für eine zugestellte Push-Nachricht.” Used “Als gesehen markieren”; item appeared under “Gesehen”.
+- Reran “Jetzt prüfen”: exactly 1 hit and 0 new BLITZ entries (job b3ffda76e3864158a57dd20cb5998786); seen item stayed under Gesehen. This demonstrates duplicate suppression in the UI.
+- After reload, WARENKORB still showed one Frische Demo Kamera at 21,00 €, MISSION still showed the saved mission and 1-hit run history, and BLITZ still showed Frische Demo Kamera under Gesehen. No “Zum Angebot” link was opened; no third-party requests/actions were initiated and no AI/model control was used.
+- CDP Page.startScreencast video: /tmp/schnapper-master7-e2e/positive-ui-screencast.mp4, H.264 MP4, 780x436, 39 frames, 19.5 seconds, 663247 bytes.
+- Evidence screenshots are `/tmp/schnapper-master7-e2e/positive-*.png`.

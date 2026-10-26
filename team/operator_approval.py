@@ -11,6 +11,7 @@ import os
 import pathlib
 import re
 import stat
+from safe_artifacts import entry_exists, read_bytes_with_stat
 
 from ki import KINichtVerfuegbar
 
@@ -25,29 +26,17 @@ DENIED = "BLOCKIERT: explizite lokale Betreiberfreigabe oder passende offene Auf
 def _read_json(path, max_bytes, private=False):
     """Read bounded local JSON, no symlinks; never return untrusted diagnostics."""
     try:
-        if path.is_symlink() or not hasattr(os, "O_NOFOLLOW") or not hasattr(os, "O_NONBLOCK"):
+        if not hasattr(os, "O_NOFOLLOW") or not hasattr(os, "O_NONBLOCK"):
             raise ValueError("unsafe platform or link")
-        fd = os.open(path, os.O_RDONLY | os.O_NOFOLLOW | os.O_NONBLOCK)
-        try:
-            info = os.fstat(fd)
-            if not stat.S_ISREG(info.st_mode) or info.st_nlink != 1:
-                raise ValueError("not an ordinary file")
-            if private:
-                if (stat.S_IMODE(info.st_mode) & 0o077) != 0:
-                    raise ValueError("operator approval is readable by others")
-                if hasattr(os, "getuid") and info.st_uid != os.getuid():
-                    raise ValueError("operator approval owner mismatch")
-            if info.st_size > max_bytes:
-                raise ValueError("oversized approval/tasks")
-            with os.fdopen(fd, "rb") as f:
-                fd = -1
-                payload = f.read(max_bytes + 1)
-            if len(payload) > max_bytes:
-                raise ValueError("oversized approval/tasks")
-            return json.loads(payload)
-        finally:
-            if fd >= 0:
-                os.close(fd)
+        payload, info = read_bytes_with_stat(path, limit=max_bytes)
+        if info.st_nlink != 1:
+            raise ValueError("not an ordinary file")
+        if private:
+            if (stat.S_IMODE(info.st_mode) & 0o077) != 0:
+                raise ValueError("operator approval is readable by others")
+            if hasattr(os, "getuid") and info.st_uid != os.getuid():
+                raise ValueError("operator approval owner mismatch")
+        return json.loads(payload)
     except (OSError, ValueError, UnicodeError, TypeError) as exc:
         raise KINichtVerfuegbar(DENIED) from exc
 
@@ -56,7 +45,11 @@ def pruefe_freigabe(now=None):
     """Re-check immediately before EVERY local model request; never cache."""
     if WORK.is_symlink() or WORK.resolve() != (TEAM / "work").absolute():
         raise KINichtVerfuegbar(DENIED)
-    if STOP.exists() or STOP.is_symlink():
+    try:
+        stop_aktiv = entry_exists(STOP)
+    except OSError as exc:
+        raise KINichtVerfuegbar("BLOCKIERT: STOP-Pfad ist nicht sicher prüfbar.") from exc
+    if stop_aktiv:
         raise KINichtVerfuegbar("BLOCKIERT: Betreiber-Not-Aus aktiv.")
     approval = _read_json(APPROVAL, 4096, private=True)
     tasks = _read_json(TASKS, 100_000)

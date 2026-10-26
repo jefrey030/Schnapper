@@ -113,13 +113,30 @@ class TestMaster85SicheresRunnerLock(unittest.TestCase):
 
     def test_fstat_fehler_schliesst_fd(self):
         original_close = os.close
-        with mock.patch.object(dienst.os, "fstat",
-                               side_effect=OSError("fstat misslungen")), \
+        original_open, original_fstat = os.open, os.fstat
+        opened = []
+
+        def track_open(path, *args, **kwargs):
+            fd = original_open(path, *args, **kwargs)
+            if path == self.path.name:
+                opened.append(fd)
+            return fd
+
+        def fail_lock_fstat(fd):
+            if fd in opened:
+                raise OSError("fstat misslungen")
+            return original_fstat(fd)
+
+        with mock.patch.object(dienst.os, "open", side_effect=track_open), \
+             mock.patch.object(dienst.os, "fstat", side_effect=fail_lock_fstat), \
              mock.patch.object(dienst.os, "close",
                                wraps=original_close) as close:
             with self.assertRaises(OSError):
                 dienst._oeffne_runner_sperre(self.path)
-            self.assertEqual(close.call_count, 1)
+            self.assertEqual(len(opened), 1)
+            close.assert_any_call(opened[0])
+            with self.assertRaises(OSError):
+                original_fstat(opened[0])
 
     def test_nach_open_erzeugter_hardlink_blockiert_pid_schreiben(self):
         original = dienst._oeffne_runner_sperre

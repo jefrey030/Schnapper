@@ -9,24 +9,32 @@ eigenen WLAN (z. B. vom Handy auf den PC) – dann ohne Passwort für alle im
 WLAN sichtbar, daher nur im eigenen Heimnetz verwenden.
 Hochgeladene Listen bleiben nur im Arbeitsspeicher. Nur mit --verlauf DATEI werden
 die gesehenen Preise (URL, Zeitpunkt, Preis) lokal in DATEI festgehalten.
+Missionen und BLITZ-Deduplizierung werden getrennt davon lokal unter
+~/.local/share/schnapper gespeichert (mit --datenverzeichnis änderbar).
 """
 from __future__ import annotations
 
 import argparse
+import datetime as dt
 import ipaddress
 import json
 import pathlib
 import sys
 import threading
+import uuid
 from decimal import Decimal, InvalidOperation
 from http import HTTPStatus
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from urllib.parse import parse_qs, urlsplit
 
 from .adapter import finde_in
+from .alarm import Wunsch
 from .angebot import ZUSTAENDE, AngebotFehler, geld
+from .blitz import Blitz, BlitzFehler, BlitzKonflikt
 from .einlesen import Importergebnis, lies_datei, lies_text
+from .mission import Mission, Missionsspeicher, MissionsFehler, MissionsKonflikt
 from .quellen import QuellenFehler, Register
+from .sicherer_speicher import dateien_wiederherstellen, missionslauf_sperre
 from .suche import SORTIERUNGEN, Filter
 from .verlauf import Verlauf, VerlaufFehler, warnung
 
@@ -37,8 +45,10 @@ DATEIEN = {"/": ("index.html", "text/html; charset=utf-8"),
            "/manifest.webmanifest": ("manifest.webmanifest", "application/manifest+json; charset=utf-8"),
            "/icon-192.png": ("icon-192.png", "image/png"),
            "/icon-512.png": ("icon-512.png", "image/png"),
-           "/icon-maskable-512.png": ("icon-maskable-512.png", "image/png")}
+           "/icon-maskable-512.png": ("icon-maskable-512.png", "image/png"),
+           "/sw.js": ("sw.js", "text/javascript; charset=utf-8")}
 MAX_UPLOAD = 5 * 1024 * 1024
+MAX_BACKUP_BYTES = 12 * 1024 * 1024
 SICHERHEIT = {
     "Content-Security-Policy": "default-src 'none'; script-src 'self'; style-src 'self'; connect-src 'self'; "
                                "img-src 'self' data:; manifest-src 'self'; base-uri 'none'; form-action 'none'; frame-ancestors 'none'",
@@ -109,13 +119,27 @@ class Zustand:
     """Aktuell geladene Angebotsliste, threadsicher austauschbar."""
 
     def __init__(self, register: Register, geladen: Importergebnis, name: str, beispiel: bool,
-                 verlauf: Verlauf | None = None):
+                 verlauf: Verlauf | None = None, datenverzeichnis: pathlib.Path | str | None = None):
         self.register = register
         self.verlauf = verlauf
         self._lock = threading.Lock()
         self._import_lock = threading.Lock()  # komplette Import-/Verlaufstransaktion serialisieren
         self._openprices_lock = threading.Lock()  # höchstens ein externer API-Abruf gleichzeitig
+        self._mission_locks: dict[str, threading.Lock] = {}
+        self._mission_locks_lock = threading.Lock()
+        self.datenverzeichnis = None if datenverzeichnis is None else pathlib.Path(datenverzeichnis)
+        self.missionen = None
+        self.blitz = None
+        if self.datenverzeichnis is not None:
+            missionen_pfad = self.datenverzeichnis / "missionen.json"
+            blitz_pfad = self.datenverzeichnis / "blitz.json"
+            self.missionen = Missionsspeicher.laden(missionen_pfad)
+            self.blitz = Blitz.laden(blitz_pfad)
         self._daten = (geladen, name, beispiel)
+
+    def mission_sperre(self, mission_id: str) -> threading.Lock:
+        with self._mission_locks_lock:
+            return self._mission_locks.setdefault(mission_id, threading.Lock())
 
     def lesen(self):
         with self._lock:
@@ -148,6 +172,9 @@ def filter_aus_query(q: dict) -> tuple[Filter, str]:
         min_rabatt = Decimal(eins("min_rabatt").replace(",", ".")) if eins("min_rabatt") else None
         if min_rabatt is not None and (not min_rabatt.is_finite() or not 0 <= min_rabatt <= 100):
             raise ValueError("Mindestrabatt muss zwischen 0 und 100 Prozent liegen")
+        entfernung = Decimal(eins("entfernung_km").replace(",", ".")) if eins("entfernung_km") else None
+        if entfernung is not None and (not entfernung.is_finite() or not 0 <= entfernung <= 500):
+            raise ValueError("Entfernung muss zwischen 0 und 500 km liegen")
     except (AngebotFehler, InvalidOperation) as exc:
         raise ValueError("Höchstpreis oder Mindestrabatt ist keine Zahl") from exc
     zustand = eins("zustand")
@@ -158,6 +185,7 @@ def filter_aus_query(q: dict) -> tuple[Filter, str]:
         raise ValueError("Unbekannte Sortierung")
     f = Filter(text=eins("text")[:200], max_preis=max_preis, min_rabatt=min_rabatt,
                zustaende={zustand} if zustand else set(),
+               region=eins("region")[:100], entfernung_km=entfernung,
                ohne_veraltet=eins("ohne_veraltet") == "1", ohne_verdacht=eins("mit_verdacht") != "1")
     return f, sortierung
 
@@ -177,6 +205,8 @@ def als_json(ergebnis, name: str, beispiel: bool, verlauf: Verlauf | None = None
             "referenzpreis": None if t.angebot.referenzpreis is None else str(t.angebot.referenzpreis),
             "rabatt_prozent": None if t.angebot.rabatt_prozent is None else str(t.angebot.rabatt_prozent),
             "zustand": t.angebot.zustand, "quelle": t.angebot.quelle, "kategorie": t.angebot.kategorie,
+            "region": t.angebot.extra.get("region") if isinstance(t.angebot.extra.get("region"), str) else None,
+            "entfernung_km": t.angebot.extra.get("entfernung_km"),
             "url": t.angebot.url, "erfasst_am": t.angebot.erfasst_am.isoformat(),
             "warnungen": list(t.warnungen) + [w for w in (warnung(infos[t.angebot.id]),) if w],
             "verlauf": None if infos[t.angebot.id] is None else infos[t.angebot.id].als_dict(),
@@ -205,6 +235,63 @@ def baue_handler(zustand: Zustand):
         def _json(self, status, obj):
             self._senden(status, json.dumps(obj, ensure_ascii=False).encode("utf-8"), "application/json; charset=utf-8")
 
+        def _json_eingabe(self, max_bytes=16 * 1024):
+            try:
+                laenge = int(self.headers.get("Content-Length", ""))
+            except ValueError:
+                return None, "Länge fehlt", HTTPStatus.LENGTH_REQUIRED
+            if not 1 <= laenge <= max_bytes:
+                return None, "JSON fehlt oder ist zu groß", HTTPStatus.REQUEST_ENTITY_TOO_LARGE
+            if self.headers.get_content_type() != "application/json":
+                return None, "Content-Type muss application/json sein", HTTPStatus.UNSUPPORTED_MEDIA_TYPE
+            try:
+                daten = json.loads(self.rfile.read(laenge))
+            except (json.JSONDecodeError, UnicodeDecodeError):
+                return None, "Ungültiges JSON", HTTPStatus.BAD_REQUEST
+            if not isinstance(daten, dict):
+                return None, "JSON muss ein Objekt sein", HTTPStatus.BAD_REQUEST
+            return daten, None, None
+
+        def _mission_lauf_ausfuehren(self, mission_id: str, automatisch: bool):
+            mission = next((m for m in zustand.missionen.alle() if m.id == mission_id), None)
+            if mission is None:
+                return self._json(HTTPStatus.NOT_FOUND, {"fehler": "Mission nicht gefunden"})
+            jetzt = dt.datetime.now(dt.timezone.utc)
+            if mission.status != "aktiv":
+                return self._json(HTTPStatus.CONFLICT, {"fehler": "Mission ist pausiert oder beendet"})
+            if automatisch and (not mission.automatisch or not mission.ist_faellig(jetzt)):
+                return self._json(HTTPStatus.CONFLICT, {"fehler": "Mission ist nicht automatisch fällig"})
+            geladen, name, beispiel = zustand.lesen()
+            ergebnis = finde_in(geladen, mission.filter(), "preis", jetzt=jetzt)
+            try:
+                zustand.missionen.lauf_abschliessen(mission_id, jetzt=jetzt, erzwingen=True)
+            except (MissionsFehler, OSError):
+                return self._json(HTTPStatus.CONFLICT,
+                                  {"fehler": "Missionslauf konnte nicht sicher gespeichert werden; bitte neu laden"})
+            meldungen = []
+            blitz_fehler = None
+            wunsch = Wunsch(
+                name=mission.name, suche=mission.suche, max_preis=mission.max_preis,
+                min_rabatt=mission.min_rabatt, zustaende=mission.zustaende,
+                region=mission.region, entfernung_km=mission.entfernung_km)
+            try:
+                meldungen = [m.als_dict() for m in zustand.blitz.pruefen(geladen, [wunsch], jetzt)]
+            except BlitzKonflikt as exc:
+                return self._json(HTTPStatus.CONFLICT, {"fehler": str(exc), "aktualisieren": True})
+            except (BlitzFehler, OSError):
+                blitz_fehler = "BLITZ-Deduplizierung konnte nicht gespeichert werden; kein Versand bestätigt"
+            antwort = als_json(ergebnis, name, beispiel, zustand.verlauf)
+            antwort.update({
+                "job_id": uuid.uuid4().hex,
+                "mission_id": mission_id,
+                "gestartet_am": jetzt.isoformat(),
+                "abgeschlossen_am": dt.datetime.now(dt.timezone.utc).isoformat(),
+                "meldungen": meldungen,
+                "blitz_fehler": blitz_fehler,
+                "benachrichtigung": "lokale_queue" if meldungen else "keine_neue_meldung",
+            })
+            return self._json(HTTPStatus.OK, antwort)
+
         def _host_erlaubt(self):
             bind_host, port = self.server.server_address[:2]
             return _lokaler_host(self.headers.get("Host"), bind_host, port)
@@ -231,6 +318,29 @@ def baue_handler(zustand: Zustand):
                 return self._json(HTTPStatus.OK, {"quellen": [
                     {"kennung": q.kennung, "name": q.name, "entscheidung": q.entscheidung, "hinweis": q.hinweis}
                     for q in zustand.register]})
+            if teile.path == "/api/missionen":
+                if zustand.missionen is None:
+                    return self._json(HTTPStatus.SERVICE_UNAVAILABLE,
+                                      {"fehler": "Lokale Missionsspeicherung ist nicht konfiguriert"})
+                return self._json(HTTPStatus.OK, {
+                    "missionen": [m.als_dict() for m in zustand.missionen.alle()],
+                    "speicher": "lokal",
+                    "automatik": "nur während die App geöffnet und sichtbar ist",
+                })
+            if teile.path == "/api/backup":
+                if zustand.missionen is None or zustand.blitz is None:
+                    return self._json(HTTPStatus.SERVICE_UNAVAILABLE,
+                                      {"fehler": "Lokale Sicherung ist nicht konfiguriert"})
+                try:
+                    return self._json(HTTPStatus.OK, {
+                        "format": "schnapper-server-backup",
+                        "version": 1,
+                        "missionen": [m.als_dict() for m in zustand.missionen.alle()],
+                        "blitz_gesehen": zustand.blitz.exportdaten()["gesehen"],
+                    })
+                except (MissionsFehler, BlitzFehler):
+                    return self._json(HTTPStatus.INTERNAL_SERVER_ERROR,
+                                      {"fehler": "Lokaler Datenbestand ist beschädigt; Sicherung abgebrochen"})
             return self._json(HTTPStatus.NOT_FOUND, {"fehler": "Nicht gefunden"})
 
         def do_POST(self):
@@ -240,11 +350,130 @@ def baue_handler(zustand: Zustand):
                 return self._json(HTTPStatus.FORBIDDEN, {"fehler": "Host nicht erlaubt"})
             if not _origin_erlaubt(self.headers.get("Origin"), *host):
                 return self._json(HTTPStatus.FORBIDDEN, {"fehler": "Fremde Webseite nicht erlaubt"})
-            if ziel not in ("/api/import", "/api/openprices"):
+            if ziel not in ("/api/import", "/api/openprices", "/api/missionen", "/api/backup") \
+                    and not ziel.startswith("/api/missionen/"):
                 return self._json(HTTPStatus.NOT_FOUND, {"fehler": "Nicht gefunden"})
             # Schutz gegen fremde Webseiten, die im Hintergrund Daten hochladen wollen
             if self.headers.get("X-Schnapper") != "1":
                 return self._json(HTTPStatus.FORBIDDEN, {"fehler": "Anfrage nicht erlaubt"})
+            if ziel == "/api/backup":
+                if zustand.missionen is None or zustand.blitz is None or zustand.datenverzeichnis is None:
+                    return self._json(HTTPStatus.SERVICE_UNAVAILABLE,
+                                      {"fehler": "Lokale Wiederherstellung ist nicht konfiguriert"})
+                daten, fehler, status = self._json_eingabe(MAX_BACKUP_BYTES)
+                if fehler:
+                    return self._json(status, {"fehler": fehler})
+                if (daten.get("format") != "schnapper-server-backup"
+                        or type(daten.get("version")) is not int or daten.get("version") != 1
+                        or not isinstance(daten.get("missionen"), list)
+                        or not isinstance(daten.get("blitz_gesehen"), dict)):
+                    return self._json(HTTPStatus.BAD_REQUEST, {"fehler": "Sicherungsformat ist ungültig"})
+                try:
+                    missionen = [Mission.aus_dict(item) for item in daten["missionen"]]
+                    Missionsspeicher._pruefe_gesamt(missionen)
+                    mission_raw = json.dumps(
+                        {"version": 2, "missionen": [m.als_dict() for m in missionen]},
+                        ensure_ascii=False, separators=(",", ":"),
+                    ).encode("utf-8")
+                    blitz_raw = json.dumps(
+                        {"version": 2, "gesehen": daten["blitz_gesehen"]},
+                        ensure_ascii=False, separators=(",", ":"),
+                    ).encode("utf-8")
+                    Missionsspeicher._dekodiere(mission_raw, "missionen.json")
+                    Blitz._dekodiere(blitz_raw, "blitz.json")
+                    dateien_wiederherstellen(
+                        zustand.datenverzeichnis / "missionen.json",
+                        {"missionen.json": mission_raw, "blitz.json": blitz_raw},
+                    )
+                    # Refresh both in-memory snapshots and their conflict tokens.
+                    zustand.missionen.alle()
+                    zustand.blitz.exportdaten()
+                    return self._json(HTTPStatus.OK, {
+                        "wiederhergestellt": True,
+                        "missionen": len(missionen),
+                        "blitz_eintraege": len(daten["blitz_gesehen"]),
+                    })
+                except (MissionsFehler, BlitzFehler, ValueError, TypeError):
+                    return self._json(HTTPStatus.BAD_REQUEST, {"fehler": "Sicherung ist ungültig"})
+                except OSError:
+                    return self._json(HTTPStatus.INTERNAL_SERVER_ERROR,
+                                      {"fehler": "Wiederherstellung konnte nicht sicher abgeschlossen werden; Originaldatei behalten"})
+            if ziel == "/api/missionen":
+                if zustand.missionen is None:
+                    return self._json(HTTPStatus.SERVICE_UNAVAILABLE,
+                                      {"fehler": "Lokale Missionsspeicherung ist nicht konfiguriert"})
+                daten, fehler, status = self._json_eingabe()
+                if fehler:
+                    return self._json(status, {"fehler": fehler})
+                aktion = daten.get("aktion")
+                mission_id = daten.get("id")
+                try:
+                    if aktion == "erstellen":
+                        mission = zustand.missionen.erstellen(
+                            name=daten.get("name"), suche=daten.get("suche"),
+                            max_preis=daten.get("max_preis"), min_rabatt=daten.get("min_rabatt"),
+                            zustaende=daten.get("zustaende", []),
+                            intervall_minuten=daten.get("intervall_minuten", 60),
+                            region=daten.get("region", ""),
+                            entfernung_km=daten.get("entfernung_km"),
+                            automatisch=daten.get("automatisch", False))
+                        return self._json(HTTPStatus.CREATED, {"mission": mission.als_dict()})
+                    if not isinstance(mission_id, str):
+                        return self._json(HTTPStatus.BAD_REQUEST, {"fehler": "Missions-ID fehlt"})
+                    if aktion == "bearbeiten":
+                        felder = ("name", "suche", "max_preis", "min_rabatt", "zustaende",
+                                  "intervall_minuten", "region", "entfernung_km", "automatisch")
+                        aenderungen = {feld: daten[feld] for feld in felder if feld in daten}
+                        mission = zustand.missionen.bearbeiten(mission_id, **aenderungen)
+                        return self._json(HTTPStatus.OK, {"mission": mission.als_dict()})
+                    if aktion == "pausieren":
+                        mission = zustand.missionen.pausieren(mission_id)
+                    elif aktion == "fortsetzen":
+                        mission = zustand.missionen.fortsetzen(mission_id)
+                    elif aktion == "loeschen":
+                        zustand.missionen.loeschen(mission_id)
+                        return self._json(HTTPStatus.OK, {"geloescht": mission_id})
+                    else:
+                        return self._json(HTTPStatus.BAD_REQUEST, {"fehler": "Unbekannte Mission-Aktion"})
+                    return self._json(HTTPStatus.OK, {"mission": mission.als_dict()})
+                except MissionsKonflikt as exc:
+                    return self._json(HTTPStatus.CONFLICT, {"fehler": str(exc), "aktualisieren": True})
+                except MissionsFehler as exc:
+                    return self._json(HTTPStatus.BAD_REQUEST, {"fehler": str(exc)})
+                except OSError:
+                    return self._json(HTTPStatus.INTERNAL_SERVER_ERROR,
+                                      {"fehler": "Mission konnte lokal nicht sicher gespeichert werden"})
+            if ziel.startswith("/api/missionen/") and ziel.endswith("/lauf"):
+                if zustand.missionen is None or zustand.blitz is None:
+                    return self._json(HTTPStatus.SERVICE_UNAVAILABLE,
+                                      {"fehler": "Lokaler Missions- und Blitzspeicher ist nicht konfiguriert"})
+                teile = ziel.split("/")
+                if len(teile) != 5 or not teile[3] or teile[4] != "lauf":
+                    return self._json(HTTPStatus.NOT_FOUND, {"fehler": "Mission nicht gefunden"})
+                mission_id = teile[3]
+                daten, fehler, status = self._json_eingabe(1024)
+                if fehler:
+                    return self._json(status, {"fehler": fehler})
+                automatisch = daten.get("automatisch", False)
+                if not isinstance(automatisch, bool):
+                    return self._json(HTTPStatus.BAD_REQUEST, {"fehler": "Automatik-Flag ungültig"})
+                sperre = zustand.mission_sperre(mission_id)
+                if not sperre.acquire(blocking=False):
+                    return self._json(HTTPStatus.CONFLICT,
+                                      {"fehler": "Für diese Mission läuft bereits eine Prüfung"})
+                try:
+                    try:
+                        with missionslauf_sperre(
+                                zustand.datenverzeichnis / "missionen.json", mission_id) as laeuft:
+                            if not laeuft:
+                                return self._json(HTTPStatus.CONFLICT,
+                                                  {"fehler": "Für diese Mission läuft bereits eine Prüfung"})
+                            return self._mission_lauf_ausfuehren(mission_id, automatisch)
+                    except OSError:
+                        return self._json(HTTPStatus.SERVICE_UNAVAILABLE,
+                                          {"fehler": "Sichere Missionslauf-Sperre nicht verfügbar"})
+                finally:
+                    sperre.release()
             if ziel == "/api/openprices":
                 from .openprices import (LIZENZ, OpenPricesAdapter,
                                          OpenPricesFehler, OpenPricesGesperrt)
@@ -311,13 +540,15 @@ def baue_handler(zustand: Zustand):
     return Handler
 
 
-def erstelle_server(datei, host="127.0.0.1", port=8765, quellen=None, verlauf=None) -> ThreadingHTTPServer:
+def erstelle_server(datei, host="127.0.0.1", port=8765, quellen=None, verlauf=None,
+                    datenverzeichnis=None) -> ThreadingHTTPServer:
     datei = pathlib.Path(datei)
     quellen_datei = pathlib.Path(quellen) if quellen else datei.parent / "quellen.json"
     register = Register.mit_datei(quellen_datei) if quellen_datei.is_file() else Register()
     geladen = lies_datei(datei, register)
     v = Verlauf.laden(verlauf) if verlauf else None
-    zustand = Zustand(register, geladen, datei.name, beispiel=datei.parent.name == "beispiele", verlauf=v)
+    zustand = Zustand(register, geladen, datei.name, beispiel=datei.parent.name == "beispiele",
+                      verlauf=v, datenverzeichnis=datenverzeichnis)
     zustand.preise_merken(geladen)
     return ThreadingHTTPServer((host, port), baue_handler(zustand))
 
@@ -329,9 +560,11 @@ def main(argv=None) -> int:
     p.add_argument("--port", type=int, default=8765)
     p.add_argument("--quellen", help="quellen.json mit zusätzlichen Freigaben")
     p.add_argument("--verlauf", help="Datei für den Preisverlauf, z. B. verlauf.json (wird angelegt)")
+    p.add_argument("--datenverzeichnis", help="Lokaler Speicher für Missionen und BLITZ-Deduplizierung")
     a = p.parse_args(argv)
     try:
-        server = erstelle_server(a.datei, a.host, a.port, a.quellen, a.verlauf)
+        datenverzeichnis = a.datenverzeichnis or str(pathlib.Path.home() / ".local" / "share" / "schnapper")
+        server = erstelle_server(a.datei, a.host, a.port, a.quellen, a.verlauf, datenverzeichnis)
     except (OSError, QuellenFehler, VerlaufFehler, ValueError) as exc:
         print("Start fehlgeschlagen:", exc, file=sys.stderr)
         return 1

@@ -80,7 +80,7 @@ class Missionen(unittest.TestCase):
     def test_beschaedigte_missionen_bleiben_unberuehrt(self):
         with tempfile.TemporaryDirectory() as tmp:
             pfad = pathlib.Path(tmp, "missionen.json")
-            for text in ('{"version":2,"missionen":[]}', "{kaputt"):
+            for text in ('{"version":3,"missionen":[]}', "{kaputt"):
                 pfad.write_text(text, encoding="utf-8")
                 with self.subTest(text=text), self.assertRaises(MissionsFehler):
                     Missionsspeicher.laden(pfad)
@@ -90,8 +90,8 @@ class Missionen(unittest.TestCase):
         with tempfile.TemporaryDirectory() as tmp:
             speicher = Missionsspeicher.laden(pathlib.Path(tmp, "missionen.json"))
             mission = speicher.erstellen(name="Kopfhörer", suche="kabellos", jetzt=JETZT)
-            with mock.patch.object(speicher, "_speichern", side_effect=OSError("voll")):
-                with self.assertRaises(OSError):
+            with mock.patch("schnapper.mission.schreibe_fd", side_effect=OSError("voll")):
+                with self.assertRaises(MissionsFehler):
                     speicher.pausieren(mission.id)
             self.assertEqual(speicher.alle()[0].status, "aktiv")
 
@@ -139,13 +139,14 @@ class BlitzQueue(unittest.TestCase):
                 self.assertEqual(pfad.read_text(encoding="utf-8"), text)
 
     def test_speicherfehler_gibt_keine_meldung_als_abgeschlossen_aus(self):
-        wunsch = Wunsch.aus_dict({"name": "Kopfhörer", "suche": "kabellos", "max_preis": "60"})
-        blitz = Blitz()
-        with mock.patch.object(blitz, "_schreiben", side_effect=OSError("voll")):
-            with self.assertRaises(OSError):
-                blitz.pruefen(angebote(roh()), [wunsch], jetzt=JETZT)
-        self.assertEqual(len(blitz), 0)
-        self.assertEqual(blitz.pruefen(angebote(roh()), [wunsch], jetzt=JETZT)[0].angebot_id, "a1")
+        with tempfile.TemporaryDirectory() as tmp:
+            wunsch = Wunsch.aus_dict({"name": "Kopfhörer", "suche": "kabellos", "max_preis": "60"})
+            blitz = Blitz.laden(pathlib.Path(tmp, "blitz.json"))
+            with mock.patch("schnapper.blitz.schreibe_fd", side_effect=OSError("voll")):
+                with self.assertRaises(BlitzFehler):
+                    blitz.pruefen(angebote(roh()), [wunsch], jetzt=JETZT)
+            self.assertEqual(len(blitz), 0)
+            self.assertEqual(blitz.pruefen(angebote(roh()), [wunsch], jetzt=JETZT)[0].angebot_id, "a1")
 
 
 class Zusammenspiel(unittest.TestCase):

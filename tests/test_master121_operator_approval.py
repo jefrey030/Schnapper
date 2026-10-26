@@ -117,6 +117,12 @@ class TestOperatorApproval(unittest.TestCase):
         self.tasks.symlink_to(target)
         self.denied()
 
+    def test_parent_directory_symlink_is_rejected_for_approval_read(self):
+        linked_parent = self.team / "linked-work"
+        linked_parent.symlink_to(self.work, target_is_directory=True)
+        with self.assertRaises(KINichtVerfuegbar):
+            approval._read_json(linked_parent / self.file.name, 4096, private=True)
+
 
 if __name__ == "__main__":
     unittest.main()

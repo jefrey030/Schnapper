@@ -75,9 +75,13 @@ class TestApprovalNonblocking(unittest.TestCase):
         original = approval.os.open
         with mock.patch.object(approval.os, 'open', wraps=original) as tracked:
             self.assertEqual(approval.pruefe_freigabe(self.now), 'S-014')
-        visited = {str(call.args[0]): call.args[1] for call in tracked.call_args_list}
+        visited = {
+            (str(call.args[0]), call.kwargs.get("dir_fd")): call.args[1]
+            for call in tracked.call_args_list
+        }
         for filename in (self.approval_file, self.tasks_file):
-            flags = visited[str(filename)]
+            flags = next(flags for (name, dir_fd), flags in visited.items()
+                         if name == filename.name and dir_fd is not None)
             self.assertTrue(flags & os.O_NOFOLLOW)
             self.assertTrue(flags & os.O_NONBLOCK)
 
