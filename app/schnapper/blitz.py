@@ -12,7 +12,8 @@ import json
 import os
 import pathlib
 import re
-import tempfile
+import stat
+from contextlib import contextmanager
 import threading
 from dataclasses import dataclass
 from decimal import Decimal
@@ -20,6 +21,7 @@ from decimal import Decimal
 from .alarm import Wunsch, pruefe_wuensche
 from .angebot import normalisiere_url
 from .einlesen import Importergebnis
+from .sicherer_speicher import verzeichnis, lesen, schreiben
 
 FORMAT_VERSION = 1
 MAX_MELDUNGEN = 20_000
@@ -65,20 +67,53 @@ def _wunsch_id(wunsch: Wunsch) -> str:
 
 
 class Blitz:
+    """Persistente, mehrfach verwendbare und prozessübergreifend gesperrte Queue."""
+
     def __init__(self, pfad: pathlib.Path | str | None = None, gesehen: dict[str, str] | None = None):
         self.pfad = None if pfad is None else pathlib.Path(pfad)
         self._lock = threading.RLock()
+        self._ordner_fd = None
         self._gesehen = dict(gesehen or {})
         if len(self._gesehen) > MAX_MELDUNGEN:
             raise BlitzFehler(f"Höchstens {MAX_MELDUNGEN} gespeicherte Meldungen")
 
-    @classmethod
-    def laden(cls, pfad: pathlib.Path | str) -> "Blitz":
-        datei = pathlib.Path(pfad)
-        if not datei.exists():
-            return cls(datei)
+    @contextmanager
+    def _dateisperre(self):
+        if self.pfad is None:
+            yield
+            return
+        if os.name != "posix":
+            raise BlitzFehler("Sichere BLITZ-Speicherung benötigt POSIX")
+        import fcntl
         try:
-            daten = json.loads(datei.read_text(encoding="utf-8"))
+            with verzeichnis(self.pfad) as (ordner, name):
+                fd = os.open(name + ".lock", os.O_RDWR | os.O_CREAT | os.O_CLOEXEC |
+                             os.O_NOFOLLOW, 0o600, dir_fd=ordner)
+                try:
+                    info = os.fstat(fd)
+                    if (not stat.S_ISREG(info.st_mode) or info.st_nlink != 1
+                            or info.st_mode & 0o077):
+                        raise BlitzFehler("BLITZ-Sperrdatei ist nicht privat oder regulär")
+                    fcntl.flock(fd, fcntl.LOCK_EX)
+                    self._ordner_fd = ordner
+                    try:
+                        yield
+                    finally:
+                        self._ordner_fd = None
+                finally:
+                    os.close(fd)
+        except OSError as exc:
+            raise BlitzFehler("BLITZ-Speicherpfad, Sperre oder Schreibvorgang nicht sicher") from exc
+
+    def _auffrischen(self):
+        """Nur innerhalb der Dateisperre: aktuellen Datenträgerstand validieren."""
+        if self.pfad is None:
+            return dict(self._gesehen)
+        try:
+            roh = lesen(self._ordner_fd, self.pfad.name)
+            if roh is None:
+                return {}
+            daten = json.loads(roh)
             if (not isinstance(daten, dict) or daten.get("version") != FORMAT_VERSION
                     or not isinstance(daten.get("gesehen"), dict)):
                 raise BlitzFehler("Unbekanntes Blitzdateiformat")
@@ -87,37 +122,43 @@ class Blitz:
                     any(not isinstance(k, str) or not _ID.fullmatch(k)
                         or not isinstance(v, str) for k, v in gesehen.items())):
                 raise BlitzFehler("Blitz-Historie ist ungültig")
-            for zeit in gesehen.values():
-                zeitpunkt = dt.datetime.fromisoformat(zeit)
+            for value in gesehen.values():
+                zeitpunkt = dt.datetime.fromisoformat(value)
                 if zeitpunkt.tzinfo is None or zeitpunkt.utcoffset() is None:
                     raise BlitzFehler("Blitz-Zeitstempel braucht eine Zeitzone")
-            return cls(datei, gesehen)
-        except BlitzFehler as exc:
-            raise BlitzFehler(f"{datei.name}: {exc}") from exc
-        except (OSError, ValueError, TypeError, json.JSONDecodeError) as exc:
-            raise BlitzFehler(f"{datei.name} ist beschädigt und wird nicht überschrieben") from exc
+            return gesehen
+        except BlitzFehler:
+            raise
+        except (OSError, UnicodeError, ValueError, TypeError) as exc:
+            raise BlitzFehler("BLITZ-Historie beschädigt und wird nicht überschrieben") from exc
+
+    @classmethod
+    def laden(cls, pfad: pathlib.Path | str) -> "Blitz":
+        speicher = cls(pfad)
+        with speicher._lock, speicher._dateisperre():
+            speicher._gesehen = speicher._auffrischen()
+        return speicher
 
     def _schreiben(self, gesehen: dict[str, str]) -> None:
         if self.pfad is None:
             return
-        self.pfad.parent.mkdir(parents=True, exist_ok=True)
-        fd, temporaer = tempfile.mkstemp(prefix=".blitz-", suffix=".json", dir=self.pfad.parent)
-        try:
-            os.fchmod(fd, 0o600)
-            with os.fdopen(fd, "w", encoding="utf-8") as datei:
-                json.dump({"version": FORMAT_VERSION, "gesehen": gesehen},
-                          datei, ensure_ascii=False, separators=(",", ":"))
-                datei.flush()
-                os.fsync(datei.fileno())
-            os.replace(temporaer, self.pfad)
-        except BaseException:
-            pathlib.Path(temporaer).unlink(missing_ok=True)
-            raise
+        if self._ordner_fd is None:
+            # Auch direkte interne Aufrufe dürfen nie die sicheren FDs umgehen.
+            with self._lock, self._dateisperre():
+                self._schreiben(gesehen)
+            return
+        inhalt = json.dumps({"version": FORMAT_VERSION, "gesehen": gesehen},
+                            ensure_ascii=False, separators=(",", ":"))
+        schreiben(self._ordner_fd, self.pfad.name, inhalt)
 
     def pruefen(self, geladen: Importergebnis, wuensche: list[Wunsch],
                 jetzt: dt.datetime | None = None) -> list[Benachrichtigung]:
         zeit = _zeit(jetzt)
-        with self._lock:
+        with self._lock, self._dateisperre():
+            # Load-under-lock verhindert doppelte BLITZ-Meldungen nach einem Neustart
+            # oder durch eine zweite, zuvor geladene Instanz.
+            if self.pfad is not None:
+                self._gesehen = self._auffrischen()
             neu_gesehen = dict(self._gesehen)
             meldungen = []
             for alarm in pruefe_wuensche(geladen, wuensche, jetzt=zeit):
@@ -141,4 +182,7 @@ class Blitz:
             return meldungen
 
     def __len__(self) -> int:
-        return len(self._gesehen)
+        with self._lock, self._dateisperre():
+            if self.pfad is not None:
+                self._gesehen = self._auffrischen()
+            return len(self._gesehen)
