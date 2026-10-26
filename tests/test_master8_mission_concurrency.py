@@ -64,6 +64,26 @@ class MissionConcurrentRegression(unittest.TestCase):
                 instance.erstellen(name="nachher", suche="B")
             self.assertEqual(pfad.read_text(encoding="utf-8"), "{KAPUTT")
 
+    def test_directory_symlink_rejected_without_outside_write(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            root = pathlib.Path(tmp)
+            outside = root / "outside"
+            outside.mkdir()
+            link = root / "linked"
+            link.symlink_to(outside, target_is_directory=True)
+            with self.assertRaises(MissionsFehler):
+                Missionsspeicher.laden(link / "missionen.json")
+            self.assertEqual(list(outside.iterdir()), [])
+
+    def test_stored_file_is_private_and_roundtrips(self):
+        import stat
+        with tempfile.TemporaryDirectory() as tmp:
+            pfad = pathlib.Path(tmp, "missionen.json")
+            instance = Missionsspeicher.laden(pfad)
+            m = instance.erstellen(name="gesichert", suche="Preis")
+            self.assertEqual(stat.S_IMODE(pfad.stat().st_mode), 0o600)
+            self.assertEqual(Missionsspeicher.laden(pfad).alle()[0].id, m.id)
+
     def test_failed_write_does_not_change_persisted_data(self):
         with tempfile.TemporaryDirectory() as tmp:
             pfad = pathlib.Path(tmp, "missionen.json")
