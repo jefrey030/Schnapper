@@ -22,6 +22,7 @@ from decimal import Decimal, InvalidOperation
 
 from .angebot import AngebotFehler, ZUSTAENDE, geld
 from .suche import Filter
+from .sicherer_speicher import verzeichnis, lesen, schreiben
 
 FORMAT_VERSION = 1
 MAX_MISSIONEN = 100
@@ -176,56 +177,53 @@ class Missionsspeicher:
 
     @classmethod
     def laden(cls, pfad: pathlib.Path | str) -> "Missionsspeicher":
-        datei = pathlib.Path(pfad)
-        if datei.is_symlink() or any(p.is_symlink() for p in datei.parents):
-            raise MissionsFehler("Symbolische Links im Missionspfad sind nicht erlaubt")
-        if not datei.exists():
-            return cls(datei)
-        try:
-            daten = json.loads(datei.read_text(encoding="utf-8"))
-            if (not isinstance(daten, dict) or daten.get("version") != FORMAT_VERSION
-                    or not isinstance(daten.get("missionen"), list)):
-                raise MissionsFehler("Unbekanntes Missionsdateiformat")
-            return cls(datei, [Mission.aus_dict(x) for x in daten["missionen"]])
-        except MissionsFehler as exc:
-            raise MissionsFehler(f"{datei.name}: {exc}") from exc
-        except (OSError, ValueError, TypeError, json.JSONDecodeError) as exc:
-            raise MissionsFehler(f"{datei.name} ist beschädigt und wird nicht überschrieben") from exc
+        speicher = cls(pfad)
+        with speicher._lock, speicher._dateisperre():
+            speicher._missionen = speicher._auffrischen()
+        return speicher
 
     @contextmanager
     def _dateisperre(self):
-        """Exklusive Dateisperre für alle Instanzen/Prozesse desselben Pfads.
-
-        Die Lock-Datei wird nicht ausgetauscht: flock muss auf einer stabilen
-        Inode wirken. Manipulierte Links und unsichere Lock-Dateien scheitern.
-        """
+        """Gleiche Inode für das Lock und FD-verankerte Pfade während der Operation."""
         if os.name != "posix":
             raise MissionsFehler("Sichere parallele Missionsspeicherung benötigt POSIX")
         import fcntl
-        pfad = self.pfad.absolute()
-        if pfad.is_symlink() or any(p.is_symlink() for p in pfad.parents):
-            raise MissionsFehler("Symbolische Links im Missionspfad sind nicht erlaubt")
-        pfad.parent.mkdir(parents=True, exist_ok=True)
-        flags = os.O_RDWR | os.O_CREAT | os.O_CLOEXEC | os.O_NOFOLLOW
         try:
-            fd = os.open(str(pfad) + ".lock", flags, 0o600)
+            with verzeichnis(self.pfad) as (ordner, name):
+                fd = os.open(name + ".lock", os.O_RDWR | os.O_CREAT |
+                             os.O_CLOEXEC | os.O_NOFOLLOW, 0o600, dir_fd=ordner)
+                try:
+                    info = os.fstat(fd)
+                    if not stat.S_ISREG(info.st_mode) or info.st_nlink != 1 or info.st_mode & 0o077:
+                        raise MissionsFehler("Missionssperre ist nicht privat oder regulär")
+                    fcntl.flock(fd, fcntl.LOCK_EX)
+                    self._ordner_fd = ordner
+                    try:
+                        yield
+                    finally:
+                        self._ordner_fd = None
+                finally:
+                    os.close(fd)
         except OSError as exc:
-            raise MissionsFehler("Missionssperre konnte nicht sicher geöffnet werden") from exc
-        try:
-            info = os.fstat(fd)
-            if not stat.S_ISREG(info.st_mode) or info.st_nlink != 1 or info.st_mode & 0o077:
-                raise MissionsFehler("Missionssperre ist nicht privat oder regulär")
-            fcntl.flock(fd, fcntl.LOCK_EX)
-            if pfad.is_symlink() or any(p.is_symlink() for p in pfad.parents):
-                raise MissionsFehler("Missionspfad wurde verändert")
-            yield
-        finally:
-            os.close(fd)
+            raise MissionsFehler("Sichere Missionsdatei / Verzeichnissperre nicht zugänglich") from exc
 
-    def _auffrischen(self):
-        # Nur unter _dateisperre aufrufen. Ein zweites geladenes Objekt kann
-        # inzwischen Änderungen geschrieben haben: nie die alte Kopie nutzen.
-        return list(type(self).laden(self.pfad)._missionen)
+    def _auffrischen(self) -> list[Mission]:
+        # Nur innerhalb der gesperrten Transaktion aufrufen.
+        try:
+            roh = lesen(self._ordner_fd, self.pfad.name)
+            if roh is None:
+                return []
+            daten = json.loads(roh)
+            if (not isinstance(daten, dict) or daten.get("version") != FORMAT_VERSION
+                    or not isinstance(daten.get("missionen"), list)):
+                raise MissionsFehler("Unbekanntes Missionsdateiformat")
+            missionen = [Mission.aus_dict(m) for m in daten["missionen"]]
+            self._pruefe_gesamt(missionen)
+            return missionen
+        except MissionsFehler:
+            raise
+        except (OSError, UnicodeError, ValueError, TypeError) as exc:
+            raise MissionsFehler("Missionsdatei ist beschädigt und wird nicht überschrieben") from exc
 
     @staticmethod
     def _pruefe_gesamt(missionen: list[Mission]) -> None:
@@ -247,24 +245,12 @@ class Missionsspeicher:
             return tuple(m for m in self._missionen if m.ist_faellig(zeit))
 
     def _speichern(self, missionen: list[Mission]) -> None:
-        if self.pfad.is_symlink() or any(p.is_symlink() for p in self.pfad.absolute().parents):
-            raise MissionsFehler("Missionspfad ist ein symbolischer Link")
         self._pruefe_gesamt(missionen)
         inhalt = json.dumps({"version": FORMAT_VERSION,
                              "missionen": [m.als_dict() for m in missionen]},
                             ensure_ascii=False, separators=(",", ":"))
-        self.pfad.parent.mkdir(parents=True, exist_ok=True)
-        fd, temporaer = tempfile.mkstemp(prefix=".missionen-", suffix=".json", dir=self.pfad.parent)
-        try:
-            os.fchmod(fd, 0o600)
-            with os.fdopen(fd, "w", encoding="utf-8") as datei:
-                datei.write(inhalt)
-                datei.flush()
-                os.fsync(datei.fileno())
-            os.replace(temporaer, self.pfad)
-        except BaseException:
-            pathlib.Path(temporaer).unlink(missing_ok=True)
-            raise
+        # _dateisperre hält ein gegen Symlink-Austausch gesichertes dir_fd.
+        schreiben(self._ordner_fd, self.pfad.name, inhalt)
 
     def _ersetzen(self, neu: list[Mission]) -> None:
         self._pruefe_gesamt(neu)
