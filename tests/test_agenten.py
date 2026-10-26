@@ -136,19 +136,22 @@ class TestKostenbremsen(unittest.TestCase):
                 self.assertNotIn(verboten, text, f"{verboten} in {datei}")
 
     def test_workflow_minimale_rechte(self):
+        # Ein deaktivierter Legacy-Workflow darf weder Rechte noch Agentenstarts haben.
         wf = (ROOT / ".github/workflows/schnapper-hourly.yml").read_text(encoding="utf-8")
-        self.assertIn("models: read", wf)
-        self.assertIn("timeout-minutes: 10", wf)
-        self.assertIn("SCHNAPPER_PAUSE", wf)
+        self.assertIn("contents: read", wf)
+        self.assertIn("if: ${{ false }}", wf)
+        self.assertNotIn("contents: write", wf)
+        self.assertNotIn("models: read", wf)
+        self.assertNotIn("git push", wf)
+        self.assertNotIn("team/agent.py ", wf)
         self.assertNotIn("secrets.ANTHROPIC", wf)
-        for rolle in ("LEAD", "BRAIN", "CHECK", "COMMAND"):
-            self.assertIn(f"team/agent.py {rolle}", wf)
 
     def test_kostenschutz_nur_oeffentlich(self):
         wf = (ROOT / ".github/workflows/schnapper-hourly.yml").read_text(encoding="utf-8")
-        self.assertIn("github.event.repository.private == false", wf)
-        self.assertIn("vars.SCHNAPPER_OEFFENTLICH == 'true'", wf)
-        self.assertIn("Repository ist privat", wf)
+        self.assertNotIn("schedule:", wf)
+        self.assertNotIn("cron:", wf)
+        self.assertIn("legacy-disabled:", wf)
+        self.assertIn("if: ${{ false }}", wf)
         tests_wf = (ROOT / ".github/workflows/tests.yml").read_text(encoding="utf-8")
         self.assertIn("github.event.repository.private == false", tests_wf)
 
