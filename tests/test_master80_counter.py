@@ -18,6 +18,10 @@ from test_local_ollama import gueltige_antwort
 
 class TestMaster80Zaehlerintegritaet(unittest.TestCase):
     def setUp(self):
+        # Offline unit fixture: consent is tested separately in approval suites.
+        consent = mock.patch.object(lokal, "pruefe_freigabe", return_value="S-000")
+        consent.start()
+        self.addCleanup(consent.stop)
         temp = tempfile.TemporaryDirectory()
         self.addCleanup(temp.cleanup)
         self.root = pathlib.Path(temp.name)

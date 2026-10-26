@@ -36,6 +36,11 @@ class TestLokaleKI(unittest.TestCase):
         })
         self.env.start()
         self.addCleanup(self.env.stop)
+        # This fixture simulates downstream Ollama behavior under approved conditions;
+        # separate MASTER 121 tests prove that real unapproved requests are denied.
+        consent = mock.patch.object(lokal, "pruefe_freigabe", return_value="S-014")
+        consent.start()
+        self.addCleanup(consent.stop)
 
     def test_keine_fremde_url_konfigurierbar(self):
         self.assertEqual(lokal.LOKAL, "http://127.0.0.1:11434")

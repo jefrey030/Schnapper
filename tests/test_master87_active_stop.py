@@ -17,6 +17,10 @@ import local_service as dienst
 
 class TestMaster87AktiverNotAus(unittest.TestCase):
     def setUp(self):
+        # Offline unit fixture: consent is tested separately in approval suites.
+        consent = mock.patch.object(dienst, "pruefe_freigabe", return_value="S-000")
+        consent.start()
+        self.addCleanup(consent.stop)
         t = tempfile.TemporaryDirectory()
         self.addCleanup(t.cleanup)
         self.root = pathlib.Path(t.name)

@@ -14,6 +14,10 @@ import local_service as dienst
 
 class TestMaster77Nachweise(unittest.TestCase):
     def setUp(self):
+        # Offline unit fixture: consent is tested separately in approval suites.
+        consent = mock.patch.object(dienst, "pruefe_freigabe", return_value="S-000")
+        consent.start()
+        self.addCleanup(consent.stop)
         temp = tempfile.TemporaryDirectory()
         self.addCleanup(temp.cleanup)
         self.root = pathlib.Path(temp.name)
@@ -62,6 +66,7 @@ class TestMaster77Nachweise(unittest.TestCase):
         self.report = {
             "lauf": self.lauf.name,
             "team_einsatzbereit": True,
+            "aufgabe": "S-000", "selected_task": {"id": "S-000"},
             "agenten_mit_echter_ki": list(dienst.ROLES),
             "ki_aufrufe": 4,
             "tests_ok": True,

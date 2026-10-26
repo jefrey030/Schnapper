@@ -15,6 +15,10 @@ from ki import KINichtVerfuegbar
 
 class TestMaster81LokaleGrenzen(unittest.TestCase):
     def setUp(self):
+        # Offline unit fixture: consent is tested separately in approval suites.
+        consent = mock.patch.object(lokal, "pruefe_freigabe", return_value="S-000")
+        consent.start()
+        self.addCleanup(consent.stop)
         temp = tempfile.TemporaryDirectory()
         self.addCleanup(temp.cleanup)
         self.pfad = pathlib.Path(temp.name) / "work" / "ki_aufrufe.txt"

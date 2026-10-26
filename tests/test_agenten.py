@@ -278,7 +278,12 @@ class TestAgenten(unittest.TestCase):
             fake = mock.Mock()
             fake.frage.return_value = {"text": '{"urteil": "bestanden"}', "modell": "m", "antwort_id": "1"}
             erg = agent.check(self.lauf, fake)
-        self.assertEqual(erg["urteil"]["urteil"], "abgelehnt")
+        # Fail-closed: bei negativen Werkzeugtests findet keine kostenrelevante
+        # CHECK-Modellinferenz statt und es wird kein positives Urteil erzeugt.
+        self.assertEqual(erg["status"], "ÜBERSPRUNGEN")
+        self.assertFalse(erg["ki_echt"])
+        self.assertNotIn("urteil", erg)
+        fake.frage.assert_not_called()
 
     def test_ungueltige_aufgabe_wird_abgelehnt(self):
         fake = mock.Mock()
