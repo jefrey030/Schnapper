@@ -21,6 +21,7 @@ import pathlib
 import re
 import subprocess
 import sys
+from safe_artifacts import read_text, write_text
 
 sys.path.insert(0, str(pathlib.Path(__file__).resolve().parent))
 from ki import KI as GitHubKI, KINichtVerfuegbar  # noqa: E402
@@ -69,9 +70,7 @@ def lies(ordner, rolle):
     pfad = ordner / f"{rolle}.json"
     try:
         # Schutz gegen übergroße/korrupte oder nicht lesbare KI-Protokolle.
-        if pfad.stat().st_size > 128_000:
-            return None
-        daten = json.loads(pfad.read_text(encoding="utf-8"))
+        daten = json.loads(read_text(pfad, limit=128_000))
     except (OSError, ValueError, UnicodeError):
         return None
     return daten if isinstance(daten, dict) else None
@@ -79,14 +78,13 @@ def lies(ordner, rolle):
 
 def schreibe(ordner, rolle, daten):
     """KI-Antworten vor der Ablage redigieren; bei Fund nie positiv freigeben."""
-    ordner.mkdir(parents=True, exist_ok=True)
     roh = json.dumps(daten, ensure_ascii=False, indent=2)
     if GEHEIMNIS_MUSTER.search(roh):
         daten.update(status="FEHLER", geheimnis_redigiert=True,
                      fehler="Geheimnisindikator entdeckt: Inhalt redigiert und Agent gesperrt.")
         roh = json.dumps(daten, ensure_ascii=False, indent=2)
         roh = GEHEIMNIS_MUSTER.sub("[REDACTED]", roh)
-    (ordner / f"{rolle}.json").write_text(roh + "\n", encoding="utf-8")
+    write_text(ordner / f"{rolle}.json", roh + "\n")
 
 
 def json_aus_text(text):
@@ -232,8 +230,7 @@ def brain(ordner, ki):
         return erg
     stempel = ordner.name
     vorschlag = TEAM / "proposals" / f"{stempel}-{l['plan']['aufgabe_id']}.md"
-    vorschlag.parent.mkdir(parents=True, exist_ok=True)
-    vorschlag.write_text(f"# BRAIN-Vorschlag {l['plan']['aufgabe_id']} ({stempel})\n\n"
+    write_text(vorschlag, f"# BRAIN-Vorschlag {l['plan']['aufgabe_id']} ({stempel})\n\n"
                          f"_Erzeugt von {antwort['modell']} über {antwort['laufzeit']}. "
                          "Vorschlag, nicht automatisch umgesetzt._\n\n" +
                          GEHEIMNIS_MUSTER.sub("[REDACTED]", antwort["text"]) + "\n",
@@ -421,8 +418,7 @@ def bericht(ordner):
                 "naechster_schritt": proto.get("naechster_schritt"), "blocker": blocker,
                 "agenten": alle}
     runs = TEAM / "runs"
-    runs.mkdir(parents=True, exist_ok=True)
-    (runs / f"{ordner.name}.json").write_text(json.dumps(
+    write_text(runs / f"{ordner.name}.json", json.dumps(
         {**zusammen, "selected_task": {"id": lead_plan.get("aufgabe_id")} if lead_plan else None},
         ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
     zeilen = [f"# SCHNAPPER-KI-Team – Stundenbericht {ordner.name}", "",
@@ -447,8 +443,8 @@ def bericht(ordner):
         zeilen += ["", f"BRAIN-Vorschlag: `{alle['BRAIN']['vorschlag_datei']}`"]
     zeilen += ["", f"Rohdaten: `team/runs/{ordner.name}.json`"]
     text = "\n".join(zeilen) + "\n"
-    (runs / f"{ordner.name}.md").write_text(text, encoding="utf-8")
-    (TEAM / "STATUS.md").write_text(text, encoding="utf-8")
+    write_text(runs / f"{ordner.name}.md", text)
+    write_text(TEAM / "STATUS.md", text)
     print(json.dumps({k: zusammen[k] for k in ("lauf", "team_einsatzbereit", "agenten_mit_echter_ki",
                                                  "modelle", "aufgabe", "check_urteil", "tests_ok", "ki_aufrufe",
                                                  "blocker")},
@@ -463,7 +459,7 @@ def main(argv):
     if len(argv) != 3 or argv[1] not in (*AGENTEN, "BERICHT"):
         print(__doc__)
         return 2
-    rolle, ordner = argv[1], pathlib.Path(argv[2]).resolve()
+    rolle, ordner = argv[1], pathlib.Path(os.path.abspath(argv[2]))
     if rolle == "BERICHT":
         return bericht(ordner)
     ki = KI(ordner / "ki_aufrufe.txt")

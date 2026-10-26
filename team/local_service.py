@@ -11,6 +11,7 @@ import hashlib
 import json
 import os
 import pathlib
+import signal
 import stat
 import subprocess
 import sys
@@ -260,45 +261,62 @@ def rolle_starten(cmd, *, cwd, env, capture_output=True, text=True,
     if stop_on_flag and gestoppt():
         return subprocess.CompletedProcess(cmd, -4, "", "")
 
-    # Keine Shell, nur das aktuelle Python und der festgelegte Agent.
+    if os.name != "posix":
+        raise OSError("Sichere Prozessgruppen benötigen POSIX")
     with subprocess.Popen(
         cmd, cwd=cwd, env=env, stdout=subprocess.PIPE,
-        stderr=subprocess.PIPE, text=True,
+        stderr=subprocess.PIPE, text=True, start_new_session=True,
     ) as proc:
+        def gruppe_beenden(sig):
+            # Nur eine echte PID verwenden; Testdoubles bleiben isoliert.
+            if type(proc.pid) is int:
+                try:
+                    os.killpg(proc.pid, sig)
+                except ProcessLookupError:
+                    pass
+            elif sig == signal.SIGTERM:
+                proc.terminate()
+            else:
+                proc.kill()
+
+        def abbrechen(sofort=False):
+            gruppe_beenden(signal.SIGKILL if sofort else signal.SIGTERM)
+            # Ein Rollenabbruch verwirft Ausgaben; Nachkommen brauchen keine
+            # Schonfrist und dürfen auch ohne offene Pipes nicht weiterlaufen.
+            if type(proc.pid) is int:
+                gruppe_beenden(signal.SIGKILL)
+            try:
+                proc.communicate(timeout=2)
+            except subprocess.TimeoutExpired:
+                if not sofort or type(proc.pid) is int:
+                    gruppe_beenden(signal.SIGKILL)
+                try:
+                    proc.communicate(timeout=1)
+                except subprocess.TimeoutExpired:
+                    for stream in (proc.stdout, proc.stderr):
+                        if stream is not None:
+                            stream.close()
+                    proc.wait(timeout=2)
+
         ende = time.monotonic() + timeout
         while True:
             if stop_on_flag and gestoppt():
-                if proc.poll() is None:
-                    try:
-                        proc.terminate()
-                    except ProcessLookupError:
-                        pass
-                    try:
-                        proc.communicate(timeout=2)
-                    except subprocess.TimeoutExpired:
-                        try:
-                            proc.kill()
-                        except ProcessLookupError:
-                            pass
-                        proc.communicate()
-                # Weder potenziell sensible Teil-Logs noch einen Erfolg ausgeben.
+                abbrechen()
                 return subprocess.CompletedProcess(cmd, -4, "", "")
             rest = ende - time.monotonic()
             if rest <= 0:
-                if proc.poll() is None:
-                    try:
-                        proc.kill()
-                    except ProcessLookupError:
-                        pass
-                proc.communicate()
+                abbrechen(sofort=True)
                 raise subprocess.TimeoutExpired(cmd, timeout)
             try:
                 stdout, stderr = proc.communicate(timeout=min(0.5, rest))
             except subprocess.TimeoutExpired:
-                # Das Kind läuft weiter; nun erneut den Not-Aus prüfen.
                 continue
             if stop_on_flag and gestoppt():
+                abbrechen()
                 return subprocess.CompletedProcess(cmd, -4, "", "")
+            # Rollen dürfen keine unbeaufsichtigten Hintergrundprozesse hinterlassen.
+            if type(proc.pid) is int:
+                gruppe_beenden(signal.SIGKILL)
             return subprocess.CompletedProcess(cmd, proc.returncode, stdout, stderr)
 
 def pruefe_manifest(lauf):
