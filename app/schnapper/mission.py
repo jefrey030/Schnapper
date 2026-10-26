@@ -9,6 +9,8 @@ from __future__ import annotations
 
 import datetime as dt
 import json
+import stat
+from contextlib import contextmanager
 import os
 import pathlib
 import re
@@ -175,6 +177,8 @@ class Missionsspeicher:
     @classmethod
     def laden(cls, pfad: pathlib.Path | str) -> "Missionsspeicher":
         datei = pathlib.Path(pfad)
+        if datei.is_symlink() or any(p.is_symlink() for p in datei.parents):
+            raise MissionsFehler("Symbolische Links im Missionspfad sind nicht erlaubt")
         if not datei.exists():
             return cls(datei)
         try:
@@ -188,6 +192,41 @@ class Missionsspeicher:
         except (OSError, ValueError, TypeError, json.JSONDecodeError) as exc:
             raise MissionsFehler(f"{datei.name} ist beschädigt und wird nicht überschrieben") from exc
 
+    @contextmanager
+    def _dateisperre(self):
+        """Exklusive Dateisperre für alle Instanzen/Prozesse desselben Pfads.
+
+        Die Lock-Datei wird nicht ausgetauscht: flock muss auf einer stabilen
+        Inode wirken. Manipulierte Links und unsichere Lock-Dateien scheitern.
+        """
+        if os.name != "posix":
+            raise MissionsFehler("Sichere parallele Missionsspeicherung benötigt POSIX")
+        import fcntl
+        pfad = self.pfad.absolute()
+        if pfad.is_symlink() or any(p.is_symlink() for p in pfad.parents):
+            raise MissionsFehler("Symbolische Links im Missionspfad sind nicht erlaubt")
+        pfad.parent.mkdir(parents=True, exist_ok=True)
+        flags = os.O_RDWR | os.O_CREAT | os.O_CLOEXEC | os.O_NOFOLLOW
+        try:
+            fd = os.open(str(pfad) + ".lock", flags, 0o600)
+        except OSError as exc:
+            raise MissionsFehler("Missionssperre konnte nicht sicher geöffnet werden") from exc
+        try:
+            info = os.fstat(fd)
+            if not stat.S_ISREG(info.st_mode) or info.st_nlink != 1 or info.st_mode & 0o077:
+                raise MissionsFehler("Missionssperre ist nicht privat oder regulär")
+            fcntl.flock(fd, fcntl.LOCK_EX)
+            if pfad.is_symlink() or any(p.is_symlink() for p in pfad.parents):
+                raise MissionsFehler("Missionspfad wurde verändert")
+            yield
+        finally:
+            os.close(fd)
+
+    def _auffrischen(self):
+        # Nur unter _dateisperre aufrufen. Ein zweites geladenes Objekt kann
+        # inzwischen Änderungen geschrieben haben: nie die alte Kopie nutzen.
+        return list(type(self).laden(self.pfad)._missionen)
+
     @staticmethod
     def _pruefe_gesamt(missionen: list[Mission]) -> None:
         if len(missionen) > MAX_MISSIONEN:
@@ -197,15 +236,19 @@ class Missionsspeicher:
             raise MissionsFehler("Missions-IDs müssen eindeutig sein")
 
     def alle(self) -> tuple[Mission, ...]:
-        with self._lock:
+        with self._lock, self._dateisperre():
+            self._missionen = self._auffrischen()
             return tuple(self._missionen)
 
     def faellige(self, jetzt=None) -> tuple[Mission, ...]:
         zeit = _zeit(jetzt)
-        with self._lock:
+        with self._lock, self._dateisperre():
+            self._missionen = self._auffrischen()
             return tuple(m for m in self._missionen if m.ist_faellig(zeit))
 
     def _speichern(self, missionen: list[Mission]) -> None:
+        if self.pfad.is_symlink() or any(p.is_symlink() for p in self.pfad.absolute().parents):
+            raise MissionsFehler("Missionspfad ist ein symbolischer Link")
         self._pruefe_gesamt(missionen)
         inhalt = json.dumps({"version": FORMAT_VERSION,
                              "missionen": [m.als_dict() for m in missionen]},
@@ -231,12 +274,14 @@ class Missionsspeicher:
 
     def erstellen(self, **daten) -> Mission:
         mission = Mission.erstellen(**daten)
-        with self._lock:
+        with self._lock, self._dateisperre():
+            self._missionen = self._auffrischen()
             self._ersetzen([*self._missionen, mission])
         return mission
 
     def bearbeiten(self, mission_id: str, **daten) -> Mission:
-        with self._lock:
+        with self._lock, self._dateisperre():
+            self._missionen = self._auffrischen()
             index = next((i for i, m in enumerate(self._missionen) if m.id == mission_id), None)
             if index is None:
                 raise MissionsFehler("Mission nicht gefunden")
@@ -255,7 +300,8 @@ class Missionsspeicher:
             return neu
 
     def _status(self, mission_id: str, status: str) -> Mission:
-        with self._lock:
+        with self._lock, self._dateisperre():
+            self._missionen = self._auffrischen()
             index = next((i for i, m in enumerate(self._missionen) if m.id == mission_id), None)
             if index is None:
                 raise MissionsFehler("Mission nicht gefunden")
@@ -279,7 +325,8 @@ class Missionsspeicher:
 
     def lauf_abschliessen(self, mission_id: str, jetzt=None) -> Mission:
         zeit = _zeit(jetzt)
-        with self._lock:
+        with self._lock, self._dateisperre():
+            self._missionen = self._auffrischen()
             index = next((i for i, m in enumerate(self._missionen) if m.id == mission_id), None)
             if index is None:
                 raise MissionsFehler("Mission nicht gefunden")
