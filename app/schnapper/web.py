@@ -13,6 +13,7 @@ die gesehenen Preise (URL, Zeitpunkt, Preis) lokal in DATEI festgehalten.
 from __future__ import annotations
 
 import argparse
+import ipaddress
 import json
 import pathlib
 import sys
@@ -45,6 +46,63 @@ SICHERHEIT = {
     "Referrer-Policy": "no-referrer",
     "Cache-Control": "no-store",
 }
+
+
+def _lokaler_host(host_header: str | None, bind_host: str, port: int) -> tuple[str, int] | None:
+    """Abwehr fremder Hostnames/DNS-Rebinding bei der lokalen, ungeschützten UI.
+
+    Nur localhost/Loopback auf dem wirklich verwendeten Port. Die explizite
+    WLAN-Freigabe (--host 0.0.0.0) erlaubt zusätzlich private IP-Literale,
+    keine über DNS auf lokale IPs auflösenden Fremd-Hostnamen.
+    """
+    if not isinstance(host_header, str) or not host_header or any(
+            x.isspace() or x in "/\\@" for x in host_header):
+        return None
+    try:
+        teile = urlsplit("http://" + host_header)
+        hostname = (teile.hostname or "").lower()
+        angefragt_port = teile.port or 80
+        if teile.username or teile.password or teile.path or teile.query or teile.fragment:
+            return None
+    except ValueError:
+        return None
+    if angefragt_port != port:
+        return None
+    if hostname == "localhost":
+        return hostname, angefragt_port
+    try:
+        ip = ipaddress.ip_address(hostname)
+    except ValueError:
+        return None
+    if ip.is_loopback:
+        return hostname, angefragt_port
+    if bind_host not in ("0.0.0.0", "::", "") and hostname != bind_host:
+        return None
+    if ip.is_unspecified or ip.is_multicast or ip.is_reserved:
+        return None
+    if ip.is_private or ip.is_link_local:
+        return hostname, angefragt_port
+    return None
+
+
+def _origin_erlaubt(origin: str | None, hostname: str, port: int) -> bool:
+    """Fremde Browser-Origin bei schreibenden POST-Anfragen blockieren.
+
+    Ohne Origin dürfen lokale Skripte weiter POST senden; hierfür ist noch
+    immer X-Schnapper erforderlich. Kein Ersatz für ein WLAN-Passwort/Auth.
+    """
+    if origin is None:
+        return True
+    if not isinstance(origin, str) or not origin or any(x.isspace() for x in origin):
+        return False
+    try:
+        teile = urlsplit(origin)
+        return (teile.scheme == "http" and (teile.hostname or "").lower() == hostname
+                and (teile.port or 80) == port and not teile.path
+                and not teile.query and not teile.fragment
+                and not teile.username and not teile.password)
+    except ValueError:
+        return False
 
 
 class Zustand:
@@ -147,10 +205,16 @@ def baue_handler(zustand: Zustand):
         def _json(self, status, obj):
             self._senden(status, json.dumps(obj, ensure_ascii=False).encode("utf-8"), "application/json; charset=utf-8")
 
+        def _host_erlaubt(self):
+            bind_host, port = self.server.server_address[:2]
+            return _lokaler_host(self.headers.get("Host"), bind_host, port)
+
         def do_HEAD(self):
             self.do_GET()
 
         def do_GET(self):
+            if self._host_erlaubt() is None:
+                return self._json(HTTPStatus.FORBIDDEN, {"fehler": "Host nicht erlaubt"})
             teile = urlsplit(self.path)
             if teile.path in DATEIEN:
                 datei, typ = DATEIEN[teile.path]
@@ -171,6 +235,11 @@ def baue_handler(zustand: Zustand):
 
         def do_POST(self):
             ziel = urlsplit(self.path).path
+            host = self._host_erlaubt()
+            if host is None:
+                return self._json(HTTPStatus.FORBIDDEN, {"fehler": "Host nicht erlaubt"})
+            if not _origin_erlaubt(self.headers.get("Origin"), *host):
+                return self._json(HTTPStatus.FORBIDDEN, {"fehler": "Fremde Webseite nicht erlaubt"})
             if ziel not in ("/api/import", "/api/openprices"):
                 return self._json(HTTPStatus.NOT_FOUND, {"fehler": "Nicht gefunden"})
             # Schutz gegen fremde Webseiten, die im Hintergrund Daten hochladen wollen

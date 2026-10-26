@@ -10,12 +10,43 @@ jobs:
   python-tests:
     # Kostenschutz: nur in öffentlichem Repository (kostenlose Standard-Runner)
     if: github.event.repository.private == false
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     timeout-minutes: 5
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
+      - uses: actions/checkout@v7
+        with:
+          # S-006 braucht historische Git-Baeume und den Merge-Verlauf.
+          fetch-depth: 0
+          persist-credentials: false
+      - name: S-006 alle Remote-Refs fuer Integrationspruefung laden
+        run: |
+          set -euo pipefail
+          git fetch --no-tags --no-recurse-submodules origin \
+            '+refs/heads/main:refs/remotes/origin/main' \
+            '+refs/heads/fix/schnapper-web-main-20261022:refs/remotes/origin/fix/schnapper-web-main-20261022' \
+            '+refs/heads/feature/schnapper-web-quellen-20261022:refs/remotes/origin/feature/schnapper-web-quellen-20261022' \
+            '+refs/heads/feature/schnapper-angebotskern-20261021:refs/remotes/origin/feature/schnapper-angebotskern-20261021' \
+            '+refs/heads/fix/schnapper-hourly-rotation-20261021:refs/remotes/origin/fix/schnapper-hourly-rotation-20261021'
+          git rev-parse --verify 'origin/main^{commit}' >/dev/null
+      - uses: actions/setup-python@v7
         with:
           python-version: '3.11'
       - name: Python Unit-Tests
         run: python -m unittest discover -s tests -v
+
+  cloudflare-tests:
+    # Nur Standard-Runner im öffentlichen Repository; keine Workers-Bereitstellung.
+    if: github.event.repository.private == false
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v7
+        with:
+          node-version: '22'
+          package-manager-cache: false
+      - name: Cloudflare Worker Offline-Tests (ohne Deployment)
+        working-directory: cloudflare
+        run: node --test test/*.test.mjs

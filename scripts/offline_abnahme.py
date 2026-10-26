@@ -61,7 +61,8 @@ def main(argv: list[str] | None = None) -> int:
     else:
         suites.append({"suite": "python", "status": "FAIL", "tests_reported": 0, "error": "No Python test files"})
     if node_files:
-        suites.append(run_suite(root, "node", ["node", "--test", *(str(p) for p in node_files)],
+        suites.append(run_suite(root, "node", ["node", "--test", "--test-reporter=tap",
+                                               *(str(p) for p in node_files)],
                                 r"^# tests (\d+)\s*$", reports))
     else:
         suites.append({"suite": "node", "status": "FAIL", "tests_reported": 0, "error": "No Node test files"})
