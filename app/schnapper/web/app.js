@@ -404,7 +404,10 @@ async function alarmAnlegen() {
   const antwort = await fetch("/api/suche?" + alarmQuery(w)).catch(() => null);
   if (!antwort || !antwort.ok) { $("status").textContent = "Preisalarm nicht angelegt: Eingaben prüfen."; return; }
   liste.push({ ...w, angelegt_am: new Date().toISOString() });
-  speicher.schreiben("alarme", liste);
+  if (!speicher.schreiben("alarme", liste)) {
+    $("status").textContent = "Preisalarm nicht angelegt: lokale Speicherung fehlgeschlagen.";
+    return;
+  }
   $("status").textContent = `Preisalarm angelegt: ${wunschText(w)}`;
   alarmePruefen();
 }
@@ -571,6 +574,14 @@ function gespeicherteErgebnisse() {
   return safe;
 }
 
+function apiFehler(antwort, inhalt, pfad) {
+  const fehler = new Error(inhalt.fehler || `Anfrage fehlgeschlagen (${antwort.status})`);
+  fehler.status = antwort.status;
+  fehler.aktualisieren = inhalt.aktualisieren === true;
+  fehler.pfad = pfad;
+  return fehler;
+}
+
 async function apiPost(pfad, daten) {
   const antwort = await fetch(pfad, {
     method: "POST",
@@ -579,7 +590,7 @@ async function apiPost(pfad, daten) {
   });
   let inhalt = {};
   try { inhalt = await antwort.json(); } catch { /* verständlicher Fehler unten */ }
-  if (!antwort.ok) throw new Error(inhalt.fehler || `Anfrage fehlgeschlagen (${antwort.status})`);
+  if (!antwort.ok) throw apiFehler(antwort, inhalt, pfad);
   return inhalt;
 }
 
@@ -587,7 +598,7 @@ async function apiGet(pfad) {
   const antwort = await fetch(pfad, { headers: { "X-Schnapper": "1" } });
   let inhalt = {};
   try { inhalt = await antwort.json(); } catch { /* verständlicher Fehler unten */ }
-  if (!antwort.ok) throw new Error(inhalt.fehler || `Anfrage fehlgeschlagen (${antwort.status})`);
+  if (!antwort.ok) throw apiFehler(antwort, inhalt, pfad);
   return inhalt;
 }
 
@@ -779,9 +790,22 @@ async function missionenLaden() {
     if (!antwort.ok) throw new Error(daten.fehler || "Missionen konnten nicht geladen werden");
     missionen = Array.isArray(daten.missionen) ? daten.missionen : [];
     renderMissionen();
+    return true;
   } catch (err) {
     $("mission-form-status").textContent = `${err.message}. Starte SCHNAPPER mit lokalem Datenverzeichnis neu.`;
+    return false;
   }
+}
+
+async function apiFehlerMeldung(err) {
+  const meldung = err?.message || "Anfrage fehlgeschlagen.";
+  if (err?.status !== 409 || err?.aktualisieren !== true) return meldung;
+  const missionsPfad = err.pfad === "/api/missionen";
+  const aktualisiert = missionsPfad ? await missionenLaden() : false;
+  const hinweis = missionsPfad
+    ? (aktualisiert ? "Die Missionsliste wurde aktualisiert." : "Die Missionsliste konnte nicht aktualisiert werden.")
+    : "Bitte lade den betroffenen Datenstand neu.";
+  return `${meldung}. ${hinweis} Deine Eingaben bleiben erhalten. Es wurde nichts automatisch wiederholt; prüfe den Stand und starte den Vorgang bewusst erneut.`;
 }
 
 async function missionAktion(aktion, id) {
@@ -790,7 +814,7 @@ async function missionAktion(aktion, id) {
     await apiPost("/api/missionen", { aktion, id });
     await missionenLaden();
     $("mission-form-status").textContent = aktion === "loeschen" ? "Mission gelöscht." : "Mission aktualisiert.";
-  } catch (err) { $("mission-form-status").textContent = err.message; }
+  } catch (err) { $("mission-form-status").textContent = await apiFehlerMeldung(err); }
 }
 
 async function missionSpeichern(ev) {
@@ -804,7 +828,7 @@ async function missionSpeichern(ev) {
     missionFormZuruecksetzen();
     await missionenLaden();
     $("mission-form-status").textContent = `Mission „${antwort.mission.name}“ lokal gespeichert.`;
-  } catch (err) { $("mission-form-status").textContent = err.message; }
+  } catch (err) { $("mission-form-status").textContent = await apiFehlerMeldung(err); }
 }
 
 function blitzMeldungen(meldungen, beispieldaten) {
@@ -902,7 +926,7 @@ async function missionLauf(id, automatisch) {
     const logs = missionLaeufe();
     logs.push({ job_id: `fehler-${Date.now()}`, mission_id: id, status: "fehlgeschlagen", zeit: new Date().toISOString() });
     const protokollGespeichert = speicher.schreiben("mission-laeufe", logs.slice(-50));
-    $("mission-form-status").textContent = `Lauf fehlgeschlagen: ${err.message}`
+    $("mission-form-status").textContent = `Lauf fehlgeschlagen: ${await apiFehlerMeldung(err)}`
       + (protokollGespeichert ? "" : " Das Laufprotokoll konnte nicht lokal gespeichert werden.");
     renderMissionLaeufe();
   } finally {

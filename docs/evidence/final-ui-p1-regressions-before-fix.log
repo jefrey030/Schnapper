@@ -1,0 +1,50 @@
+✔ failed mission-ergebnisse persistence is never reported as saved (9.696999ms)
+✔ failed blitz persistence is never reported as saved (2.708661ms)
+✔ failed mission-laeufe persistence is never reported as saved (7.311336ms)
+✔ success is reported only after all three browser stores succeed (3.353024ms)
+✖ failed alarm persistence is never reported as created (2.519403ms)
+✖ 409 refreshes mission list, preserves form data, and never retries mutation (1.486358ms)
+ℹ tests 6
+ℹ suites 0
+ℹ pass 4
+ℹ fail 2
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 98.971965
+
+✖ failing tests:
+
+test at ../../../../tmp/tmp.9VQFuiUvbS/tests/test_storage_failure_ui.mjs:99:1
+✖ failed alarm persistence is never reported as created (2.519403ms)
+  AssertionError [ERR_ASSERTION]: Expected values to be strictly equal:
+  
+  1 !== 0
+  
+      at TestContext.<anonymous> (file:///tmp/tmp.9VQFuiUvbS/tests/test_storage_failure_ui.mjs:127:10)
+      at async Test.run (node:internal/test_runner/test:1409:7)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:974:7) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: 1,
+    expected: 0,
+    operator: 'strictEqual',
+    diff: 'simple'
+  }
+
+test at ../../../../tmp/tmp.9VQFuiUvbS/tests/test_storage_failure_ui.mjs:133:1
+✖ 409 refreshes mission list, preserves form data, and never retries mutation (1.486358ms)
+  AssertionError [ERR_ASSERTION]: Expected values to be strictly equal:
+  
+  0 !== 1
+  
+      at TestContext.<anonymous> (file:///tmp/tmp.9VQFuiUvbS/tests/test_storage_failure_ui.mjs:166:10)
+      at async Test.run (node:internal/test_runner/test:1409:7)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:974:7) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: 0,
+    expected: 1,
+    operator: 'strictEqual',
+    diff: 'simple'
+  }

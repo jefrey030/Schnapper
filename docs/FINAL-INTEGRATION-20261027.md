@@ -7,12 +7,14 @@ Ziel: sicherer Integrations-Draft-PR; kein Merge und kein Deployment.
 
 ## Ergebnis
 
-Die beiden in den WORK-Befunden von [PR #133](https://github.com/jefrey030/Schnapper/pull/133) beschriebenen Fehler sind korrigiert und mit Regressionen abgesichert:
+Die Befunde aus den WORK-Berichten von [PR #133](https://github.com/jefrey030/Schnapper/pull/133) sind im Folge-PR korrigiert und mit Regressionen abgesichert:
 
 1. **Backup-Snapshot:** `/api/backup` liest und validiert `missionen.json` und `blitz.json` unter genau einer gemeinsamen Verzeichnissperre. Die Dateien werden über sichere Verzeichnis-Handles gelesen. Der Code ruft keine Store-Exportmethode auf, die eine zweite blockierende Sperre nehmen könnte. Die Snapshot-Decoder sind als Store-API verfügbar.
 2. **Speicherstatus der Oberfläche:** MISSION-Läufe prüfen die Rückgabewerte für Ergebnisse, BLITZ-Queue und Laufprotokoll einzeln. Ein fehlgeschlagener Browser-Write kann keine Erfolgsmeldung „lokal gespeichert“ mehr auslösen; die Meldung nennt die betroffenen Bereiche. BLITZ meldet den Persistenzfehler ebenfalls direkt.
+3. **Alarmspeicherung:** Ein Preisalarm wird erst nach bestätigtem Browser-Write als angelegt gemeldet; bei `false` bleibt die Fehlermeldung sichtbar und die Prüfung wird nicht gestartet.
+4. **HTTP-409-Konflikte:** `apiPost` und `apiGet` erhalten HTTP-Status, `aktualisieren`-Flag und Pfad am Fehlerobjekt. Bei einem 409 der Missionsmutation wird die Missionsliste kontrolliert neu geladen; Formularwerte bleiben erhalten. Es gibt keinen automatischen Wiederholungsversuch; die Oberfläche fordert zur Prüfung und bewussten Wiederholung auf.
 
-Beide neuen Regressionen wurden gegen den unveränderten PR-#133-Stand ausgeführt und scheiterten dort wie beabsichtigt. Nach der Korrektur bestehen sie. Das Rohprotokoll steht in `docs/evidence/regressions-before-fix.log`.
+Die ursprünglichen Backup-/MISSION-Regressionen scheiterten gegen den unveränderten PR-#133-Stand wie beabsichtigt. Die zwei zusätzlichen UI-Regressionen scheitern ebenfalls gegen den vorherigen PR-#134-Stand und bestehen nach der Korrektur. Rohbelege: `docs/evidence/regressions-before-fix.log` und `docs/evidence/final-ui-p1-regressions-before-fix.log`.
 
 ## Abgleich der PRs #129–#133
 
@@ -34,6 +36,10 @@ Die zuvor aus dem finalen #133-Teststand fehlenden bzw. nicht mehr passenden Reg
 | #132 `test_symlink_leaf_and_lock_fail_closed` | `test_blitz_leaf_und_speicherlock_symlink_werden_abgewiesen` | BLITZ nutzt dieselbe gemeinsame Sperrdatei |
 | #132 `test_corruption_after_loading_is_not_overwritten` | `test_blitz_beschaedigung_nach_laden_bleibt_unveraendert` | Beschädigte BLITZ-Historie bleibt unverändert |
 | #132 `test_private_atomic_file_survives_reload` | `test_blitz_private_datei_ueberlebt_neustart` | Dateimodus und Reload bleiben abgesichert |
+| #133 `alarmAnlegen` darf fehlgeschlagenen Write nicht als Erfolg melden | `failed alarm persistence is never reported as created` | `false` bleibt Fehler; kein Erfolg und keine Alarmprüfung |
+| #133 HTTP 409 darf `status`/`aktualisieren` nicht verlieren | `409 refreshes mission list, preserves form data, and never retries mutation` | Status/Flag erhalten; Missionsliste einmal neu laden; Eingaben bleiben; keine Mutation wird wiederholt |
+
+Die 13 ursprünglichen #130/#132-Regressionen laufen gegen die neue Speicher-API nicht unverändert durch: 6 bestanden, 6 Fehler und 1 Fehlschlag. Die Fehler resultieren aus dem geänderten Konfliktvertrag (explizites `MissionsKonflikt`/`BlitzKonflikt`), dem entfernten privaten `_speichern`-Hook und dem ersetzten per-Datei-Locknamen. Der Fehlschlag prüft den alten Lock-Dateinamen, nicht den gemeinsamen Lock. Das ist kein Nachweis für stillen Datenverlust oder einen Bypass; die jeweilige Ersetzung muss Work anhand der neuen Tests abnehmen.
 
 Die Stilllegung aus #131 ist im Arbeitszweig enthalten; die Datei stimmt bytegenau mit dem #131-Zweig überein. **`main` bleibt davon unberührt und führt den dortigen Legacy-Stundenworkflow weiter aus, solange #131 beziehungsweise diese Integration nicht gemergt ist.** Das wurde wegen der ausdrücklichen Vorgabe „kein Merge“ nicht geändert.
 
@@ -41,18 +47,18 @@ PR-Verlauf: [#129](https://github.com/jefrey030/Schnapper/pull/129) · [#130](ht
 
 ## Tests und Nachweise
 
-Alle Prüfungen liefen lokal/offline mit temporären Verzeichnissen und synthetischen Angebotsdaten. Keine Produktionsdaten, externe Preisquellen, KI-Provider, Cloudflare-Bereitstellung oder kostenpflichtigen Dienste wurden verwendet.
+Alle Prüfungen liefen lokal/offline mit temporären Verzeichnissen und synthetischen Angebotsdaten. Keine Produktionsdaten, externe Preisquellen, KI-Provider, Cloudflare-Bereitstellung oder kostenpflichtigen Dienste wurden verwendet. Seit den lokalen Python-/Cloudflare-Vollsuiten wurden nur Web-UI-JavaScript, Node-Regressionen und Dokumentation ergänzt; der neue PR-Head muss die automatische CI erneut bestehen.
 
 | Prüfung | Ergebnis | Rohprotokoll |
 |---|---:|---|
 | Vollständige Python-Tests, `GITHUB_ACTIONS=true` einschließlich S-006-Refs | **534 bestanden, 0 fehlgeschlagen, 0 übersprungen** | `docs/evidence/final-python-tests.log` |
 | Vollständige Cloudflare-Worker-Offlinetests | **16 bestanden, 0 fehlgeschlagen, 0 übersprungen** | `docs/evidence/final-cloudflare-tests.log` |
-| UI-Speicherfehler-Regressionen | **4 bestanden, 0 fehlgeschlagen, 0 übersprungen** | `docs/evidence/final-ui-regression-tests.log` |
+| UI-Speicherfehler-Regressionen (Ergebnisse, BLITZ, Laufprotokoll, Alarm, HTTP 409) | **6 bestanden, 0 fehlgeschlagen, 0 übersprungen** | `docs/evidence/final-ui-regression-tests.log` |
 | Headless-Browser-Oberfläche bei 360 × 800 | **bestanden**: LUPE, WARENKORB, PREISDETEKTIV, BLITZ, MISSION; Upload, Vergleich, Mission-Lauf, Queue, Backup/Download und Wiederherstellung | `docs/evidence/final-headless-ui.log` |
 | Zwei sichtbare Browser-Tabs | **bestanden**: Web-Lock wird gemeinsam genutzt; der zweite Tab sendet während des ersten Laufs keinen doppelten Lauf | `docs/evidence/final-headless-ui.log` |
 | Neustart im isolierten Testdatenverzeichnis nach Restore | **bestanden**: 2 Missionen und 2 BLITZ-Historieneinträge nach Neustart wieder lesbar | `docs/evidence/final-restart-check.log` |
 | JavaScript-Syntax, Python-Compileall, Whitespace/Diff | **bestanden** | `docs/evidence/final-static-checks.log` |
-| Vorher/Nachher-Regressionsnachweis gegen PR-#133-Basis | **vorher: Backup-Test fehlgeschlagen; UI: 3 Fehlversuche/1 Erfolg. Nachher: alle Regressionen bestanden.** | `docs/evidence/regressions-before-fix.log` |
+| Vorher/Nachher-Regressionsnachweis | **Backup-/MISSION-Fehler vor dem Fix reproduziert; die zwei neuen UI-Fehler scheitern auf dem vorherigen PR-#134-Head (4 pass/2 fail) und bestehen nach dem Fix (6 pass/0 fail).** | `docs/evidence/regressions-before-fix.log`, `docs/evidence/final-ui-p1-regressions-before-fix.log` |
 
 Kommandos:
 
@@ -77,7 +83,7 @@ Der Browserlauf benötigt ausschließlich einen lokal gestarteten SCHNAPPER-Test
 
 ## CI und Freigabegrenzen
 
-`.github/workflows/tests.yml` hat ausschließlich lesende Repository-Berechtigungen und startet Python-, Cloudflare-Offlinetests sowie die UI-Speicherregression. Die Jobs sind auf öffentliche Repositories und Standardrunner begrenzt; es gibt darin kein Deployment. Beim Erstellen von Draft-PR #134 war der Pull-Request-Lauf für den ersten Head-SHA noch in Arbeit; das ist kein bestandenes Ergebnis. Für den aktuellen Head ist stets der neueste Check-Status im PR maßgeblich.
+`.github/workflows/tests.yml` hat ausschließlich lesende Repository-Berechtigungen und startet Python-, Cloudflare-Offlinetests sowie die UI-Speicherregression. Die Jobs sind auf öffentliche Repositories und Standardrunner begrenzt; es gibt darin kein Deployment. Frühere Heads von PR #134 hatten erfolgreiche Testläufe; für den nachfolgenden Fix-Head ist ausschließlich der neueste Check-Status in PR #134 maßgeblich. Diese Datei behauptet keinen CI-Erfolg für einen noch nicht geprüften Head.
 
 ## Offene Blocker und Risiken
 
@@ -85,8 +91,8 @@ Der Browserlauf benötigt ausschließlich einen lokal gestarteten SCHNAPPER-Test
 2. Es gibt keinen Nachweis echter KI-Inferenz oder eines vorhandenen lokalen Modells.
 3. Android-Gerät/Emulator fehlt.
 4. Die Browserprüfung und Wiederherstellung liefen ausschließlich mit synthetischen Daten; Live-Preisquellen, Produktionshosting, echte Cloudflare-Datenbanken/Storage und externe Integrationen wurden nicht getestet.
-5. Der GitHub-CI-Status des finalen Draft-PR-Commits ist nach PR-Erstellung zu prüfen. Die lokalen vollständigen Tests sind grün; ein späterer CI-Fehler bleibt bis zum GitHub-Lauf offen.
-6. Für die Produktionsfreigabe bleiben ein unabhängiges Review, die bewusste Betreiberentscheidung zum Legacy-Workflow sowie separate Freigaben für KI, Geräte und externe Integrationen erforderlich.
+5. `main` ist laut GitHub branch-protection API nicht geschützt; Repository-Rulesets wurden nicht gefunden. Es gibt damit keine technisch erzwungenen Required Reviews/Checks auf `main`. Nicht geändert.
+6. Für die Produktionsfreigabe bleiben ein formales unabhängiges Review, die bewusste Betreiberentscheidung zum Legacy-Workflow sowie separate Freigaben für KI, Geräte und externe Integrationen erforderlich. Reviewer-Anforderung und formale Review-Einträge müssen auf PR #134 separat geprüft werden.
 
 ## Entscheidung
 
