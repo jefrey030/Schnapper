@@ -1,0 +1,605 @@
+COMMAND: PYTHONPATH=app:team GITHUB_ACTIONS=true python3 -X dev -W error -m unittest discover -s tests -v
+test_nur_mock_und_eigene_standardmaessig_erlaubt (test_abgleich_s004_s005.TestAbgleichS004.test_nur_mock_und_eigene_standardmaessig_erlaubt) ... ok
+test_t1_kleinanzeigen_nicht_per_datei_freischaltbar (test_abgleich_s004_s005.TestAbgleichS004.test_t1_kleinanzeigen_nicht_per_datei_freischaltbar) ... ok
+test_t1_kleinanzeigen_wird_abgewiesen (test_abgleich_s004_s005.TestAbgleichS004.test_t1_kleinanzeigen_wird_abgewiesen) ... ok
+test_t2_unbekannte_quelle_wird_abgewiesen (test_abgleich_s004_s005.TestAbgleichS004.test_t2_unbekannte_quelle_wird_abgewiesen) ... ok
+test_t4_ebay_bleibt_gesperrt_auch_mit_schalter (test_abgleich_s004_s005.TestAbgleichS005.test_t4_ebay_bleibt_gesperrt_auch_mit_schalter) ... ok
+test_t4_ebay_ohne_freigabe_gesperrt_ohne_netzaufruf (test_abgleich_s004_s005.TestAbgleichS005.test_t4_ebay_ohne_freigabe_gesperrt_ohne_netzaufruf) ... ok
+test_kein_job_kann_starten_auch_nicht_manuell (test_actions_cost_guard.LegacyDisabledTests.test_kein_job_kann_starten_auch_nicht_manuell) ... ok
+test_keine_automatischen_stundenlaeufe (test_actions_cost_guard.LegacyDisabledTests.test_keine_automatischen_stundenlaeufe) ... ok
+test_keine_modelle_und_keine_schreibrechte (test_actions_cost_guard.LegacyDisabledTests.test_keine_modelle_und_keine_schreibrechte) ... ok
+test_oeffentliche_ci_trotzdem_verfuegbar (test_actions_cost_guard.LegacyDisabledTests.test_oeffentliche_ci_trotzdem_verfuegbar) ... ok
+test_ohne_ki_ehrlich_nicht_einsatzbereit (test_agenten.TestAgenten.test_ohne_ki_ehrlich_nicht_einsatzbereit) ... ok
+test_s003_jeder_agent_berichtet_und_fehlende_ki_ist_blocker (test_agenten.TestAgenten.test_s003_jeder_agent_berichtet_und_fehlende_ki_ist_blocker) ... ok
+test_ungueltige_aufgabe_wird_abgelehnt (test_agenten.TestAgenten.test_ungueltige_aufgabe_wird_abgelehnt) ... ok
+test_vier_getrennte_ki_aufrufe_mit_nachahmer (test_agenten.TestAgenten.test_vier_getrennte_ki_aufrufe_mit_nachahmer) ... ok
+test_werkzeugbefund_schlaegt_ki_urteil (test_agenten.TestAgenten.test_werkzeugbefund_schlaegt_ki_urteil) ... ok
+test_abgeschaltete_github_models_wird_nicht_kontaktiert (test_agenten.TestKostenbremsen.test_abgeschaltete_github_models_wird_nicht_kontaktiert) ... ok
+test_api_url_erfordert_https_und_sicheren_port (test_agenten.TestKostenbremsen.test_api_url_erfordert_https_und_sicheren_port) ... ok
+test_aufrufbudget (test_agenten.TestKostenbremsen.test_aufrufbudget) ... ok
+test_kein_bezahlter_anbieter_im_code (test_agenten.TestKostenbremsen.test_kein_bezahlter_anbieter_im_code) ... ok
+test_ki_http_folgt_keinem_redirect_und_sendet_keinen_token (test_agenten.TestKostenbremsen.test_ki_http_folgt_keinem_redirect_und_sendet_keinen_token) ... ok
+test_modellwahl_bevorzugt_open_weight (test_agenten.TestKostenbremsen.test_modellwahl_bevorzugt_open_weight) ... ok
+test_nur_github_models_erlaubt (test_agenten.TestKostenbremsen.test_nur_github_models_erlaubt) ... ok
+test_redirect_ist_vor_weitergabe_des_tokens_blockiert (test_agenten.TestKostenbremsen.test_redirect_ist_vor_weitergabe_des_tokens_blockiert) ... ok
+test_tests_nur_im_oeffentlichen_repo (test_agenten.TestKostenbremsen.test_tests_nur_im_oeffentlichen_repo) ... ok
+test_workflow_ist_unbedingt_stillgelegt (test_agenten.TestKostenbremsen.test_workflow_ist_unbedingt_stillgelegt) ... ok
+test_betrugsverdacht_loest_keinen_alarm_aus (test_alarm.AlarmPruefen.test_betrugsverdacht_loest_keinen_alarm_aus) ... ok
+test_guenstigstes_zuerst_und_dubletten_weg (test_alarm.AlarmPruefen.test_guenstigstes_zuerst_und_dubletten_weg) ... ok
+test_preisgrenze_inkl_versand (test_alarm.AlarmPruefen.test_preisgrenze_inkl_versand) ... ok
+test_veralteter_preis_nur_auf_wunsch (test_alarm.AlarmPruefen.test_veralteter_preis_nur_auf_wunsch) ... ok
+test_zustand_und_rabatt (test_alarm.AlarmPruefen.test_zustand_und_rabatt) ... ok
+test_beispieldateien (test_alarm.Kommandozeile.test_beispieldateien) ... ok
+test_fehlende_datei (test_alarm.Kommandozeile.test_fehlende_datei) ... ok
+test_kein_alarm_exitcode_3 (test_alarm.Kommandozeile.test_kein_alarm_exitcode_3) ... ok
+test_gueltiger_wunsch (test_alarm.WunschEinlesen.test_gueltiger_wunsch) ... ok
+test_kaputtes_json (test_alarm.WunschEinlesen.test_kaputtes_json) ... ok
+test_liste_meldet_fehler_und_behaelt_rest (test_alarm.WunschEinlesen.test_liste_meldet_fehler_und_behaelt_rest) ... ok
+test_obergrenze_anzahl (test_alarm.WunschEinlesen.test_obergrenze_anzahl) ... ok
+test_ohne_grenze_ist_kein_alarm (test_alarm.WunschEinlesen.test_ohne_grenze_ist_kein_alarm) ... ok
+test_ungueltige_werte (test_alarm.WunschEinlesen.test_ungueltige_werte) ... ok
+test_barcode_zeigt_preis_ohne_eigene_angebote_zu_ersetzen (test_app_handy.BarcodeWeb.test_barcode_zeigt_preis_ohne_eigene_angebote_zu_ersetzen) ... ok
+test_browser_hat_barcode_formular (test_app_handy.BarcodeWeb.test_browser_hat_barcode_formular) ... ok
+test_kein_schalter_keine_externe_preisabfrage (test_app_handy.BarcodeWeb.test_kein_schalter_keine_externe_preisabfrage) ... ok
+test_nan_filter_antwortet_400_und_keine_500 (test_app_handy.BarcodeWeb.test_nan_filter_antwortet_400_und_keine_500) ... ok
+test_schutzheader_und_ungueltiger_barcode (test_app_handy.BarcodeWeb.test_schutzheader_und_ungueltiger_barcode) ... ok
+test_zweifach_barcode_abruf_wird_lokal_begrenzt (test_app_handy.BarcodeWeb.test_zweifach_barcode_abruf_wird_lokal_begrenzt) ... ok
+test_extrem_grosse_geldbetraege_erzeugen_kontrollierten_fehler (test_app_handy.Preisvalidierung.test_extrem_grosse_geldbetraege_erzeugen_kontrollierten_fehler) ... ok
+test_manifest_inhalt (test_app_handy.Startbildschirm.test_manifest_inhalt) ... ok
+test_server_liefert_manifest_und_icons (test_app_handy.Startbildschirm.test_server_liefert_manifest_und_icons) ... ok
+test_anleitung_nennt_alle_spalten (test_app_handy.Vorlage.test_anleitung_nennt_alle_spalten) ... ok
+test_ausgefuellte_vorlage_mit_quelle_eigene (test_app_handy.Vorlage.test_ausgefuellte_vorlage_mit_quelle_eigene) ... ok
+test_leere_vorlage_ohne_fehler (test_app_handy.Vorlage.test_leere_vorlage_ohne_fehler) ... ok
+test_andere_quelle_ist_vergleich_keine_dublette (test_app_kern.Dubletten.test_andere_quelle_ist_vergleich_keine_dublette) ... ok
+test_deutlich_anderer_preis_keine_dublette (test_app_kern.Dubletten.test_deutlich_anderer_preis_keine_dublette) ... ok
+test_gleiche_url_neuester_bleibt (test_app_kern.Dubletten.test_gleiche_url_neuester_bleibt) ... ok
+test_gleicher_titel_gleiche_quelle_andere_url (test_app_kern.Dubletten.test_gleicher_titel_gleiche_quelle_andere_url) ... ok
+test_url_ohne_tracking_ist_gleich (test_app_kern.Dubletten.test_url_ohne_tracking_ist_gleich) ... ok
+test_ungueltige_angebote (test_app_kern.HarteRegeln.test_ungueltige_angebote) ... ok
+test_beispieldatei_ende_zu_ende (test_app_kern.Import.test_beispieldatei_ende_zu_ende) ... ok
+test_json_mit_fehlern_bricht_nicht_ab (test_app_kern.Import.test_json_mit_fehlern_bricht_nicht_ab) ... ok
+test_kaputtes_json (test_app_kern.Import.test_kaputtes_json) ... ok
+test_deutsches_und_englisches_format (test_app_kern.Preise.test_deutsches_und_englisches_format) ... ok
+test_rabatt_inkl_versand (test_app_kern.Preise.test_rabatt_inkl_versand) ... ok
+test_unlesbar_und_bool (test_app_kern.Preise.test_unlesbar_und_bool) ... ok
+test_filter_preis_rabatt_zustand (test_app_kern.Suche.test_filter_preis_rabatt_zustand) ... ok
+test_rabatt_sortierung_und_verdacht_ausgeblendet (test_app_kern.Suche.test_rabatt_sortierung_und_verdacht_ausgeblendet) ... ok
+test_textsuche_alle_woerter (test_app_kern.Suche.test_textsuche_alle_woerter) ... ok
+test_unbekannte_sortierung (test_app_kern.Suche.test_unbekannte_sortierung) ... ok
+test_betrugsverdacht_nur_bei_neuware (test_app_kern.WeicheRegeln.test_betrugsverdacht_nur_bei_neuware) ... ok
+test_ohne_referenz_keine_ersparnis_behaupten (test_app_kern.WeicheRegeln.test_ohne_referenz_keine_ersparnis_behaupten) ... ok
+test_veralteter_preis (test_app_kern.WeicheRegeln.test_veralteter_preis) ... ok
+test_datei_adapter_kompletter_ablauf (test_app_quellen_web.Adapter.test_datei_adapter_kompletter_ablauf) ... ok
+test_t4_ebay_ohne_freigabe_kein_netz (test_app_quellen_web.Adapter.test_t4_ebay_ohne_freigabe_kein_netz) ... ok
+test_ausgeschlossene_quelle_nicht_per_datei_freischaltbar (test_app_quellen_web.QuellenRegister.test_ausgeschlossene_quelle_nicht_per_datei_freischaltbar) ... ok
+test_ebay_noch_gesperrt (test_app_quellen_web.QuellenRegister.test_ebay_noch_gesperrt) ... ok
+test_freigabe_braucht_hinweis_zum_nutzungsrecht (test_app_quellen_web.QuellenRegister.test_freigabe_braucht_hinweis_zum_nutzungsrecht) ... ok
+test_t1_ausgeschlossene_quelle (test_app_quellen_web.QuellenRegister.test_t1_ausgeschlossene_quelle) ... ok
+test_t2_unbekannte_quelle (test_app_quellen_web.QuellenRegister.test_t2_unbekannte_quelle) ... ok
+test_t3_mock_und_eigene_erlaubt (test_app_quellen_web.QuellenRegister.test_t3_mock_und_eigene_erlaubt) ... ok
+test_ungueltige_kennung (test_app_quellen_web.QuellenRegister.test_ungueltige_kennung) ... ok
+test_alarm_abfrage_der_oberflaeche (test_app_quellen_web.Web.test_alarm_abfrage_der_oberflaeche) ... ok
+test_merkliste_und_preisalarm_in_der_oberflaeche (test_app_quellen_web.Web.test_merkliste_und_preisalarm_in_der_oberflaeche) ... ok
+test_seite_mit_sicherheitskoepfen (test_app_quellen_web.Web.test_seite_mit_sicherheitskoepfen) ... ok
+test_suche_api (test_app_quellen_web.Web.test_suche_api) ... ok
+test_suche_api_ungueltige_eingabe (test_app_quellen_web.Web.test_suche_api_ungueltige_eingabe) ... ok
+test_t5_lokal_ohne_internet (test_app_quellen_web.Web.test_t5_lokal_ohne_internet) ... ok
+test_unbekannter_pfad (test_app_quellen_web.Web.test_unbekannter_pfad) ... ok
+test_alarm_abfrage_der_oberflaeche (test_app_quellen_web.WebImport.test_alarm_abfrage_der_oberflaeche) ... ok
+test_import_schutz_und_quellenpruefung (test_app_quellen_web.WebImport.test_import_schutz_und_quellenpruefung) ... ok
+test_merkliste_und_preisalarm_in_der_oberflaeche (test_app_quellen_web.WebImport.test_merkliste_und_preisalarm_in_der_oberflaeche) ... ok
+test_beispieldaten_beim_start_festgehalten (test_app_quellen_web.WebVerlauf.test_beispieldaten_beim_start_festgehalten) ... ok
+test_tiefstpreis_und_fragwuerdiger_statt_preis (test_app_quellen_web.WebVerlauf.test_tiefstpreis_und_fragwuerdiger_statt_preis) ... ok
+test_verlauf_aktiv_gemeldet (test_app_quellen_web.WebVerlauf.test_verlauf_aktiv_gemeldet) ... ok
+test_fehlende_schnittstellen_und_blocker (test_bestandsaufnahme_s001.TestBestandsaufnahmeS001.test_fehlende_schnittstellen_und_blocker) ... ok
+test_genannte_dateien_existieren (test_bestandsaufnahme_s001.TestBestandsaufnahmeS001.test_genannte_dateien_existieren) ... ok
+test_genannte_funktionen_existieren (test_bestandsaufnahme_s001.TestBestandsaufnahmeS001.test_genannte_funktionen_existieren) ... ok
+test_nur_standardbibliothek (test_bestandsaufnahme_s001.TestBestandsaufnahmeS001.test_nur_standardbibliothek) ... ok
+test_ci_fehlende_kandidatenref_ist_fail_statt_teilpass (test_branches_s006.TestBranchesS006.test_ci_fehlende_kandidatenref_ist_fail_statt_teilpass) ... ok
+test_ci_fehlende_main_ref_ist_fail_statt_skip (test_branches_s006.TestBranchesS006.test_ci_fehlende_main_ref_ist_fail_statt_skip) ... ok
+test_kandidaten_sind_vollstaendig_in_main (test_branches_s006.TestBranchesS006.test_kandidaten_sind_vollstaendig_in_main) ... ok
+test_s006_bleibt_vorschlag_und_nennt_alle_kandidaten (test_branches_s006.TestBranchesS006.test_s006_bleibt_vorschlag_und_nennt_alle_kandidaten) ... ok
+test_node24_kompatible_actions (test_ci_hardening.CiHardeningTests.test_node24_kompatible_actions) ... ok
+test_read_only_und_ohne_deployment (test_ci_hardening.CiHardeningTests.test_read_only_und_ohne_deployment) ... ok
+test_regressionen_bleiben_aktiv (test_ci_hardening.CiHardeningTests.test_regressionen_bleiben_aktiv) ... ok
+test_runner_stabil_und_budgetgeschuetzt (test_ci_hardening.CiHardeningTests.test_runner_stabil_und_budgetgeschuetzt) ... ok
+test_altes_mac_wird_ohne_ki_aufruf_blockiert (test_diagnose_local.TestDiagnose.test_altes_mac_wird_ohne_ki_aufruf_blockiert) ... ok
+test_cloud_modell_wird_abgelehnt_ohne_anfrage (test_diagnose_local.TestDiagnose.test_cloud_modell_wird_abgelehnt_ohne_anfrage) ... ok
+test_linux_local_installation_wird_erkannt_ohne_inferenz (test_diagnose_local.TestDiagnose.test_linux_local_installation_wird_erkannt_ohne_inferenz) ... ok
+test_check_rejects_unparseable_ai_verdict (test_failsafe.TestFailClosedAgentReports.test_check_rejects_unparseable_ai_verdict) ... ok
+test_command_cannot_override_failed_check (test_failsafe.TestFailClosedAgentReports.test_command_cannot_override_failed_check) ... ok
+test_command_denial_blocks_readiness (test_failsafe.TestFailClosedAgentReports.test_command_denial_blocks_readiness) ... ok
+test_command_fehlerhafte_vorrollen_sparen_kosten (test_failsafe.TestFailClosedAgentReports.test_command_fehlerhafte_vorrollen_sparen_kosten) ... ok
+test_command_fehlt_vorgang_ueberspringt_ki (test_failsafe.TestFailClosedAgentReports.test_command_fehlt_vorgang_ueberspringt_ki) ... ok
+test_command_ohne_offene_aufgabe_vermeidet_ki_aufruf (test_failsafe.TestFailClosedAgentReports.test_command_ohne_offene_aufgabe_vermeidet_ki_aufruf) ... ok
+test_command_positiv_uebergabe_nur_ein_modellaufruf (test_failsafe.TestFailClosedAgentReports.test_command_positiv_uebergabe_nur_ein_modellaufruf) ... ok
+test_command_pruefung_negativ_ueberspringt_ki (test_failsafe.TestFailClosedAgentReports.test_command_pruefung_negativ_ueberspringt_ki) ... ok
+test_command_rejects_missing_required_fields (test_failsafe.TestFailClosedAgentReports.test_command_rejects_missing_required_fields) ... ok
+test_duplicate_response_id_blocks_false_readiness (test_failsafe.TestFailClosedAgentReports.test_duplicate_response_id_blocks_false_readiness) ... ok
+test_four_model_replies_not_sufficient_when_one_agent_failed (test_failsafe.TestFailClosedAgentReports.test_four_model_replies_not_sufficient_when_one_agent_failed) ... ok
+test_four_unique_response_ids_and_four_calls_allow_readiness (test_failsafe.TestFailClosedAgentReports.test_four_unique_response_ids_and_four_calls_allow_readiness) ... ok
+test_git_scan_ausfall_muss_blockieren (test_failsafe.TestFailClosedAgentReports.test_git_scan_ausfall_muss_blockieren) ... ok
+test_git_scan_erfasst_dateinamen_mit_leerzeichen (test_failsafe.TestFailClosedAgentReports.test_git_scan_erfasst_dateinamen_mit_leerzeichen) ... ok
+test_git_scan_lesefehler_verhindert_positive_abnahme (test_failsafe.TestFailClosedAgentReports.test_git_scan_lesefehler_verhindert_positive_abnahme) ... ok
+test_json_parser_finds_first_complete_object (test_failsafe.TestFailClosedAgentReports.test_json_parser_finds_first_complete_object) ... ok
+test_ki_antwort_mit_token_wird_vor_weitergabe_verworfen (test_failsafe.TestFailClosedAgentReports.test_ki_antwort_mit_token_wird_vor_weitergabe_verworfen) ... ok
+test_ki_eingabe_mit_token_wird_niemals_an_modell_gesendet (test_failsafe.TestFailClosedAgentReports.test_ki_eingabe_mit_token_wird_niemals_an_modell_gesendet) ... ok
+test_ki_geheimnis_fund_macht_rollenprozess_rot (test_failsafe.TestFailClosedAgentReports.test_ki_geheimnis_fund_macht_rollenprozess_rot) ... ok
+test_main_nicht_ok_rollen_werden_prozessfehler (test_failsafe.TestFailClosedAgentReports.test_main_nicht_ok_rollen_werden_prozessfehler) ... ok
+test_missing_or_corrupt_call_counter_blocks_readiness (test_failsafe.TestFailClosedAgentReports.test_missing_or_corrupt_call_counter_blocks_readiness) ... ok
+test_missing_or_positive_secret_scan_blocks_readiness (test_failsafe.TestFailClosedAgentReports.test_missing_or_positive_secret_scan_blocks_readiness) ... ok
+test_rejected_or_revision_check_is_not_ready (test_failsafe.TestFailClosedAgentReports.test_rejected_or_revision_check_is_not_ready) ... ok
+test_secret_in_command_or_lead_reply_blocks_readiness (test_failsafe.TestFailClosedAgentReports.test_secret_in_command_or_lead_reply_blocks_readiness) ... ok
+test_zero_executed_tests_not_ready (test_failsafe.TestFailClosedAgentReports.test_zero_executed_tests_not_ready) ... ok
+test_speicherfehler_antwortet_500_und_behaelt_bisherige_liste (test_import_atomar.ImportHTTPRegression.test_speicherfehler_antwortet_500_und_behaelt_bisherige_liste) ... ok
+test_erneuter_import_speichert_nach_frueherem_fehler_auch_ohne_neue_punkte (test_import_atomar.ImportZustand.test_erneuter_import_speichert_nach_frueherem_fehler_auch_ohne_neue_punkte) ... ok
+test_liste_wird_erst_nach_gespeichertem_verlauf_aktiviert (test_import_atomar.ImportZustand.test_liste_wird_erst_nach_gespeichertem_verlauf_aktiviert) ... ok
+test_ohne_verlauf_bleibt_import_moeglich (test_import_atomar.ImportZustand.test_ohne_verlauf_bleibt_import_moeglich) ... ok
+test_parallele_importe_werden_serialisiert (test_import_atomar.ImportZustand.test_parallele_importe_werden_serialisiert)
+Langsames Speichern darf einen späteren Import nicht überholen. ... ok
+test_speicherfehler_aktiviert_neue_liste_nicht (test_import_atomar.ImportZustand.test_speicherfehler_aktiviert_neue_liste_nicht) ... ok
+test_erneuter_identischer_import_speichert_trotz_null_neuer_punkte (test_import_atomar.VerlaufTransaktion.test_erneuter_identischer_import_speichert_trotz_null_neuer_punkte) ... ok
+test_schreibfehler_rollt_preisverlauf_im_ram_zurueck (test_import_atomar.VerlaufTransaktion.test_schreibfehler_rollt_preisverlauf_im_ram_zurueck) ... ok
+test_defekte_wuensche_ueberspringen_statt_alle_verwerfen (test_input_guardrails.AlarmGuardrails.test_defekte_wuensche_ueberspringen_statt_alle_verwerfen) ... ok
+test_nicht_endliche_rabatte_fuehren_zu_wunschfehler (test_input_guardrails.AlarmGuardrails.test_nicht_endliche_rabatte_fuehren_zu_wunschfehler) ... ok
+test_ungueltige_zustandstypen_abweisen (test_input_guardrails.AlarmGuardrails.test_ungueltige_zustandstypen_abweisen) ... ok
+test_gemischte_euroformate_richtig (test_input_guardrails.PreisGuardrails.test_gemischte_euroformate_richtig) ... ok
+test_kaputte_urls_werden_als_angebotsfehler_gemeldet (test_input_guardrails.PreisGuardrails.test_kaputte_urls_werden_als_angebotsfehler_gemeldet) ... ok
+test_kaputter_preis_bricht_restimport_nicht_ab (test_input_guardrails.PreisGuardrails.test_kaputter_preis_bricht_restimport_nicht_ab) ... ok
+test_kaputter_url_import_rest_weiter (test_input_guardrails.PreisGuardrails.test_kaputter_url_import_rest_weiter) ... ok
+test_mehrdeutige_und_falsch_gruppierte_betraege_abweisen (test_input_guardrails.PreisGuardrails.test_mehrdeutige_und_falsch_gruppierte_betraege_abweisen) ... ok
+test_url_port_bleibt_differenzierbar (test_input_guardrails.PreisGuardrails.test_url_port_bleibt_differenzierbar) ... ok
+test_beispieldaten_sind_als_test_erkennbar (test_konzept_s000.TestKonzeptS000.test_beispieldaten_sind_als_test_erkennbar) ... ok
+test_brain_ablauf_und_schema (test_konzept_s000.TestKonzeptS000.test_brain_ablauf_und_schema) ... ok
+test_check_pflichtszenarien_mit_test (test_konzept_s000.TestKonzeptS000.test_check_pflichtszenarien_mit_test) ... ok
+test_command_genau_ein_naechster_schritt (test_konzept_s000.TestKonzeptS000.test_command_genau_ein_naechster_schritt) ... ok
+test_keine_integration_behauptet (test_konzept_s000.TestKonzeptS000.test_keine_integration_behauptet) ... ok
+test_lead_genau_drei_mvp_funktionen_mit_begruendung (test_konzept_s000.TestKonzeptS000.test_lead_genau_drei_mvp_funktionen_mit_begruendung) ... ok
+test_cloud_modelle_auch_ueber_localhost_verboten (test_local_ollama.TestLokaleKI.test_cloud_modelle_auch_ueber_localhost_verboten) ... ok
+test_fehlendes_modell_wird_nicht_ersetzt (test_local_ollama.TestLokaleKI.test_fehlendes_modell_wird_nicht_ersetzt) ... ok
+test_fehlerhafte_providerdaten_bleiben_gesperrt (test_local_ollama.TestLokaleKI.test_fehlerhafte_providerdaten_bleiben_gesperrt) ... ok
+test_fehlformatierte_katalogeintraege_blockieren_ohne_absturz (test_local_ollama.TestLokaleKI.test_fehlformatierte_katalogeintraege_blockieren_ohne_absturz) ... ok
+test_keine_fremde_url_konfigurierbar (test_local_ollama.TestLokaleKI.test_keine_fremde_url_konfigurierbar) ... ok
+test_keine_rueckkehr_zu_bezahl_api (test_local_ollama.TestLokaleKI.test_keine_rueckkehr_zu_bezahl_api) ... ok
+test_lokale_inferenz_und_zaehler (test_local_ollama.TestLokaleKI.test_lokale_inferenz_und_zaehler) ... ok
+test_lokales_limit (test_local_ollama.TestLokaleKI.test_lokales_limit) ... ok
+test_weiterleitungen_verboten (test_local_ollama.TestLokaleKI.test_weiterleitungen_verboten) ... ok
+test_abgelehntes_check_und_command_nein_koennen_nicht_abnehmen (test_local_service.TestDienst.test_abgelehntes_check_und_command_nein_koennen_nicht_abnehmen) ... ok
+test_agenten_start_oserror_stoppt_folgerollen_und_versteckt_details (test_local_service.TestDienst.test_agenten_start_oserror_stoppt_folgerollen_und_versteckt_details) ... ok
+test_agentenbericht_und_einzeldatei_muessen_uebereinstimmen (test_local_service.TestDienst.test_agentenbericht_und_einzeldatei_muessen_uebereinstimmen) ... ok
+test_agentenfehler_stoppt_naechste_kostenrelevante_rollen (test_local_service.TestDienst.test_agentenfehler_stoppt_naechste_kostenrelevante_rollen) ... ok
+test_ausfall_eines_agenten_wird_nicht_als_erfolg_gewertet (test_local_service.TestDienst.test_ausfall_eines_agenten_wird_nicht_als_erfolg_gewertet) ... ok
+test_betreiber_not_aus_verhindert_neuen_lauf (test_local_service.TestDienst.test_betreiber_not_aus_verhindert_neuen_lauf) ... ok
+test_bool_zahl_ist_keine_gemessene_testanzahl (test_local_service.TestDienst.test_bool_zahl_ist_keine_gemessene_testanzahl) ... ok
+test_check_geheimnisscan_darf_nicht_ausgelassen_werden (test_local_service.TestDienst.test_check_geheimnisscan_darf_nicht_ausgelassen_werden) ... ok
+test_check_urteil_und_testzahlen_widerspruch_blockiert (test_local_service.TestDienst.test_check_urteil_und_testzahlen_widerspruch_blockiert) ... ok
+test_einzelrollen_identitaet_muss_zur_datei_passen (test_local_service.TestDienst.test_einzelrollen_identitaet_muss_zur_datei_passen) ... ok
+test_falsche_laufzeit_oder_doppelte_ids_blockieren (test_local_service.TestDienst.test_falsche_laufzeit_oder_doppelte_ids_blockieren) ... ok
+test_fehlender_bericht_ist_blockiert (test_local_service.TestDienst.test_fehlender_bericht_ist_blockiert) ... ok
+test_geheimnis_im_prozesslog_wird_redigiert_und_stoppt_folgerollen (test_local_service.TestDienst.test_geheimnis_im_prozesslog_wird_redigiert_und_stoppt_folgerollen) ... ok
+test_kaputter_stundenbericht_stoppt_ohne_positive_antworten (test_local_service.TestDienst.test_kaputter_stundenbericht_stoppt_ohne_positive_antworten) ... ok
+test_lead_aufgabe_muss_gesamtbericht_und_rotation_entsprechen (test_local_service.TestDienst.test_lead_aufgabe_muss_gesamtbericht_und_rotation_entsprechen) ... ok
+test_manifest_abweichenden_laufordner_sicher_abweisen (test_local_service.TestDienst.test_manifest_abweichenden_laufordner_sicher_abweisen) ... ok
+test_manifest_blockiert_fremde_pfade_ohne_sie_zu_lesen (test_local_service.TestDienst.test_manifest_blockiert_fremde_pfade_ohne_sie_zu_lesen) ... ok
+test_manifest_blockierter_lauf_bleibt_blockiert_aber_nachvollziehbar (test_local_service.TestDienst.test_manifest_blockierter_lauf_bleibt_blockiert_aber_nachvollziehbar) ... ok
+test_manifest_entdeckt_nachtraeglich_geaenderte_ki_datei (test_local_service.TestDienst.test_manifest_entdeckt_nachtraeglich_geaenderte_ki_datei) ... ok
+test_manifest_erfolgsbehauptung_ohne_vier_agenten_blockiert (test_local_service.TestDienst.test_manifest_erfolgsbehauptung_ohne_vier_agenten_blockiert) ... ok
+test_manifest_erkennt_geloeschten_beleg (test_local_service.TestDienst.test_manifest_erkennt_geloeschten_beleg) ... ok
+test_manifest_gueltig_und_vollstaendig_pruefen (test_local_service.TestDienst.test_manifest_gueltig_und_vollstaendig_pruefen) ... ok
+test_manifest_sperrt_falsche_sha256_und_widerspruch (test_local_service.TestDienst.test_manifest_sperrt_falsche_sha256_und_widerspruch) ... ok
+test_manifest_symlink_beleg_und_symlink_lauf_sind_gesperrt (test_local_service.TestDienst.test_manifest_symlink_beleg_und_symlink_lauf_sind_gesperrt) ... ok
+test_nachweispruefung_abweichende_json_typen_blockiert (test_local_service.TestDienst.test_nachweispruefung_abweichende_json_typen_blockiert) ... ok
+test_prozesskette_exakt_einmal_und_in_richtiger_reihenfolge (test_local_service.TestDienst.test_prozesskette_exakt_einmal_und_in_richtiger_reihenfolge) ... ok
+test_strukturell_ungueltiger_bericht_hat_keinen_gruenen_piloten (test_local_service.TestDienst.test_strukturell_ungueltiger_bericht_hat_keinen_gruenen_piloten) ... ok
+test_symlink_zu_externer_agentendatei_ist_keine_evidenz (test_local_service.TestDienst.test_symlink_zu_externer_agentendatei_ist_keine_evidenz) ... ok
+test_ungueltige_agentendatei_ist_keine_freigabe (test_local_service.TestDienst.test_ungueltige_agentendatei_ist_keine_freigabe) ... ok
+test_verify_cli_ist_lesend_und_startet_keine_agenten (test_local_service.TestDienst.test_verify_cli_ist_lesend_und_startet_keine_agenten) ... ok
+test_vier_antworten_allein_genuegen_nicht_ohne_tests (test_local_service.TestDienst.test_vier_antworten_allein_genuegen_nicht_ohne_tests) ... ok
+test_vier_antworten_falsch_bei_anderem_freigabefehler (test_local_service.TestDienst.test_vier_antworten_falsch_bei_anderem_freigabefehler) ... ok
+test_vier_fake_antworten_und_gruene_tests_im_unit_test (test_local_service.TestDienst.test_vier_fake_antworten_und_gruene_tests_im_unit_test) ... ok
+test_backend_env_does_not_start_local_ki_without_approval (test_master121_integration.TestMaster121Integration.test_backend_env_does_not_start_local_ki_without_approval) ... ok
+test_direct_chat_http_denied_before_network (test_master121_integration.TestMaster121Integration.test_direct_chat_http_denied_before_network) ... ok
+test_service_does_not_launch_agent_without_approval (test_master121_integration.TestMaster121Integration.test_service_does_not_launch_agent_without_approval) ... ok
+test_bad_permissions_denied (test_master121_operator_approval.TestOperatorApproval.test_bad_permissions_denied) ... ok
+test_check_is_live_not_cached (test_master121_operator_approval.TestOperatorApproval.test_check_is_live_not_cached) ... ok
+test_env_backend_does_not_count_as_consent (test_master121_operator_approval.TestOperatorApproval.test_env_backend_does_not_count_as_consent) ... ok
+test_expired_future_or_timezone_naive (test_master121_operator_approval.TestOperatorApproval.test_expired_future_or_timezone_naive) ... ok
+test_mismatched_task_denied (test_master121_operator_approval.TestOperatorApproval.test_mismatched_task_denied) ... ok
+test_missing_approval_is_blocked (test_master121_operator_approval.TestOperatorApproval.test_missing_approval_is_blocked) ... ok
+test_operator_stop_file_denied (test_master121_operator_approval.TestOperatorApproval.test_operator_stop_file_denied) ... ok
+test_parent_directory_symlink_is_rejected_for_approval_read (test_master121_operator_approval.TestOperatorApproval.test_parent_directory_symlink_is_rejected_for_approval_read) ... ok
+test_positive_single_open_task_short_approval (test_master121_operator_approval.TestOperatorApproval.test_positive_single_open_task_short_approval) ... ok
+test_symlink_approval_denied (test_master121_operator_approval.TestOperatorApproval.test_symlink_approval_denied) ... ok
+test_tampered_or_oversize_file_denied (test_master121_operator_approval.TestOperatorApproval.test_tampered_or_oversize_file_denied) ... ok
+test_task_file_symlink_denied (test_master121_operator_approval.TestOperatorApproval.test_task_file_symlink_denied) ... ok
+test_wrong_scope_or_false_approval (test_master121_operator_approval.TestOperatorApproval.test_wrong_scope_or_false_approval) ... ok
+test_zero_or_multiple_open_tasks (test_master121_operator_approval.TestOperatorApproval.test_zero_or_multiple_open_tasks) ... ok
+test_approval_fifo_refused_without_blocking (test_master122_approval_fifo.TestApprovalNonblocking.test_approval_fifo_refused_without_blocking) ... ok
+test_both_reads_require_nonblocking_and_no_follow (test_master122_approval_fifo.TestApprovalNonblocking.test_both_reads_require_nonblocking_and_no_follow) ... ok
+test_regular_file_remains_valid (test_master122_approval_fifo.TestApprovalNonblocking.test_regular_file_remains_valid) ... ok
+test_task_fifo_refused_without_blocking (test_master122_approval_fifo.TestApprovalNonblocking.test_task_fifo_refused_without_blocking) ... ok
+test_ci_actions_remain_unchanged_in_both_jobs (test_master123_s006_integration.TestMaster84S006Integration.test_ci_actions_remain_unchanged_in_both_jobs) ... ok
+test_ci_fails_when_any_historical_candidate_missing (test_master123_s006_integration.TestMaster84S006Integration.test_ci_fails_when_any_historical_candidate_missing) ... ok
+test_ci_os_versions_remain_unchanged (test_master123_s006_integration.TestMaster84S006Integration.test_ci_os_versions_remain_unchanged) ... ok
+test_ci_requires_all_four_ref_checks (test_master123_s006_integration.TestMaster84S006Integration.test_ci_requires_all_four_ref_checks) ... ok
+test_ci_still_disables_private_repo_runners (test_master123_s006_integration.TestMaster84S006Integration.test_ci_still_disables_private_repo_runners) ... ok
+test_ci_uses_full_history_instead_of_shallow_clone (test_master123_s006_integration.TestMaster84S006Integration.test_ci_uses_full_history_instead_of_shallow_clone) ... ok
+test_credentials_not_persisted_and_read_only (test_master123_s006_integration.TestMaster84S006Integration.test_credentials_not_persisted_and_read_only) ... ok
+test_four_mock_candidates_are_really_validated_when_present (test_master123_s006_integration.TestMaster84S006Integration.test_four_mock_candidates_are_really_validated_when_present) ... ok
+test_fuenf_remote_referenzziele_explizit_im_ci (test_master123_s006_integration.TestMaster84S006Integration.test_fuenf_remote_referenzziele_explizit_im_ci) ... ok
+test_local_missing_refs_may_skip_but_ci_never_skips (test_master123_s006_integration.TestMaster84S006Integration.test_local_missing_refs_may_skip_but_ci_never_skips) ... ok
+test_no_deploy_or_branch_delete_in_s006_ci_step (test_master123_s006_integration.TestMaster84S006Integration.test_no_deploy_or_branch_delete_in_s006_ci_step) ... ok
+test_approval_revoked_during_discovery_blocks_inference (test_master4_integration.Integration.test_approval_revoked_during_discovery_blocks_inference) ... ok
+test_counter_real_parallel_processes (test_master4_integration.Integration.test_counter_real_parallel_processes) ... [LEAD] status=NICHT EINSATZBEREIT ki_echt=False geheimnis_redigiert=False fehler=Kein GITHUB_TOKEN vorhanden – KI läuft nur in GitHub Actions mit 'models: read'.
+[BRAIN] status=ÜBERSPRUNGEN ki_echt=False geheimnis_redigiert=False fehler=Kein gültiger Auftrag von LEAD.
+[CHECK] status=ÜBERSPRUNGEN ki_echt=False geheimnis_redigiert=False fehler=Kein BRAIN-Vorschlag zum Prüfen (Tests wurden trotzdem ausgeführt).
+[COMMAND] status=ÜBERSPRUNGEN ki_echt=False geheimnis_redigiert=False fehler=LEAD/BRAIN/CHECK unvollständig oder fehlgeschlagen; kein COMMAND-KI-Aufruf.
+{"lauf": "20261021T190000Z", "team_einsatzbereit": false, "agenten_mit_echter_ki": [], "modelle": [], "aufgabe": null, "check_urteil": null, "tests_ok": true, "ki_aufrufe": 0, "blocker": [{"art": "KI-Anbindung fehlt", "detail": "Kein GITHUB_TOKEN vorhanden – KI läuft nur in GitHub Actions mit 'models: read'.", "rollen": ["LEAD"]}]}
+[LEAD] status=NICHT EINSATZBEREIT ki_echt=False geheimnis_redigiert=False fehler=Kein GITHUB_TOKEN vorhanden – KI läuft nur in GitHub Actions mit 'models: read'.
+[BRAIN] status=ÜBERSPRUNGEN ki_echt=False geheimnis_redigiert=False fehler=Kein gültiger Auftrag von LEAD.
+[CHECK] status=ÜBERSPRUNGEN ki_echt=False geheimnis_redigiert=False fehler=Kein BRAIN-Vorschlag zum Prüfen (Tests wurden trotzdem ausgeführt).
+[COMMAND] status=ÜBERSPRUNGEN ki_echt=False geheimnis_redigiert=False fehler=LEAD/BRAIN/CHECK unvollständig oder fehlgeschlagen; kein COMMAND-KI-Aufruf.
+{"lauf": "20261021T190000Z", "team_einsatzbereit": false, "agenten_mit_echter_ki": [], "modelle": [], "aufgabe": null, "check_urteil": null, "tests_ok": true, "ki_aufrufe": 0, "blocker": [{"art": "KI-Anbindung fehlt", "detail": "Kein GITHUB_TOKEN vorhanden – KI läuft nur in GitHub Actions mit 'models: read'.", "rollen": ["LEAD"]}]}
+[LEAD] status=OK ki_echt=True geheimnis_redigiert=False fehler=
+[LEAD] KI-Antwort verarbeitet; Rohtext und Metadaten im Konsolenlog unterdrückt.
+[BRAIN] status=OK ki_echt=True geheimnis_redigiert=False fehler=
+[BRAIN] KI-Antwort verarbeitet; Rohtext und Metadaten im Konsolenlog unterdrückt.
+[CHECK] status=OK ki_echt=True geheimnis_redigiert=False fehler=
+[CHECK] KI-Antwort verarbeitet; Rohtext und Metadaten im Konsolenlog unterdrückt.
+[COMMAND] status=OK ki_echt=True geheimnis_redigiert=False fehler=
+[COMMAND] KI-Antwort verarbeitet; Rohtext und Metadaten im Konsolenlog unterdrückt.
+{"lauf": "20261021T190000Z", "team_einsatzbereit": true, "agenten_mit_echter_ki": ["LEAD", "BRAIN", "CHECK", "COMMAND"], "modelle": ["meta/Llama-3.3-70B-Instruct"], "aufgabe": "S-000", "check_urteil": "bestanden", "tests_ok": true, "ki_aufrufe": 4, "blocker": []}
+{"lauf": "20261022T020000Z", "team_einsatzbereit": false, "agenten_mit_echter_ki": ["LEAD", "BRAIN", "CHECK", "COMMAND"], "modelle": [], "aufgabe": "S-000", "check_urteil": "bestanden", "tests_ok": true, "ki_aufrufe": 4, "blocker": []}
+{"lauf": "20261022T020000Z", "team_einsatzbereit": false, "agenten_mit_echter_ki": ["LEAD", "BRAIN", "CHECK", "COMMAND"], "modelle": [], "aufgabe": "S-000", "check_urteil": "bestanden", "tests_ok": true, "ki_aufrufe": 4, "blocker": []}
+{"lauf": "20261022T020000Z", "team_einsatzbereit": false, "agenten_mit_echter_ki": ["LEAD", "BRAIN", "CHECK", "COMMAND"], "modelle": ["dummy"], "aufgabe": "S-000", "check_urteil": "bestanden", "tests_ok": true, "ki_aufrufe": 0, "blocker": []}
+{"lauf": "20261022T020000Z", "team_einsatzbereit": true, "agenten_mit_echter_ki": ["LEAD", "BRAIN", "CHECK", "COMMAND"], "modelle": [], "aufgabe": "S-000", "check_urteil": "bestanden", "tests_ok": true, "ki_aufrufe": 4, "blocker": []}
+[LEAD] status=NICHT EINSATZBEREIT ki_echt=False geheimnis_redigiert=False fehler=Geheimnisindikator in KI-Antwort – Lauf gesperrt, Inhalt verworfen.
+[LEAD] status=NICHT EINSATZBEREIT ki_echt=False geheimnis_redigiert=False fehler=
+[LEAD] status=KEINE AUFGABE ki_echt=False geheimnis_redigiert=False fehler=
+[LEAD] status=FEHLER ki_echt=False geheimnis_redigiert=False fehler=
+[LEAD] status=ÜBERSPRUNGEN ki_echt=False geheimnis_redigiert=False fehler=
+{"lauf": "20261022T020000Z", "team_einsatzbereit": false, "agenten_mit_echter_ki": ["LEAD", "BRAIN", "CHECK", "COMMAND"], "modelle": [], "aufgabe": "S-000", "check_urteil": "bestanden", "tests_ok": true, "ki_aufrufe": 0, "blocker": []}
+{"lauf": "20261022T020000Z", "team_einsatzbereit": false, "agenten_mit_echter_ki": ["LEAD", "BRAIN", "CHECK", "COMMAND"], "modelle": [], "aufgabe": "S-000", "check_urteil": "bestanden", "tests_ok": true, "ki_aufrufe": 0, "blocker": []}
+{"lauf": "20261022T020000Z", "team_einsatzbereit": false, "agenten_mit_echter_ki": ["LEAD", "BRAIN", "CHECK", "COMMAND"], "modelle": [], "aufgabe": "S-000", "check_urteil": "bestanden", "tests_ok": true, "ki_aufrufe": 4, "blocker": []}
+{"lauf": "20261022T020000Z", "team_einsatzbereit": false, "agenten_mit_echter_ki": ["LEAD", "BRAIN", "CHECK", "COMMAND"], "modelle": [], "aufgabe": "S-000", "check_urteil": "bestanden", "tests_ok": true, "ki_aufrufe": 4, "blocker": []}
+{"lauf": "20261022T020000Z", "team_einsatzbereit": false, "agenten_mit_echter_ki": ["LEAD", "BRAIN", "CHECK", "COMMAND"], "modelle": [], "aufgabe": "S-000", "check_urteil": "abgelehnt", "tests_ok": true, "ki_aufrufe": 4, "blocker": []}
+{"lauf": "20261022T020000Z", "team_einsatzbereit": false, "agenten_mit_echter_ki": ["LEAD", "BRAIN", "CHECK", "COMMAND"], "modelle": [], "aufgabe": "S-000", "check_urteil": "nachbessern", "tests_ok": true, "ki_aufrufe": 4, "blocker": []}
+{"lauf": "20261022T020000Z", "team_einsatzbereit": false, "agenten_mit_echter_ki": ["LEAD", "BRAIN", "CHECK", "COMMAND"], "modelle": [], "aufgabe": "S-000", "check_urteil": "bestanden", "tests_ok": true, "ki_aufrufe": 4, "blocker": []}
+{"lauf": "20261022T020000Z", "team_einsatzbereit": false, "agenten_mit_echter_ki": ["LEAD", "BRAIN", "CHECK", "COMMAND"], "modelle": [], "aufgabe": "S-000", "check_urteil": "bestanden", "tests_ok": true, "ki_aufrufe": 4, "blocker": []}
+{"lauf": "20261022T020000Z", "team_einsatzbereit": false, "agenten_mit_echter_ki": ["LEAD", "BRAIN", "CHECK", "COMMAND"], "modelle": [], "aufgabe": "S-000", "check_urteil": "bestanden", "tests_ok": true, "ki_aufrufe": 4, "blocker": []}
+{"lauf": "20261022T020000Z", "team_einsatzbereit": false, "agenten_mit_echter_ki": ["LEAD", "BRAIN", "CHECK", "COMMAND"], "modelle": [], "aufgabe": "S-000", "check_urteil": "bestanden", "tests_ok": true, "ki_aufrufe": 0, "blocker": []}
+BLOCKIERT: Stundenbericht ungültig oder nicht lesbar.
+BLOCKIERT: Stundenbericht ungültig oder nicht lesbar.
+{"lauf": "20261027T011604Z-dfbe64", "vier_echte_ki_antworten": false, "tests_bestanden": true, "prozesse_ok": true, "status": "BLOCKIERT", "hinweis": "Technischer KI-Nachweis ist keine Freigabe für App-Änderungen.", "fehler": ["Agentenbericht muss ein JSON-Objekt sein.", "Pflichtnachweis fehlt, ist unsicher oder nicht lesbar."], "protokoll": "team/runs/20261027T011604Z-dfbe64.json"}
+BLOCKIERT: Betreiber-Not-Aus team/work/STOP ist aktiv.
+BLOCKIERT: Stundenbericht ungültig oder nicht lesbar.
+BLOCKIERT: Stundenbericht ungültig oder nicht lesbar.
+{"lauf": "20261027T011604Z-0e45f1", "vier_echte_ki_antworten": false, "tests_bestanden": false, "prozesse_ok": true, "status": "BLOCKIERT", "hinweis": "Technischer KI-Nachweis ist keine Freigabe für App-Änderungen.", "fehler": ["Agentenbericht muss ein JSON-Objekt sein.", "Pflichtnachweis fehlt, ist unsicher oder nicht lesbar."], "protokoll": "team/runs/20261027T011604Z-0e45f1.json"}
+{"lauf": "20261027T011604Z-3a3cb9", "vier_echte_ki_antworten": true, "tests_bestanden": true, "prozesse_ok": true, "status": "TECHNISCHER PILOT ERFOLGREICH", "hinweis": "Technischer KI-Nachweis ist keine Freigabe für App-Änderungen.", "fehler": [], "protokoll": "team/runs/20261027T011604Z-3a3cb9.json"}
+BLOCKIERT: Lokale Betreiberfreigabe oder passende offene Aufgabe fehlt.
+ok
+test_stop_terminates_real_child_process (test_master4_integration.Integration.test_stop_terminates_real_child_process) ... ok
+test_beschaedigte_blitzdatei_wird_nicht_ueberschrieben (test_master5_modules.BlitzQueue.test_beschaedigte_blitzdatei_wird_nicht_ueberschrieben) ... ok
+test_neue_passende_angebote_einmalig_und_dauerhaft (test_master5_modules.BlitzQueue.test_neue_passende_angebote_einmalig_und_dauerhaft) ... ok
+test_speicherfehler_gibt_keine_meldung_als_abgeschlossen_aus (test_master5_modules.BlitzQueue.test_speicherfehler_gibt_keine_meldung_als_abgeschlossen_aus) ... ok
+test_verdaechtige_und_veraltete_angebote_losen_keinen_blitz_aus (test_master5_modules.BlitzQueue.test_verdaechtige_und_veraltete_angebote_losen_keinen_blitz_aus) ... ok
+test_beschaedigte_missionen_bleiben_unberuehrt (test_master5_modules.Missionen.test_beschaedigte_missionen_bleiben_unberuehrt) ... ok
+test_erstellen_bearbeiten_faellig_pause_und_beenden (test_master5_modules.Missionen.test_erstellen_bearbeiten_faellig_pause_und_beenden) ... ok
+test_speicherfehler_veraendert_missionsstatus_nicht (test_master5_modules.Missionen.test_speicherfehler_veraendert_missionsstatus_nicht) ... ok
+test_ungueltige_felder_und_zeitzonen_werden_abgewiesen (test_master5_modules.Missionen.test_ungueltige_felder_und_zeitzonen_werden_abgewiesen) ... ok
+test_lupe_entfernt_unzulaessiges_und_dubletten_preisdetektiv_vergleicht (test_master5_modules.Zusammenspiel.test_lupe_entfernt_unzulaessiges_und_dubletten_preisdetektiv_vergleicht) ... ok
+test_aktives_lock_verhindert_zweiten_lauf (test_master76_lock.TestLokalerDienstLock.test_aktives_lock_verhindert_zweiten_lauf) ... ok
+test_nach_zwei_erfolgreichen_laeufen_bleibt_lock_nutzbar (test_master76_lock.TestLokalerDienstLock.test_nach_zwei_erfolgreichen_laeufen_bleibt_lock_nutzbar) ... ok
+test_stale_datei_vom_absturz_blockiert_keinen_neuen_lauf (test_master76_lock.TestLokalerDienstLock.test_stale_datei_vom_absturz_blockiert_keinen_neuen_lauf) ... ok
+test_symlink_als_lockdatei_wird_sicher_abgelehnt (test_master76_lock.TestLokalerDienstLock.test_symlink_als_lockdatei_wird_sicher_abgelehnt) ... ok
+test_check_denial_cannot_be_overruled_by_aggregate (test_master77_proof.TestMaster77Nachweise.test_check_denial_cannot_be_overruled_by_aggregate) ... ok
+test_check_tests_must_match_aggregate (test_master77_proof.TestMaster77Nachweise.test_check_tests_must_match_aggregate) ... ok
+test_counter_symlink_is_not_evidence (test_master77_proof.TestMaster77Nachweise.test_counter_symlink_is_not_evidence) ... ok
+test_malformed_structures_fail_closed_without_crash (test_master77_proof.TestMaster77Nachweise.test_malformed_structures_fail_closed_without_crash) ... ok
+test_missing_or_positive_secret_scan_blocks (test_master77_proof.TestMaster77Nachweise.test_missing_or_positive_secret_scan_blocks) ... ok
+test_mock_is_consistent_but_not_a_live_ai_proof (test_master77_proof.TestMaster77Nachweise.test_mock_is_consistent_but_not_a_live_ai_proof) ... ok
+test_no_independent_counter_no_success (test_master77_proof.TestMaster77Nachweise.test_no_independent_counter_no_success) ... ok
+test_role_file_tamper_blocks (test_master77_proof.TestMaster77Nachweise.test_role_file_tamper_blocks) ... ok
+test_role_symlink_blocks (test_master77_proof.TestMaster77Nachweise.test_role_symlink_blocks) ... ok
+test_unreadable_json_report_is_blocked_without_ai (test_master77_proof.TestMaster77Nachweise.test_unreadable_json_report_is_blocked_without_ai) ... ok
+test_bool_exitcode_wird_nicht_als_null_akzeptiert (test_master78_process_evidence.TestMaster78Prozessbelege.test_bool_exitcode_wird_nicht_als_null_akzeptiert) ... ok
+test_doppelte_rolle_anstelle_bericht_blockiert (test_master78_process_evidence.TestMaster78Prozessbelege.test_doppelte_rolle_anstelle_bericht_blockiert) ... ok
+test_doppelte_rolle_anstelle_check_blockiert (test_master78_process_evidence.TestMaster78Prozessbelege.test_doppelte_rolle_anstelle_check_blockiert) ... ok
+test_falscher_datentyp_prozessliste_blockiert (test_master78_process_evidence.TestMaster78Prozessbelege.test_falscher_datentyp_prozessliste_blockiert) ... ok
+test_fremde_rolle_blockiert (test_master78_process_evidence.TestMaster78Prozessbelege.test_fremde_rolle_blockiert) ... ok
+test_korrekte_fuenf_rollen_mock_ok (test_master78_process_evidence.TestMaster78Prozessbelege.test_korrekte_fuenf_rollen_mock_ok) ... ok
+test_leere_und_unvollstaendige_prozessliste_blockiert (test_master78_process_evidence.TestMaster78Prozessbelege.test_leere_und_unvollstaendige_prozessliste_blockiert) ... ok
+test_manifest_folgt_keinem_rollen_symlink (test_master78_process_evidence.TestMaster78Prozessbelege.test_manifest_folgt_keinem_rollen_symlink) ... ok
+test_nicht_null_exitcode_blockiert (test_master78_process_evidence.TestMaster78Prozessbelege.test_nicht_null_exitcode_blockiert) ... ok
+test_nicht_objekt_in_prozessliste_blockiert_ohne_crash (test_master78_process_evidence.TestMaster78Prozessbelege.test_nicht_objekt_in_prozessliste_blockiert_ohne_crash) ... ok
+test_unlesbare_manifestdatei_blockiert_kontrolliert (test_master78_process_evidence.TestMaster78Prozessbelege.test_unlesbare_manifestdatei_blockiert_kontrolliert) ... ok
+test_vertauchte_rolle_blockiert (test_master78_process_evidence.TestMaster78Prozessbelege.test_vertauchte_rolle_blockiert) ... ok
+test_datei_austausch_waehrend_open_blockiert (test_master79_artifacts.TestMaster79SicheresManifest.test_datei_austausch_waehrend_open_blockiert) ... ok
+test_defekter_symlink_blockiert (test_master79_artifacts.TestMaster79SicheresManifest.test_defekter_symlink_blockiert) ... ok
+test_elternordner_symlink_ist_gesperrt (test_master79_artifacts.TestMaster79SicheresManifest.test_elternordner_symlink_ist_gesperrt) ... ok
+test_falsche_path_symlink_auskunft_ist_egal (test_master79_artifacts.TestMaster79SicheresManifest.test_falsche_path_symlink_auskunft_ist_egal) ... ok
+test_fehlende_datei_blockiert (test_master79_artifacts.TestMaster79SicheresManifest.test_fehlende_datei_blockiert) ... ok
+test_fifo_kann_nicht_als_datei_gelten (test_master79_artifacts.TestMaster79SicheresManifest.test_fifo_kann_nicht_als_datei_gelten) ... ok
+test_genau_2mb_ist_erlaubt (test_master79_artifacts.TestMaster79SicheresManifest.test_genau_2mb_ist_erlaubt) ... ok
+test_hardlink_ausserhalb_der_artefaktstruktur_wird_abgewiesen (test_master79_artifacts.TestMaster79SicheresManifest.test_hardlink_ausserhalb_der_artefaktstruktur_wird_abgewiesen) ... ok
+test_os_open_enthaelt_no_follow (test_master79_artifacts.TestMaster79SicheresManifest.test_os_open_enthaelt_no_follow) ... ok
+test_regulaere_datei_hash_ist_korrekt (test_master79_artifacts.TestMaster79SicheresManifest.test_regulaere_datei_hash_ist_korrekt) ... ok
+test_sicheres_verzeichnis_anlegen_folgt_keinem_elternlink (test_master79_artifacts.TestMaster79SicheresManifest.test_sicheres_verzeichnis_anlegen_folgt_keinem_elternlink) ... ok
+test_symlink_auf_regulaere_datei_blockiert (test_master79_artifacts.TestMaster79SicheresManifest.test_symlink_auf_regulaere_datei_blockiert) ... ok
+test_ueber_2mb_ist_nicht_erlaubt (test_master79_artifacts.TestMaster79SicheresManifest.test_ueber_2mb_ist_nicht_erlaubt) ... ok
+test_verzeichnis_ist_keine_artefaktdatei (test_master79_artifacts.TestMaster79SicheresManifest.test_verzeichnis_ist_keine_artefaktdatei) ... ok
+test_verzeichnisaustausch_waehrend_lesen_wird_erkannt (test_master79_artifacts.TestMaster79SicheresManifest.test_verzeichnisaustausch_waehrend_lesen_wird_erkannt) ... ok
+test_blitz_beschaedigung_nach_laden_bleibt_unveraendert (test_master7_storage.BlitzKonflikte.test_blitz_beschaedigung_nach_laden_bleibt_unveraendert) ... ok
+test_blitz_leaf_und_speicherlock_symlink_werden_abgewiesen (test_master7_storage.BlitzKonflikte.test_blitz_leaf_und_speicherlock_symlink_werden_abgewiesen) ... ok
+test_blitz_private_datei_ueberlebt_neustart (test_master7_storage.BlitzKonflikte.test_blitz_private_datei_ueberlebt_neustart) ... ok
+test_blitz_symlink_im_uebergeordneten_ordner_blockiert (test_master7_storage.BlitzKonflikte.test_blitz_symlink_im_uebergeordneten_ordner_blockiert) ... ok
+test_blitz_verzeichnisaustausch_waehrend_schreiben_beruehrt_aussen_nicht (test_master7_storage.BlitzKonflikte.test_blitz_verzeichnisaustausch_waehrend_schreiben_beruehrt_aussen_nicht) ... ok
+test_gleichzeitige_deduplizierung_meldet_einmal_und_keinen_stillverlust (test_master7_storage.BlitzKonflikte.test_gleichzeitige_deduplizierung_meldet_einmal_und_keinen_stillverlust) ... ok
+test_sechs_vorgeladene_instanz_duplizieren_treffer_nicht (test_master7_storage.BlitzKonflikte.test_sechs_vorgeladene_instanz_duplizieren_treffer_nicht) ... ok
+test_acht_vorgeladene_instanz_aenderungen_bleiben_nach_explizitem_retry_erhalten (test_master7_storage.MissionKonflikte.test_acht_vorgeladene_instanz_aenderungen_bleiben_nach_explizitem_retry_erhalten) ... ok
+test_fremde_oder_beschreibbare_speicherorte_blockieren (test_master7_storage.MissionKonflikte.test_fremde_oder_beschreibbare_speicherorte_blockieren) ... ok
+test_missionslauf_sperre_blockiert_andere_prozesse (test_master7_storage.MissionKonflikte.test_missionslauf_sperre_blockiert_andere_prozesse) ... BLOCKIERT: Ein anderer lokaler SCHNAPPER-Dienst ist aktiv.
+BLOCKIERT: Sperrdatei kann nicht sicher geoeffnet werden.
+ok
+test_missionslauf_sperre_verweigert_symlink_und_hardlink (test_master7_storage.MissionKonflikte.test_missionslauf_sperre_verweigert_symlink_und_hardlink) ... ok
+test_private_mission_datei_ueberlebt_neustart (test_master7_storage.MissionKonflikte.test_private_mission_datei_ueberlebt_neustart) ... ok
+test_separate_prozesse_erkennen_konflikt_statt_still_zu_ueberschreiben (test_master7_storage.MissionKonflikte.test_separate_prozesse_erkennen_konflikt_statt_still_zu_ueberschreiben) ... ok
+test_speicherfehler_laesst_alte_missionen_unveraendert (test_master7_storage.MissionKonflikte.test_speicherfehler_laesst_alte_missionen_unveraendert) ... ok
+test_speicherlock_symlink_und_beschaedigte_datei_bleiben_unveraendert (test_master7_storage.MissionKonflikte.test_speicherlock_symlink_und_beschaedigte_datei_bleiben_unveraendert) ... ok
+test_uebergeordneter_symlink_und_leaf_symlink_blockiert (test_master7_storage.MissionKonflikte.test_uebergeordneter_symlink_und_leaf_symlink_blockiert) ... ok
+test_verlinkte_oder_fremdlesbare_speicherdatei_blockiert (test_master7_storage.MissionKonflikte.test_verlinkte_oder_fremdlesbare_speicherdatei_blockiert) ... ok
+test_verzeichnisaustausch_waehrend_schreiben_beruehrt_aussen_nicht (test_master7_storage.MissionKonflikte.test_verzeichnisaustausch_waehrend_schreiben_beruehrt_aussen_nicht) ... ok
+test_zwei_instanz_aenderungen_erkennen_konflikt_und_rebase_nicht_still (test_master7_storage.MissionKonflikte.test_zwei_instanz_aenderungen_erkennen_konflikt_und_rebase_nicht_still) ... ok
+test_antwort_nutzt_reservierte_nummer_statt_nachlesen (test_master80_counter.TestMaster80Zaehlerintegritaet.test_antwort_nutzt_reservierte_nummer_statt_nachlesen) ... ok
+test_defekter_symlink_blockiert (test_master80_counter.TestMaster80Zaehlerintegritaet.test_defekter_symlink_blockiert) ... ok
+test_fehlgeschlagene_antwort_reservierung_nicht_wiederverwenden (test_master80_counter.TestMaster80Zaehlerintegritaet.test_fehlgeschlagene_antwort_reservierung_nicht_wiederverwenden) ... ok
+test_fifo_als_zaehler_blockiert_ohne_haenger (test_master80_counter.TestMaster80Zaehlerintegritaet.test_fifo_als_zaehler_blockiert_ohne_haenger) ... ok
+test_gueltiges_limit_wird_streng_eingehalten (test_master80_counter.TestMaster80Zaehlerintegritaet.test_gueltiges_limit_wird_streng_eingehalten) ... ok
+test_hardlink_auf_fremde_datei_blockiert (test_master80_counter.TestMaster80Zaehlerintegritaet.test_hardlink_auf_fremde_datei_blockiert) ... ok
+test_kein_zugriff_bei_ungueltigem_backend (test_master80_counter.TestMaster80Zaehlerintegritaet.test_kein_zugriff_bei_ungueltigem_backend) ... ok
+test_legacy_einstelliger_zaehler_weiterhin_lesbar (test_master80_counter.TestMaster80Zaehlerintegritaet.test_legacy_einstelliger_zaehler_weiterhin_lesbar) ... ok
+test_mehrere_aufrufe_bleiben_eindeutig (test_master80_counter.TestMaster80Zaehlerintegritaet.test_mehrere_aufrufe_bleiben_eindeutig) ... ok
+test_neue_datei_erzeugt_reservierung_eins (test_master80_counter.TestMaster80Zaehlerintegritaet.test_neue_datei_erzeugt_reservierung_eins) ... ok
+test_offline_zaehlerverwendung_hat_keinen_netzwerkzugriff (test_master80_counter.TestMaster80Zaehlerintegritaet.test_offline_zaehlerverwendung_hat_keinen_netzwerkzugriff) ... ok
+test_parallel_aufrufe_kein_doppeltes_inkrement (test_master80_counter.TestMaster80Zaehlerintegritaet.test_parallel_aufrufe_kein_doppeltes_inkrement) ... ok
+test_symlink_auf_externe_datei_blockiert_ohne_schreiben (test_master80_counter.TestMaster80Zaehlerintegritaet.test_symlink_auf_externe_datei_blockiert_ohne_schreiben) ... ok
+test_ungueltige_counterdaten_nicht_ueberschreiben (test_master80_counter.TestMaster80Zaehlerintegritaet.test_ungueltige_counterdaten_nicht_ueberschreiben) ... ok
+test_verzeichnis_als_zaehler_blockiert (test_master80_counter.TestMaster80Zaehlerintegritaet.test_verzeichnis_als_zaehler_blockiert) ... ok
+test_andere_osfehler_werden_nicht_versteckt (test_master81_lock_quota.TestMaster81LokaleGrenzen.test_andere_osfehler_werden_nicht_versteckt) ... ok
+test_init_lehnt_bool_als_limit_ab (test_master81_lock_quota.TestMaster81LokaleGrenzen.test_init_lehnt_bool_als_limit_ab) ... ok
+test_init_lehnt_float_und_negative_werte_ab (test_master81_lock_quota.TestMaster81LokaleGrenzen.test_init_lehnt_float_und_negative_werte_ab) ... ok
+test_init_lehnt_limit_ueber_harter_grenze_ab (test_master81_lock_quota.TestMaster81LokaleGrenzen.test_init_lehnt_limit_ueber_harter_grenze_ab) ... ok
+test_init_lehnt_null_limit_ohne_modellaufruf_ab (test_master81_lock_quota.TestMaster81LokaleGrenzen.test_init_lehnt_null_limit_ohne_modellaufruf_ab) ... ok
+test_keine_ausweichende_cloud_api (test_master81_lock_quota.TestMaster81LokaleGrenzen.test_keine_ausweichende_cloud_api) ... ok
+test_limit_eins_wird_respektiert (test_master81_lock_quota.TestMaster81LokaleGrenzen.test_limit_eins_wird_respektiert) ... ok
+test_nachtraeglich_unsicheres_limit_blockiert_ohne_datei (test_master81_lock_quota.TestMaster81LokaleGrenzen.test_nachtraeglich_unsicheres_limit_blockiert_ohne_datei) ... ok
+test_osfehler_bei_sperre_ohne_zaehlermanipulation (test_master81_lock_quota.TestMaster81LokaleGrenzen.test_osfehler_bei_sperre_ohne_zaehlermanipulation) ... ok
+test_sichere_konfigurationswerte_1_bis_6 (test_master81_lock_quota.TestMaster81LokaleGrenzen.test_sichere_konfigurationswerte_1_bis_6) ... ok
+test_sperre_erfolgreich_ohne_warten (test_master81_lock_quota.TestMaster81LokaleGrenzen.test_sperre_erfolgreich_ohne_warten) ... ok
+test_sperre_nach_timeout_fehlschlaegt (test_master81_lock_quota.TestMaster81LokaleGrenzen.test_sperre_nach_timeout_fehlschlaegt) ... ok
+test_sperre_retry_bei_eacces (test_master81_lock_quota.TestMaster81LokaleGrenzen.test_sperre_retry_bei_eacces) ... ok
+test_sperre_retry_bei_eagain (test_master81_lock_quota.TestMaster81LokaleGrenzen.test_sperre_retry_bei_eagain) ... ok
+test_sperrenregel_unterliegt_keinem_test_only_skip (test_master81_lock_quota.TestMaster81LokaleGrenzen.test_sperrenregel_unterliegt_keinem_test_only_skip) ... ok
+test_timeout_veraendert_bestehenden_zaehler_nicht (test_master81_lock_quota.TestMaster81LokaleGrenzen.test_timeout_veraendert_bestehenden_zaehler_nicht) ... ok
+test_ungueltige_konfigurationswerte_sind_gesperrt (test_master81_lock_quota.TestMaster81LokaleGrenzen.test_ungueltige_konfigurationswerte_sind_gesperrt) ... ok
+test_process_added_newline_blocks (test_master82_process_binding.TestMaster82Prozessbindung.test_process_added_newline_blocks) ... ok
+test_process_empty_file_blocks (test_master82_process_binding.TestMaster82Prozessbindung.test_process_empty_file_blocks) ... ok
+test_process_exitcode_changed_after_written_blocks (test_master82_process_binding.TestMaster82Prozessbindung.test_process_exitcode_changed_after_written_blocks) ... ok
+test_process_extra_field_inserted_after_written_blocks (test_master82_process_binding.TestMaster82Prozessbindung.test_process_extra_field_inserted_after_written_blocks) ... ok
+test_process_reformatted_without_semantic_change_blocks (test_master82_process_binding.TestMaster82Prozessbindung.test_process_reformatted_without_semantic_change_blocks) ... ok
+test_process_replaced_with_empty_json_blocks (test_master82_process_binding.TestMaster82Prozessbindung.test_process_replaced_with_empty_json_blocks) ... ok
+test_process_replaced_with_invalid_json_blocks (test_master82_process_binding.TestMaster82Prozessbindung.test_process_replaced_with_invalid_json_blocks) ... ok
+test_process_role_swapped_after_written_blocks (test_master82_process_binding.TestMaster82Prozessbindung.test_process_role_swapped_after_written_blocks) ... ok
+test_process_trailing_string_blocks (test_master82_process_binding.TestMaster82Prozessbindung.test_process_trailing_string_blocks) ... ok
+test_unchanged_process_evidence_still_accepts_mock (test_master82_process_binding.TestMaster82Prozessbindung.test_unchanged_process_evidence_still_accepts_mock) ... ok
+test_call_counter_mutated_after_validation_is_blocked (test_master83_all_evidence_binding.TestMaster83AllePflichtbelege.test_call_counter_mutated_after_validation_is_blocked) ... ok
+test_changed_role_text_after_validation_is_blocked (test_master83_all_evidence_binding.TestMaster83AllePflichtbelege.test_changed_role_text_after_validation_is_blocked) ... ok
+test_checked_role_and_counter_snapshots_are_byte_hashes (test_master83_all_evidence_binding.TestMaster83AllePflichtbelege.test_checked_role_and_counter_snapshots_are_byte_hashes) ... ok
+test_corrupt_role_never_produces_complete_snapshot (test_master83_all_evidence_binding.TestMaster83AllePflichtbelege.test_corrupt_role_never_produces_complete_snapshot) ... ok
+test_counter_equivalent_number_different_bytes_is_blocked (test_master83_all_evidence_binding.TestMaster83AllePflichtbelege.test_counter_equivalent_number_different_bytes_is_blocked) ... ok
+test_counter_replaced_with_symlink_after_validation_is_blocked (test_master83_all_evidence_binding.TestMaster83AllePflichtbelege.test_counter_replaced_with_symlink_after_validation_is_blocked) ... ok
+test_each_agent_role_mutated_after_validation_is_blocked (test_master83_all_evidence_binding.TestMaster83AllePflichtbelege.test_each_agent_role_mutated_after_validation_is_blocked) ... ok
+test_hourly_report_mutated_after_validation_is_blocked (test_master83_all_evidence_binding.TestMaster83AllePflichtbelege.test_hourly_report_mutated_after_validation_is_blocked) ... ok
+test_missing_counter_never_produces_full_snapshot (test_master83_all_evidence_binding.TestMaster83AllePflichtbelege.test_missing_counter_never_produces_full_snapshot) ... ok
+test_positive_mock_creates_seven_consistent_file_hashes (test_master83_all_evidence_binding.TestMaster83AllePflichtbelege.test_positive_mock_creates_seven_consistent_file_hashes) ... ok
+test_report_replaced_with_symlink_after_validation_is_blocked (test_master83_all_evidence_binding.TestMaster83AllePflichtbelege.test_report_replaced_with_symlink_after_validation_is_blocked) ... ok
+test_report_semantically_same_new_format_is_blocked (test_master83_all_evidence_binding.TestMaster83AllePflichtbelege.test_report_semantically_same_new_format_is_blocked) ... ok
+test_role_replaced_with_symlink_after_validation_is_blocked (test_master83_all_evidence_binding.TestMaster83AllePflichtbelege.test_role_replaced_with_symlink_after_validation_is_blocked) ... ok
+test_role_schema_same_new_format_is_blocked (test_master83_all_evidence_binding.TestMaster83AllePflichtbelege.test_role_schema_same_new_format_is_blocked) ... ok
+test_ci_actions_remain_current_in_both_jobs (test_master84_s006_integration.TestMaster84S006Integration.test_ci_actions_remain_current_in_both_jobs) ... ok
+test_ci_fails_when_any_historical_candidate_missing (test_master84_s006_integration.TestMaster84S006Integration.test_ci_fails_when_any_historical_candidate_missing) ... ok
+test_ci_os_versions_remain_pinned_to_ubuntu_2404 (test_master84_s006_integration.TestMaster84S006Integration.test_ci_os_versions_remain_pinned_to_ubuntu_2404) ... ok
+test_ci_requires_all_four_ref_checks (test_master84_s006_integration.TestMaster84S006Integration.test_ci_requires_all_four_ref_checks) ... ok
+test_ci_still_disables_private_repo_runners (test_master84_s006_integration.TestMaster84S006Integration.test_ci_still_disables_private_repo_runners) ... ok
+test_ci_uses_full_history_instead_of_shallow_clone (test_master84_s006_integration.TestMaster84S006Integration.test_ci_uses_full_history_instead_of_shallow_clone) ... ok
+test_credentials_not_persisted_and_read_only (test_master84_s006_integration.TestMaster84S006Integration.test_credentials_not_persisted_and_read_only) ... ok
+test_four_mock_candidates_are_really_validated_when_present (test_master84_s006_integration.TestMaster84S006Integration.test_four_mock_candidates_are_really_validated_when_present) ... ok
+test_fuenf_remote_referenzziele_explizit_im_ci (test_master84_s006_integration.TestMaster84S006Integration.test_fuenf_remote_referenzziele_explizit_im_ci) ... ok
+test_local_missing_refs_may_skip_but_ci_never_skips (test_master84_s006_integration.TestMaster84S006Integration.test_local_missing_refs_may_skip_but_ci_never_skips) ... ok
+test_no_deploy_or_branch_delete_in_s006_ci_step (test_master84_s006_integration.TestMaster84S006Integration.test_no_deploy_or_branch_delete_in_s006_ci_step) ... ok
+test_aktives_lock_blockiert_ohne_pid_mutation (test_master85_runner_lock.TestMaster85SicheresRunnerLock.test_aktives_lock_blockiert_ohne_pid_mutation) ... ok
+test_defekter_symlink_fuehrt_zu_no_go (test_master85_runner_lock.TestMaster85SicheresRunnerLock.test_defekter_symlink_fuehrt_zu_no_go) ... ok
+test_directory_fuehrt_zu_no_go (test_master85_runner_lock.TestMaster85SicheresRunnerLock.test_directory_fuehrt_zu_no_go) ... ok
+test_fifo_blockiert_ohne_haengen (test_master85_runner_lock.TestMaster85SicheresRunnerLock.test_fifo_blockiert_ohne_haengen) ... ok
+test_fstat_fehler_schliesst_fd (test_master85_runner_lock.TestMaster85SicheresRunnerLock.test_fstat_fehler_schliesst_fd) ... ok
+test_hardlink_fuehrt_zu_no_go (test_master85_runner_lock.TestMaster85SicheresRunnerLock.test_hardlink_fuehrt_zu_no_go) ... ok
+test_missing_nofollow_muss_blockieren (test_master85_runner_lock.TestMaster85SicheresRunnerLock.test_missing_nofollow_muss_blockieren) ... ok
+test_nach_aktivem_lock_wieder_startbar (test_master85_runner_lock.TestMaster85SicheresRunnerLock.test_nach_aktivem_lock_wieder_startbar) ... ok
+test_nach_open_erzeugter_hardlink_blockiert_pid_schreiben (test_master85_runner_lock.TestMaster85SicheresRunnerLock.test_nach_open_erzeugter_hardlink_blockiert_pid_schreiben) ... ok
+test_new_file_is_private_mode (test_master85_runner_lock.TestMaster85SicheresRunnerLock.test_new_file_is_private_mode) ... ok
+test_no_subprocess_called_when_lock_invalid (test_master85_runner_lock.TestMaster85SicheresRunnerLock.test_no_subprocess_called_when_lock_invalid) ... ok
+test_pid_fsync_error_blockiert_ohne_start (test_master85_runner_lock.TestMaster85SicheresRunnerLock.test_pid_fsync_error_blockiert_ohne_start) ... ok
+test_pid_short_write_blockiert_ohne_start (test_master85_runner_lock.TestMaster85SicheresRunnerLock.test_pid_short_write_blockiert_ohne_start) ... ok
+test_pid_write_oserror_blockiert_ohne_start (test_master85_runner_lock.TestMaster85SicheresRunnerLock.test_pid_write_oserror_blockiert_ohne_start) ... ok
+test_regulaere_neue_datei_ist_nutzbar (test_master85_runner_lock.TestMaster85SicheresRunnerLock.test_regulaere_neue_datei_ist_nutzbar) ... ok
+test_sicheres_fd_hat_nofollow_und_nonblock (test_master85_runner_lock.TestMaster85SicheresRunnerLock.test_sicheres_fd_hat_nofollow_und_nonblock) ... ok
+test_stale_pid_datei_ist_wieder_nutzbar (test_master85_runner_lock.TestMaster85SicheresRunnerLock.test_stale_pid_datei_ist_wieder_nutzbar) ... ok
+test_ungueltiger_symlink_keine_pid_ueberschreibung (test_master85_runner_lock.TestMaster85SicheresRunnerLock.test_ungueltiger_symlink_keine_pid_ueberschreibung) ... ok
+test_check_denial_cannot_be_overruled_by_aggregate (test_master77_proof.TestMaster77Nachweise.test_check_denial_cannot_be_overruled_by_aggregate) ... ok
+test_check_tests_must_match_aggregate (test_master77_proof.TestMaster77Nachweise.test_check_tests_must_match_aggregate) ... ok
+test_counter_symlink_is_not_evidence (test_master77_proof.TestMaster77Nachweise.test_counter_symlink_is_not_evidence) ... ok
+test_malformed_structures_fail_closed_without_crash (test_master77_proof.TestMaster77Nachweise.test_malformed_structures_fail_closed_without_crash) ... ok
+test_missing_or_positive_secret_scan_blocks (test_master77_proof.TestMaster77Nachweise.test_missing_or_positive_secret_scan_blocks) ... ok
+test_mock_is_consistent_but_not_a_live_ai_proof (test_master77_proof.TestMaster77Nachweise.test_mock_is_consistent_but_not_a_live_ai_proof) ... ok
+test_no_independent_counter_no_success (test_master77_proof.TestMaster77Nachweise.test_no_independent_counter_no_success) ... ok
+test_role_file_tamper_blocks (test_master77_proof.TestMaster77Nachweise.test_role_file_tamper_blocks) ... ok
+test_role_symlink_blocks (test_master77_proof.TestMaster77Nachweise.test_role_symlink_blocks) ... ok
+test_unreadable_json_report_is_blocked_without_ai (test_master77_proof.TestMaster77Nachweise.test_unreadable_json_report_is_blocked_without_ai) ... ok
+test_boolean_tokens_block (test_master86_proof_integration.TestMaster86IntegrierteNachweise.test_boolean_tokens_block) ... ok
+test_incomplete_chat_blocks (test_master86_proof_integration.TestMaster86IntegrierteNachweise.test_incomplete_chat_blocks) ... ok
+test_length_stop_blocks (test_master86_proof_integration.TestMaster86IntegrierteNachweise.test_length_stop_blocks) ... ok
+test_local_uuid_explicitly_is_not_provider_attestation (test_master86_proof_integration.TestMaster86IntegrierteNachweise.test_local_uuid_explicitly_is_not_provider_attestation) ... ok
+test_missing_ollama_evidence_blocks (test_master86_proof_integration.TestMaster86IntegrierteNachweise.test_missing_ollama_evidence_blocks) ... ok
+test_missing_or_naive_timestamp_blocks (test_master86_proof_integration.TestMaster86IntegrierteNachweise.test_missing_or_naive_timestamp_blocks) ... ok
+test_missing_type_blocks (test_master86_proof_integration.TestMaster86IntegrierteNachweise.test_missing_type_blocks) ... ok
+test_no_return_to_unprotected_counter_implementation (test_master86_proof_integration.TestMaster86IntegrierteNachweise.test_no_return_to_unprotected_counter_implementation) ... ok
+test_positive_offline_report_accepted_for_format_only (test_master86_proof_integration.TestMaster86IntegrierteNachweise.test_positive_offline_report_accepted_for_format_only) ... ok
+test_validator_keeps_actual_text_but_does_not_sign_it (test_master86_proof_integration.TestMaster86IntegrierteNachweise.test_validator_keeps_actual_text_but_does_not_sign_it) ... ok
+test_validator_missing_ollama_fields_blocks (test_master86_proof_integration.TestMaster86IntegrierteNachweise.test_validator_missing_ollama_fields_blocks) ... ok
+test_wrong_message_role_blocks (test_master86_proof_integration.TestMaster86IntegrierteNachweise.test_wrong_message_role_blocks) ... ok
+test_wrong_reported_model_blocks (test_master86_proof_integration.TestMaster86IntegrierteNachweise.test_wrong_reported_model_blocks) ... ok
+test_wrong_type_blocks (test_master86_proof_integration.TestMaster86IntegrierteNachweise.test_wrong_type_blocks) ... ok
+test_zero_eval_tokens_block (test_master86_proof_integration.TestMaster86IntegrierteNachweise.test_zero_eval_tokens_block) ... ok
+test_active_stop_marks_blocked_and_skips_other_roles (test_master87_active_stop.TestMaster87AktiverNotAus.test_active_stop_marks_blocked_and_skips_other_roles) ... ok
+test_bypass_capture_output_rejected (test_master87_active_stop.TestMaster87AktiverNotAus.test_bypass_capture_output_rejected) ... ok
+test_bypass_check_mode_rejected (test_master87_active_stop.TestMaster87AktiverNotAus.test_bypass_check_mode_rejected) ... ok
+test_bypass_text_log_rejected (test_master87_active_stop.TestMaster87AktiverNotAus.test_bypass_text_log_rejected) ... ok
+test_negative_exitcode_is_returned_unchanged (test_master87_active_stop.TestMaster87AktiverNotAus.test_negative_exitcode_is_returned_unchanged) ... ok
+test_no_shell_in_process_creation (test_master87_active_stop.TestMaster87AktiverNotAus.test_no_shell_in_process_creation) ... ok
+test_report_can_run_after_stop_when_explicitly_allowed (test_master87_active_stop.TestMaster87AktiverNotAus.test_report_can_run_after_stop_when_explicitly_allowed) ... ok
+test_report_stop_does_not_force_termination (test_master87_active_stop.TestMaster87AktiverNotAus.test_report_stop_does_not_force_termination) ... ok
+test_start_failure_marks_blocked_and_still_calls_report (test_master87_active_stop.TestMaster87AktiverNotAus.test_start_failure_marks_blocked_and_still_calls_report) ... ok
+test_stop_before_spawn_never_starts_subprocess (test_master87_active_stop.TestMaster87AktiverNotAus.test_stop_before_spawn_never_starts_subprocess) ... ok
+test_stop_during_communicate_discards_partial_output (test_master87_active_stop.TestMaster87AktiverNotAus.test_stop_during_communicate_discards_partial_output) ... ok
+test_stop_during_running_process_terminates_child (test_master87_active_stop.TestMaster87AktiverNotAus.test_stop_during_running_process_terminates_child) ... ok
+test_stuck_child_after_stop_is_killed (test_master87_active_stop.TestMaster87AktiverNotAus.test_stuck_child_after_stop_is_killed) ... ok
+test_successful_process_keeps_logs_and_code (test_master87_active_stop.TestMaster87AktiverNotAus.test_successful_process_keeps_logs_and_code) ... ok
+test_timeout_after_one_poll_expires (test_master87_active_stop.TestMaster87AktiverNotAus.test_timeout_after_one_poll_expires) ... ok
+test_timeout_expires_and_kills_child (test_master87_active_stop.TestMaster87AktiverNotAus.test_timeout_expires_and_kills_child) ... ok
+test_unusable_report_process_is_not_positive (test_master87_active_stop.TestMaster87AktiverNotAus.test_unusable_report_process_is_not_positive) ... ok
+test_t3_keine_verdeckten_fremdquellen (test_mock_adapter.MockAdapterTests.test_t3_keine_verdeckten_fremdquellen) ... ok
+test_t3_mockquelle_gesperrt_wenn_register_sperrt (test_mock_adapter.MockAdapterTests.test_t3_mockquelle_gesperrt_wenn_register_sperrt) ... ok
+test_t3_ungueltige_parameter_werden_abgewiesen (test_mock_adapter.MockAdapterTests.test_t3_ungueltige_parameter_werden_abgewiesen) ... ok
+test_t3_ungueltige_testdaten_werden_gemeldet (test_mock_adapter.MockAdapterTests.test_t3_ungueltige_testdaten_werden_gemeldet) ... ok
+test_t3_voller_suchablauf_mit_veraltet_markierung (test_mock_adapter.MockAdapterTests.test_t3_voller_suchablauf_mit_veraltet_markierung) ... ok
+test_t3_zwei_offline_testangebote (test_mock_adapter.MockAdapterTests.test_t3_zwei_offline_testangebote) ... ok
+test_fester_pruefzeitpunkt_unabhaengig_von_der_uhr (test_mock_adapter.PruefzeitpunktTests.test_fester_pruefzeitpunkt_unabhaengig_von_der_uhr) ... ok
+test_abruf_nur_zum_erlaubten_host (test_openprices.AdapterTests.test_abruf_nur_zum_erlaubten_host) ... ok
+test_abweichender_api_pfad_und_credentials_sind_blockiert (test_openprices.AdapterTests.test_abweichender_api_pfad_und_credentials_sind_blockiert) ... ok
+test_alte_beobachtung_wird_als_veraltet_markiert (test_openprices.AdapterTests.test_alte_beobachtung_wird_als_veraltet_markiert) ... ok
+test_gesperrte_quelle_bleibt_gesperrt_trotz_schalter (test_openprices.AdapterTests.test_gesperrte_quelle_bleibt_gesperrt_trotz_schalter) ... ok
+test_netzfehler_wird_sauber_gemeldet (test_openprices.AdapterTests.test_netzfehler_wird_sauber_gemeldet) ... ok
+test_nicht_utf8_json_antwort_wird_sauber_gemeldet (test_openprices.AdapterTests.test_nicht_utf8_json_antwort_wird_sauber_gemeldet) ... ok
+test_ohne_freigabeschalter_kein_abruf (test_openprices.AdapterTests.test_ohne_freigabeschalter_kein_abruf) ... ok
+test_user_agent_wird_gesendet (test_openprices.AdapterTests.test_user_agent_wird_gesendet) ... ok
+test_voller_suchablauf_mit_echtem_format (test_openprices.AdapterTests.test_voller_suchablauf_mit_echtem_format) ... ok
+test_ungueltige_eingaben (test_openprices.AnfrageTests.test_ungueltige_eingaben) ... ok
+test_url_nutzt_dokumentierte_parameter (test_openprices.AnfrageTests.test_url_nutzt_dokumentierte_parameter) ... ok
+test_cli_datei_und_openprices_schliessen_sich_aus (test_openprices.KommandozeileTests.test_cli_datei_und_openprices_schliessen_sich_aus) ... ok
+test_cli_mit_schalter_zeigt_treffer_und_lizenz (test_openprices.KommandozeileTests.test_cli_mit_schalter_zeigt_treffer_und_lizenz) ... ok
+test_cli_ohne_schalter_meldet_sperre (test_openprices.KommandozeileTests.test_cli_ohne_schalter_meldet_sperre) ... ok
+test_schalter_gibt_nur_diese_quelle_frei (test_openprices.RegisterTests.test_schalter_gibt_nur_diese_quelle_frei) ... ok
+test_standard_bleibt_spaeter (test_openprices.RegisterTests.test_standard_bleibt_spaeter) ... ok
+test_beobachtung_aus_ferner_zukunft_wird_abgewiesen (test_openprices.UmwandlungTests.test_beobachtung_aus_ferner_zukunft_wird_abgewiesen) ... ok
+test_beobachtung_von_heute_liegt_nie_in_der_zukunft (test_openprices.UmwandlungTests.test_beobachtung_von_heute_liegt_nie_in_der_zukunft) ... ok
+test_defekte_optionale_metadaten_brechen_suche_nicht_ab (test_openprices.UmwandlungTests.test_defekte_optionale_metadaten_brechen_suche_nicht_ab) ... ok
+test_geaendertes_format_wird_erkannt (test_openprices.UmwandlungTests.test_geaendertes_format_wird_erkannt) ... ok
+test_gueltige_preise_mit_quelle_link_und_lizenz (test_openprices.UmwandlungTests.test_gueltige_preise_mit_quelle_link_und_lizenz) ... ok
+test_naiver_pruefzeitpunkt_ist_nicht_zulaessig (test_openprices.UmwandlungTests.test_naiver_pruefzeitpunkt_ist_nicht_zulaessig) ... ok
+test_rabatt_nur_wenn_wirklich_teurer (test_openprices.UmwandlungTests.test_rabatt_nur_wenn_wirklich_teurer) ... ok
+test_unbrauchbare_preiswerte_und_ids_werden_sicher_uebersprungen (test_openprices.UmwandlungTests.test_unbrauchbare_preiswerte_und_ids_werden_sicher_uebersprungen) ... ok
+test_unpassendes_wird_uebersprungen_und_gemeldet (test_openprices.UmwandlungTests.test_unpassendes_wird_uebersprungen_und_gemeldet) ... ok
+test_zeitzonen_grenzfall_toleriert_folgetag_aber_nicht_uebermorgen (test_openprices.UmwandlungTests.test_zeitzonen_grenzfall_toleriert_folgetag_aber_nicht_uebermorgen) ... ok
+test_zu_grosse_preisliste_wird_auf_50_angebote_begrenzt (test_openprices.UmwandlungTests.test_zu_grosse_preisliste_wird_auf_50_angebote_begrenzt) ... ok
+test_atomic_write_replaces_leaf_link_without_touching_target (test_p0_process_paths.P0Security.test_atomic_write_replaces_leaf_link_without_touching_target) ... ok
+test_directory_links_and_leaf_reads_rejected (test_p0_process_paths.P0Security.test_directory_links_and_leaf_reads_rejected) ... ok
+test_stop_after_parent_exit_kills_descendant (test_p0_process_paths.P0Security.test_stop_after_parent_exit_kills_descendant) ... ok
+test_stop_kills_term_ignoring_descendant (test_p0_process_paths.P0Security.test_stop_kills_term_ignoring_descendant) ... ok
+test_timeout_kills_descendant (test_p0_process_paths.P0Security.test_timeout_kills_descendant) ... ok
+test_pilot_mit_korruptem_oder_uebergrossem_bericht_blockiert (test_p3_corrupt_evidence.TestP3LokalerBericht.test_pilot_mit_korruptem_oder_uebergrossem_bericht_blockiert) ... ok
+test_brain_ungueltiger_lead_plan_spart_ki_aufruf (test_p3_corrupt_evidence.TestP3RollenBelege.test_brain_ungueltiger_lead_plan_spart_ki_aufruf) ... ok
+test_check_defekte_tests_oder_scan_sperren_vor_inferenz (test_p3_corrupt_evidence.TestP3RollenBelege.test_check_defekte_tests_oder_scan_sperren_vor_inferenz) ... ok
+test_check_fehlende_vorrollen_oder_ki_text_keine_inferenz (test_p3_corrupt_evidence.TestP3RollenBelege.test_check_fehlende_vorrollen_oder_ki_text_keine_inferenz) ... ok
+test_lies_nimmt_nur_kleine_json_objekte (test_p3_corrupt_evidence.TestP3RollenBelege.test_lies_nimmt_nur_kleine_json_objekte) ... ok
+test_unit_tests_bei_timeout_oder_prozessfehler_niemals_ok (test_p3_corrupt_evidence.TestP3RollenBelege.test_unit_tests_bei_timeout_oder_prozessfehler_niemals_ok) ... ok
+test_ebay_nicht_ohne_freigabe (test_plan_s002.TestPlanS002.test_ebay_nicht_ohne_freigabe) ... ok
+test_externe_quellen_haben_offiziellen_beleg (test_plan_s002.TestPlanS002.test_externe_quellen_haben_offiziellen_beleg) ... ok
+test_jede_quelle_hat_genau_eine_entscheidung (test_plan_s002.TestPlanS002.test_jede_quelle_hat_genau_eine_entscheidung) ... ok
+test_kleinanzeigen_ausgeschlossen (test_plan_s002.TestPlanS002.test_kleinanzeigen_ausgeschlossen) ... ok
+test_testfaelle_und_naechster_schritt (test_plan_s002.TestPlanS002.test_testfaelle_und_naechster_schritt) ... ok
+test_echte_eigene_liste_zeigt_keine_mock_warnung (test_price_provenance.MockPreisKennzeichnung.test_echte_eigene_liste_zeigt_keine_mock_warnung) ... ok
+test_handy_zeigt_banner_auch_bei_hochgeladenen_mock_daten (test_price_provenance.MockPreisKennzeichnung.test_handy_zeigt_banner_auch_bei_hochgeladenen_mock_daten) ... ok
+test_hochgeladenes_mock_angebot_bleibt_deutlich_testdaten (test_price_provenance.MockPreisKennzeichnung.test_hochgeladenes_mock_angebot_bleibt_deutlich_testdaten) ... ok
+test_automatic_mission_requires_explicit_opt_in_and_is_due (test_product_integration.ProductIntegration.test_automatic_mission_requires_explicit_opt_in_and_is_due) ... ok
+test_backup_reads_mission_and_blitz_from_one_locked_snapshot (test_product_integration.ProductIntegration.test_backup_reads_mission_and_blitz_from_one_locked_snapshot) ... ok
+test_backup_restore_is_validated_repeatable_and_restores_both_server_stores (test_product_integration.ProductIntegration.test_backup_restore_is_validated_repeatable_and_restores_both_server_stores) ... ok
+test_failed_two_file_restore_rolls_back_from_durable_journal (test_product_integration.ProductIntegration.test_failed_two_file_restore_rolls_back_from_durable_journal) ... ok
+test_mission_search_to_cart_price_analysis_and_blitz_queue (test_product_integration.ProductIntegration.test_mission_search_to_cart_price_analysis_and_blitz_queue) ... ok
+test_missions_persist_after_server_restart (test_product_integration.ProductIntegration.test_missions_persist_after_server_restart) ... ok
+test_only_one_mission_run_can_be_in_flight (test_product_integration.ProductIntegration.test_only_one_mission_run_can_be_in_flight) ... ok
+test_partial_edit_and_delete_are_safe (test_product_integration.ProductIntegration.test_partial_edit_and_delete_are_safe) ... ok
+test_sw_is_served_without_caching_api_data (test_product_integration.ProductIntegration.test_sw_is_served_without_caching_api_data) ... ok
+test_symlink_state_directory_is_rejected (test_product_integration.ProductIntegration.test_symlink_state_directory_is_rejected) ... ok
+test_two_server_instances_share_mission_run_lock (test_product_integration.ProductIntegration.test_two_server_instances_share_mission_run_lock) ... ok
+test_closed_task_ignored (test_runner.TestSchnapper.test_closed_task_ignored) ... ok
+test_four_roles (test_runner.TestSchnapper.test_four_roles) ... ok
+test_last_task_recovered_from_report (test_runner.TestSchnapper.test_last_task_recovered_from_report) ... ok
+test_malformed_report_is_safe (test_runner.TestSchnapper.test_malformed_report_is_safe) ... ok
+test_no_paid_api_in_runner (test_runner.TestSchnapper.test_no_paid_api_in_runner) ... ok
+test_priority (test_runner.TestSchnapper.test_priority) ... ok
+test_rotation_across_open_tasks (test_runner.TestSchnapper.test_rotation_across_open_tasks) ... ok
+test_tasks_format (test_runner.TestSchnapper.test_tasks_format) ... ok
+test_gleiche_beobachtung_nur_einmal (test_verlauf.Aufzeichnen.test_gleiche_beobachtung_nur_einmal) ... ok
+test_obergrenze_punkte (test_verlauf.Aufzeichnen.test_obergrenze_punkte) ... ok
+test_tracking_parameter_egal (test_verlauf.Aufzeichnen.test_tracking_parameter_egal) ... ok
+test_alte_beobachtungen_ausserhalb_fenster (test_verlauf.Auswerten.test_alte_beobachtungen_ausserhalb_fenster) ... ok
+test_geschoenter_referenzpreis (test_verlauf.Auswerten.test_geschoenter_referenzpreis) ... ok
+test_gleicher_preis_ist_keine_aenderung (test_verlauf.Auswerten.test_gleicher_preis_ist_keine_aenderung) ... ok
+test_ohne_vorgeschichte_keine_info (test_verlauf.Auswerten.test_ohne_vorgeschichte_keine_info) ... ok
+test_plausibler_referenzpreis (test_verlauf.Auswerten.test_plausibler_referenzpreis) ... ok
+test_referenzpreis_nicht_zu_frueh_verdaechtigen (test_verlauf.Auswerten.test_referenzpreis_nicht_zu_frueh_verdaechtigen) ... ok
+test_tiefstpreis_und_aenderung (test_verlauf.Auswerten.test_tiefstpreis_und_aenderung) ... ok
+test_versand_zaehlt_mit (test_verlauf.Auswerten.test_versand_zaehlt_mit) ... ok
+test_beschaedigte_datei_wird_nicht_ueberschrieben (test_verlauf.Datei.test_beschaedigte_datei_wird_nicht_ueberschrieben) ... ok
+test_fehlende_datei_ist_leer (test_verlauf.Datei.test_fehlende_datei_ist_leer) ... ok
+test_speichern_und_laden (test_verlauf.Datei.test_speichern_und_laden) ... ok
+test_echte_aufgaben_haben_gueltigen_status (test_vorschlaege.TestVorschlaege.test_echte_aufgaben_haben_gueltigen_status) ... ok
+test_hinweis_ist_nichtleerer_text_und_aendert_status_nicht (test_vorschlaege.TestVorschlaege.test_hinweis_ist_nichtleerer_text_und_aendert_status_nicht) ... ok
+test_lead_agent_filtert_nur_open (test_vorschlaege.TestVorschlaege.test_lead_agent_filtert_nur_open) ... ok
+test_open_hat_vorrang_vor_proposed_mit_hoeherer_prioritaet (test_vorschlaege.TestVorschlaege.test_open_hat_vorrang_vor_proposed_mit_hoeherer_prioritaet) ... ok
+test_proposed_wird_nie_gewaehlt (test_vorschlaege.TestVorschlaege.test_proposed_wird_nie_gewaehlt) ... ok
+test_vorschlaege_haben_akzeptanzkriterien (test_vorschlaege.TestVorschlaege.test_vorschlaege_haben_akzeptanzkriterien) ... ok
+test_dns_rebinding_like_foreign_hostname_is_denied (test_web_host_origin.LocalAddressPolicyTests.test_dns_rebinding_like_foreign_hostname_is_denied) ... ok
+test_loopback_and_localhost_on_exact_port (test_web_host_origin.LocalAddressPolicyTests.test_loopback_and_localhost_on_exact_port) ... ok
+test_origin_must_match_request_host_and_port (test_web_host_origin.LocalAddressPolicyTests.test_origin_must_match_request_host_and_port) ... ok
+test_private_lan_ip_only_if_explicit_network_bind (test_web_host_origin.LocalAddressPolicyTests.test_private_lan_ip_only_if_explicit_network_bind) ... ok
+test_real_http_foreign_host_cannot_read_list (test_web_host_origin.LocalHttpSecurityTests.test_real_http_foreign_host_cannot_read_list) ... ok
+test_real_http_foreign_origin_cannot_import (test_web_host_origin.LocalHttpSecurityTests.test_real_http_foreign_origin_cannot_import) ... ok
+test_real_http_local_search_remains_available (test_web_host_origin.LocalHttpSecurityTests.test_real_http_local_search_remains_available) ... ok
+test_real_http_same_origin_import_reaches_validation (test_web_host_origin.LocalHttpSecurityTests.test_real_http_same_origin_import_reaches_validation) ... ok
+test_leerer_filter_hat_kein_limit (test_web_preisgrenzen.FilterGrenzen.test_leerer_filter_hat_kein_limit) ... ok
+test_mindestrabatt_bleibt_erhalten (test_web_preisgrenzen.FilterGrenzen.test_mindestrabatt_bleibt_erhalten) ... ok
+test_null_und_negative_preise_abweisen (test_web_preisgrenzen.FilterGrenzen.test_null_und_negative_preise_abweisen) ... ok
+test_positive_limits_bleiben_gueltig (test_web_preisgrenzen.FilterGrenzen.test_positive_limits_bleiben_gueltig) ... ok
+test_web_api_akzeptiert_gueltigen_hoechstpreis (test_web_preisgrenzen.LokaleWebAPI.test_web_api_akzeptiert_gueltigen_hoechstpreis) ... ok
+test_web_api_lehnt_null_und_negativ_ab (test_web_preisgrenzen.LokaleWebAPI.test_web_api_lehnt_null_und_negativ_ab) ... ok
+
+----------------------------------------------------------------------
+Ran 534 tests in 27.494s
+
+OK
+BLOCKIERT: Ein anderer lokaler SCHNAPPER-Dienst ist aktiv.
+BLOCKIERT: Sperrdatei kann nicht sicher geoeffnet werden.
+BLOCKIERT: Sperrdatei kann nicht sicher geoeffnet werden.
+BLOCKIERT: Sperrdatei kann nicht sicher geoeffnet werden.
+BLOCKIERT: Sperrdatei kann nicht sicher geoeffnet werden.
+BLOCKIERT: Ein anderer lokaler SCHNAPPER-Dienst ist aktiv.
+BLOCKIERT: Runner-Sperre ist keine eigene regulaere Datei.
+BLOCKIERT: Sperrdatei kann nicht sicher geoeffnet werden.
+BLOCKIERT: Runner-PID-Protokoll konnte nicht sicher geschrieben werden.
+BLOCKIERT: Runner-PID-Protokoll konnte nicht sicher geschrieben werden.
+BLOCKIERT: Runner-PID-Protokoll konnte nicht sicher geschrieben werden.
+BLOCKIERT: Sperrdatei kann nicht sicher geoeffnet werden.
+BLOCKIERT: Stundenbericht ungültig oder nicht lesbar.
+BLOCKIERT: Stundenbericht ungültig oder nicht lesbar.
+BLOCKIERT: Stundenbericht ungültig oder nicht lesbar.

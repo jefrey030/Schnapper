@@ -1,0 +1,12 @@
+Snapshot: local test environment; checks only, no model calls or downloads.
+ollama=not-found
+llama-server=not-found
+llamafile=not-found
+local-ai=not-found
+adb=not-found
+emulator=not-found
+model_weight_files_in_repository=0
+OLLAMA_HOST=unset
+OLLAMA_MODELS=unset
+AI=BLOCKED: no local runtime/model observed; no download, inference, or activation performed.
+Android=BLOCKED: adb and emulator binaries unavailable.

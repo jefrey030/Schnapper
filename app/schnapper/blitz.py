@@ -107,6 +107,11 @@ class Blitz:
             raise BlitzFehler(f"{dateiname} ist beschädigt und wird nicht überschrieben") from exc
 
     @classmethod
+    def dekodiere_snapshot(cls, raw: bytes | None) -> tuple[dict[str, str], str | None]:
+        """Validiert einen BLITZ-Snapshot, dessen Dateien bereits sicher gelesen wurden."""
+        return cls._dekodiere(raw, "blitz.json")
+
+    @classmethod
     def laden(cls, pfad: pathlib.Path | str) -> "Blitz":
         datei = pathlib.Path(pfad)
         try:

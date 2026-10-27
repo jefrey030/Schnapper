@@ -93,9 +93,15 @@ const speicher = {
     return standard;
   },
   schreiben(name, wert) {
-    if (this.beschaedigt.has(name) || this.blockiert) return false;
+    if (this.beschaedigt.has(name) || this.blockiert) {
+      speicherHinweis("Lokale Speicherung fehlgeschlagen: Der Browserdatensatz ist beschädigt oder schreibgeschützt.");
+      return false;
+    }
     const state = this._laden() || this.ersatz._state || browserStateLeer();
-    if (Object.hasOwn(state.corrupt, name)) return false;
+    if (Object.hasOwn(state.corrupt, name)) {
+      speicherHinweis("Lokale Speicherung fehlgeschlagen: Der betroffene Browserdatensatz ist beschädigt und schreibgeschützt.");
+      return false;
+    }
     const next = {
       format: BROWSER_STATE_FORMAT,
       version: 1,
@@ -817,7 +823,7 @@ function blitzMeldungen(meldungen, beispieldaten) {
     if (!speicher.schreiben("blitz", gespeichert)) {
       $("benachrichtigung-status").textContent =
         "BLITZ-Treffer gefunden, aber der beschädigte lokale Speicher ist schreibgeschützt; bitte Datensicherung erstellen.";
-      return;
+      return false;
     }
     if (window.Notification?.permission === "granted") {
       try {
@@ -834,6 +840,7 @@ function blitzMeldungen(meldungen, beispieldaten) {
       }
     }
   }
+  return true;
 }
 
 function renderBlitz() {
@@ -871,28 +878,32 @@ async function missionLauf(id, automatisch) {
     const safe = gespeicherteErgebnisse();
     safe[id] = { zeit: daten.abgeschlossen_am, treffer: resultate,
       beispieldaten: Boolean(daten.beispieldaten) };
-    if (!speicher.schreiben("mission-ergebnisse", safe)) {
-      $("mission-form-status").textContent = "Prüfung abgeschlossen, Ergebnis aber wegen beschädigtem lokalen Speicher nicht dauerhaft gespeichert.";
-    }
-    blitzMeldungen(daten.meldungen || [], daten.beispieldaten);
+    const speicherFehler = [];
+    if (!speicher.schreiben("mission-ergebnisse", safe)) speicherFehler.push("Ergebnisse");
+    if (!blitzMeldungen(daten.meldungen || [], daten.beispieldaten)) speicherFehler.push("BLITZ-Queue");
     const eintrag = {
-      job_id: daten.job_id, mission_id: id, status: daten.blitz_fehler ? "abgeschlossen_mit_blitz_fehler" : "abgeschlossen",
+      job_id: daten.job_id, mission_id: id,
+      status: daten.blitz_fehler || speicherFehler.length ? "abgeschlossen_mit_fehler" : "abgeschlossen",
       zeit: daten.abgeschlossen_am, anzahl: (daten.treffer || []).length,
       meldungen: (daten.meldungen || []).length,
     };
     const logs = missionLaeufe();
     logs.push(eintrag);
-    speicher.schreiben("mission-laeufe", logs.slice(-50));
-    $("mission-form-status").textContent = daten.blitz_fehler
-      ? `Lauf ${daten.job_id}: ${eintrag.anzahl} Treffer; ${daten.blitz_fehler}`
+    if (!speicher.schreiben("mission-laeufe", logs.slice(-50))) speicherFehler.push("Laufprotokoll");
+    const laufFehler = [];
+    if (daten.blitz_fehler) laufFehler.push(daten.blitz_fehler);
+    if (speicherFehler.length) laufFehler.push(`Speicherung fehlgeschlagen: ${speicherFehler.join(", ")}.`);
+    $("mission-form-status").textContent = laufFehler.length
+      ? `Lauf ${daten.job_id}: ${eintrag.anzahl} Treffer; ${laufFehler.join(" ")}`
       : `Lauf ${daten.job_id}: ${eintrag.anzahl} Treffer, ${eintrag.meldungen} neue BLITZ-Einträge (lokal gespeichert).`;
     await missionenLaden();
     renderMissionLaeufe();
   } catch (err) {
     const logs = missionLaeufe();
     logs.push({ job_id: `fehler-${Date.now()}`, mission_id: id, status: "fehlgeschlagen", zeit: new Date().toISOString() });
-    speicher.schreiben("mission-laeufe", logs.slice(-50));
-    $("mission-form-status").textContent = `Lauf fehlgeschlagen: ${err.message}`;
+    const protokollGespeichert = speicher.schreiben("mission-laeufe", logs.slice(-50));
+    $("mission-form-status").textContent = `Lauf fehlgeschlagen: ${err.message}`
+      + (protokollGespeichert ? "" : " Das Laufprotokoll konnte nicht lokal gespeichert werden.");
     renderMissionLaeufe();
   } finally {
     laufendeMissionen.delete(id);

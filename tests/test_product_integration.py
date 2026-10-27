@@ -194,6 +194,57 @@ class ProductIntegration(unittest.TestCase):
         self.assertEqual(status, 400)
         self.assertEqual(self.request("GET", "/api/backup")[1]["missionen"], backup["missionen"])
 
+    def test_backup_reads_mission_and_blitz_from_one_locked_snapshot(self):
+        self.create_mission(name="Snapshot A", suche="Kamera")
+        status, state_a = self.request("GET", "/api/backup")
+        self.assertEqual(status, 200)
+
+        mission_b = web.Mission.erstellen(
+            name="Snapshot B", suche="Lampe", mission_id="snapshot-b",
+            jetzt=dt.datetime(2026, 10, 27, 12, tzinfo=dt.timezone.utc),
+        )
+        mission_raw = json.dumps(
+            {"version": 2, "missionen": [mission_b.als_dict()]},
+            ensure_ascii=False, separators=(",", ":"),
+        ).encode("utf-8")
+        blitz_raw = json.dumps(
+            {"version": 2, "gesehen": {"b" * 64: "2026-10-27T12:00:00+00:00"}},
+            separators=(",", ":"),
+        ).encode("utf-8")
+        state_b = {
+            "format": "schnapper-server-backup",
+            "version": 1,
+            "missionen": [mission_b.als_dict()],
+            "blitz_gesehen": {"b" * 64: "2026-10-27T12:00:00+00:00"},
+        }
+
+        original_alle = web.Missionsspeicher.alle
+
+        interleaving = {"performed": False}
+
+        def restore_b_after_mission_read(store):
+            missions = original_alle(store)
+            # Deterministically place a valid, atomic B snapshot between the
+            # old implementation's independent MISSION and BLITZ reads.
+            interleaving["performed"] = True
+            sicherer_speicher.dateien_wiederherstellen(
+                self.data_dir / "missionen.json",
+                {"missionen.json": mission_raw, "blitz.json": blitz_raw},
+            )
+            return missions
+
+        with mock.patch.object(web.Missionsspeicher, "alle", restore_b_after_mission_read), \
+                mock.patch.object(web, "dateisperre", wraps=sicherer_speicher.dateisperre, create=True) as storage_lock:
+            status, captured = self.request("GET", "/api/backup")
+
+        self.assertEqual(status, 200, captured)
+        self.assertFalse(interleaving["performed"], "Backup must not perform separately locked store reads.")
+        storage_lock.assert_called_once()
+        pair = (captured["missionen"], captured["blitz_gesehen"])
+        pair_a = (state_a["missionen"], state_a["blitz_gesehen"])
+        pair_b = (state_b["missionen"], state_b["blitz_gesehen"])
+        self.assertIn(pair, (pair_a, pair_b), "Backup must be entirely snapshot A or snapshot B.")
+
     def test_failed_two_file_restore_rolls_back_from_durable_journal(self):
         self.offer_import()
         first = self.create_mission()

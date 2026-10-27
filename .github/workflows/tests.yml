@@ -50,3 +50,5 @@ jobs:
       - name: Cloudflare Worker Offline-Tests (ohne Deployment)
         working-directory: cloudflare
         run: node --test test/*.test.mjs
+      - name: UI-Speicherfehler-Regressionen (ohne Browser oder Netzwerk)
+        run: node --test tests/test_storage_failure_ui.mjs

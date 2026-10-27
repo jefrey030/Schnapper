@@ -1,0 +1,8 @@
+PASS browser UI exposes LUPE, WARENKORB, PREISDETEKTIV, BLITZ, MISSION at 360x800
+PASS LUPE upload/search, WARENKORB save, PREISDETEKTIV comparison
+PASS MISSION run, BLITZ queue and local run result
+PASS UI backup includes one consistent MISSION/BLITZ snapshot and browser run state
+PASS browser quota failure stays visible for results, BLITZ queue and run log
+PASS UI restore rolls server and browser state back to the downloaded snapshot
+INFO automatic readiness {"visibility":"visible","locks":"function","missions":[{"name":"Synthetic mission A","automatic":false,"status":"aktiv","last":"2026-10-27T01:16:29.943098+00:00"},{"name":"Synthetic automatic mission","automatic":true,"status":"aktiv","last":null}]}
+PASS simultaneous visible tabs share Web Lock; second tab sends no duplicate mission run

@@ -34,7 +34,7 @@ from .blitz import Blitz, BlitzFehler, BlitzKonflikt
 from .einlesen import Importergebnis, lies_datei, lies_text
 from .mission import Mission, Missionsspeicher, MissionsFehler, MissionsKonflikt
 from .quellen import QuellenFehler, Register
-from .sicherer_speicher import dateien_wiederherstellen, missionslauf_sperre
+from .sicherer_speicher import dateien_wiederherstellen, dateisperre, lese_fd, missionslauf_sperre
 from .suche import SORTIERUNGEN, Filter
 from .verlauf import Verlauf, VerlaufFehler, warnung
 
@@ -332,13 +332,22 @@ def baue_handler(zustand: Zustand):
                     return self._json(HTTPStatus.SERVICE_UNAVAILABLE,
                                       {"fehler": "Lokale Sicherung ist nicht konfiguriert"})
                 try:
+                    # MISSION and BLITZ share one directory-wide lock. Read and
+                    # validate both raw files under one acquisition; calling
+                    # either store's public export method here would acquire a
+                    # second blocking lock and could deadlock.
+                    with dateisperre(zustand.datenverzeichnis / "missionen.json") as (directory, _name):
+                        missionen, _mission_revision = Missionsspeicher.dekodiere_snapshot(
+                            lese_fd(directory, "missionen.json"))
+                        blitz_gesehen, _blitz_revision = Blitz.dekodiere_snapshot(
+                            lese_fd(directory, "blitz.json"))
                     return self._json(HTTPStatus.OK, {
                         "format": "schnapper-server-backup",
                         "version": 1,
-                        "missionen": [m.als_dict() for m in zustand.missionen.alle()],
-                        "blitz_gesehen": zustand.blitz.exportdaten()["gesehen"],
+                        "missionen": [m.als_dict() for m in missionen],
+                        "blitz_gesehen": blitz_gesehen,
                     })
-                except (MissionsFehler, BlitzFehler):
+                except (MissionsFehler, BlitzFehler, OSError):
                     return self._json(HTTPStatus.INTERNAL_SERVER_ERROR,
                                       {"fehler": "Lokaler Datenbestand ist beschädigt; Sicherung abgebrochen"})
             return self._json(HTTPStatus.NOT_FOUND, {"fehler": "Nicht gefunden"})

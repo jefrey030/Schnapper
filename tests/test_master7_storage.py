@@ -105,6 +105,33 @@ class MissionKonflikte(unittest.TestCase):
                                   ["gespeichert", "konflikt"])
             self.assertEqual(len(Missionsspeicher.laden(pfad).alle()), 1)
 
+    def test_acht_vorgeladene_instanz_aenderungen_bleiben_nach_explizitem_retry_erhalten(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            pfad = pathlib.Path(tmp, "missionen.json")
+            stores = [Missionsspeicher.laden(pfad) for _ in range(8)]
+            barrier = threading.Barrier(len(stores))
+
+            def erstellen(index):
+                barrier.wait(timeout=10)
+                try:
+                    stores[index].erstellen(name=f"Mission {index}", suche=f"Artikel {index}", jetzt=JETZT)
+                    return index, "gespeichert"
+                except MissionsKonflikt:
+                    return index, "konflikt"
+
+            with ThreadPoolExecutor(max_workers=len(stores)) as pool:
+                results = list(pool.map(erstellen, range(len(stores))))
+            self.assertEqual(sum(status == "gespeichert" for _index, status in results), 1)
+            self.assertEqual(sum(status == "konflikt" for _index, status in results), 7)
+
+            for index, status in results:
+                if status == "konflikt":
+                    store = Missionsspeicher.laden(pfad)
+                    store.erstellen(
+                        name=f"Mission {index}", suche=f"Artikel {index}", jetzt=JETZT)
+            self.assertEqual({m.name for m in Missionsspeicher.laden(pfad).alle()},
+                             {f"Mission {index}" for index in range(8)})
+
     def test_speicherfehler_laesst_alte_missionen_unveraendert(self):
         with tempfile.TemporaryDirectory() as tmp:
             pfad = pathlib.Path(tmp, "missionen.json")
@@ -162,6 +189,35 @@ class MissionKonflikte(unittest.TestCase):
             os.link(pfad, hardlink)
             with self.assertRaises(MissionsFehler):
                 Missionsspeicher.laden(pfad)
+
+    def test_speicherlock_symlink_und_beschaedigte_datei_bleiben_unveraendert(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            root = pathlib.Path(tmp)
+            pfad = root / "missionen.json"
+            ziel = root / "ziel"
+            ziel.write_text("UNVERAENDERT", encoding="utf-8")
+            (root / ".schnapper-storage.lock").symlink_to(ziel)
+            with self.assertRaises(MissionsFehler):
+                Missionsspeicher.laden(pfad)
+            self.assertEqual(ziel.read_text(encoding="utf-8"), "UNVERAENDERT")
+
+        with tempfile.TemporaryDirectory() as tmp:
+            pfad = pathlib.Path(tmp, "missionen.json")
+            store = Missionsspeicher.laden(pfad)
+            store.erstellen(name="Vorher", suche="Kamera", jetzt=JETZT)
+            pfad.write_bytes(b"{kaputt")
+            with self.assertRaises(MissionsFehler):
+                store.erstellen(name="Nachher", suche="Lampe", jetzt=JETZT)
+            self.assertEqual(pfad.read_bytes(), b"{kaputt")
+
+    def test_private_mission_datei_ueberlebt_neustart(self):
+        import stat
+        with tempfile.TemporaryDirectory() as tmp:
+            pfad = pathlib.Path(tmp, "missionen.json")
+            mission = Missionsspeicher.laden(pfad).erstellen(
+                name="Gesichert", suche="Preis", jetzt=JETZT)
+            self.assertEqual(stat.S_IMODE(pfad.stat().st_mode), 0o600)
+            self.assertEqual(Missionsspeicher.laden(pfad).alle()[0].id, mission.id)
 
     def test_missionslauf_sperre_blockiert_andere_prozesse(self):
         if os.name != "posix":
@@ -256,6 +312,25 @@ class BlitzKonflikte(unittest.TestCase):
             # Wiederholung nach Neustart wird sicher unterdrückt.
             self.assertEqual(frisch.pruefen(_angebot(), [_wunsch()], JETZT), [])
 
+    def test_sechs_vorgeladene_instanz_duplizieren_treffer_nicht(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            pfad = pathlib.Path(tmp, "blitz.json")
+            queues = [Blitz.laden(pfad) for _ in range(6)]
+            barrier = threading.Barrier(len(queues))
+
+            def pruefen(queue):
+                barrier.wait(timeout=10)
+                try:
+                    return ("gespeichert", queue.pruefen(_angebot(), [_wunsch()], JETZT))
+                except BlitzKonflikt:
+                    return ("konflikt", [])
+
+            with ThreadPoolExecutor(max_workers=len(queues)) as pool:
+                results = list(pool.map(pruefen, queues))
+            self.assertEqual(sum(len(messages) for _status, messages in results), 1)
+            self.assertEqual(sum(status == "konflikt" for status, _messages in results), 5)
+            self.assertEqual(len(Blitz.laden(pfad)), 1)
+
     def test_blitz_symlink_im_uebergeordneten_ordner_blockiert(self):
         with tempfile.TemporaryDirectory() as tmp:
             root = pathlib.Path(tmp)
@@ -265,6 +340,43 @@ class BlitzKonflikte(unittest.TestCase):
             link.symlink_to(outside, target_is_directory=True)
             with self.assertRaises(BlitzFehler):
                 Blitz.laden(link / "blitz.json")
+
+    def test_blitz_leaf_und_speicherlock_symlink_werden_abgewiesen(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            root = pathlib.Path(tmp)
+            target = root / "target"
+            target.write_text("UNVERAENDERT", encoding="utf-8")
+            pfad = root / "blitz.json"
+            pfad.symlink_to(target)
+            with self.assertRaises(BlitzFehler):
+                Blitz.laden(pfad)
+            self.assertEqual(target.read_text(encoding="utf-8"), "UNVERAENDERT")
+
+            pfad.unlink()
+            (root / ".schnapper-storage.lock").unlink()
+            (root / ".schnapper-storage.lock").symlink_to(target)
+            with self.assertRaises(BlitzFehler):
+                Blitz.laden(pfad)
+            self.assertEqual(target.read_text(encoding="utf-8"), "UNVERAENDERT")
+
+    def test_blitz_beschaedigung_nach_laden_bleibt_unveraendert(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            pfad = pathlib.Path(tmp, "blitz.json")
+            blitz = Blitz.laden(pfad)
+            blitz.pruefen(_angebot(), [_wunsch()], JETZT)
+            pfad.write_bytes(b"{kaputt")
+            with self.assertRaises(BlitzFehler):
+                blitz.pruefen(_angebot(), [_wunsch()], JETZT)
+            self.assertEqual(pfad.read_bytes(), b"{kaputt")
+
+    def test_blitz_private_datei_ueberlebt_neustart(self):
+        import stat
+        with tempfile.TemporaryDirectory() as tmp:
+            pfad = pathlib.Path(tmp, "blitz.json")
+            blitz = Blitz.laden(pfad)
+            self.assertEqual(len(blitz.pruefen(_angebot(), [_wunsch()], JETZT)), 1)
+            self.assertEqual(stat.S_IMODE(pfad.stat().st_mode), 0o600)
+            self.assertEqual(len(Blitz.laden(pfad)), 1)
 
     def test_blitz_verzeichnisaustausch_waehrend_schreiben_beruehrt_aussen_nicht(self):
         with tempfile.TemporaryDirectory() as tmp:

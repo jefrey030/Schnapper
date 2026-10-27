@@ -226,6 +226,11 @@ class Missionsspeicher:
             raise MissionsFehler(f"{dateiname} ist beschädigt und wird nicht überschrieben") from exc
 
     @classmethod
+    def dekodiere_snapshot(cls, raw: bytes | None) -> tuple[list[Mission], str | None]:
+        """Validiert einen MISSION-Snapshot, dessen Dateien bereits sicher gelesen wurden."""
+        return cls._dekodiere(raw, "missionen.json")
+
+    @classmethod
     def laden(cls, pfad: pathlib.Path | str) -> "Missionsspeicher":
         datei = pathlib.Path(pfad)
         try:

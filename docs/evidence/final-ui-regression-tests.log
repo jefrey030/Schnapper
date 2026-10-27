@@ -1,0 +1,13 @@
+COMMAND: node --test tests/test_storage_failure_ui.mjs
+✔ failed mission-ergebnisse persistence is never reported as saved (6.577366ms)
+✔ failed blitz persistence is never reported as saved (2.715006ms)
+✔ failed mission-laeufe persistence is never reported as saved (3.863794ms)
+✔ success is reported only after all three browser stores succeed (3.936357ms)
+ℹ tests 4
+ℹ suites 0
+ℹ pass 4
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 92.459203
