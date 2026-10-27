@@ -37,7 +37,7 @@ Die zuvor aus dem finalen #133-Teststand fehlenden bzw. nicht mehr passenden Reg
 
 Die Stilllegung aus #131 ist im Arbeitszweig enthalten; die Datei stimmt bytegenau mit dem #131-Zweig überein. **`main` bleibt davon unberührt und führt den dortigen Legacy-Stundenworkflow weiter aus, solange #131 beziehungsweise diese Integration nicht gemergt ist.** Das wurde wegen der ausdrücklichen Vorgabe „kein Merge“ nicht geändert.
 
-PR-Verlauf: [#129](https://github.com/jefrey030/Schnapper/pull/129) · [#130](https://github.com/jefrey030/Schnapper/pull/130) · [#131](https://github.com/jefrey030/Schnapper/pull/131) · [#132](https://github.com/jefrey030/Schnapper/pull/132) · [#133](https://github.com/jefrey030/Schnapper/pull/133).
+PR-Verlauf: [#129](https://github.com/jefrey030/Schnapper/pull/129) · [#130](https://github.com/jefrey030/Schnapper/pull/130) · [#131](https://github.com/jefrey030/Schnapper/pull/131) · [#132](https://github.com/jefrey030/Schnapper/pull/132) · [#133](https://github.com/jefrey030/Schnapper/pull/133) · [Final-Draft-PR #134](https://github.com/jefrey030/Schnapper/pull/134).
 
 ## Tests und Nachweise
 
@@ -77,7 +77,7 @@ Der Browserlauf benötigt ausschließlich einen lokal gestarteten SCHNAPPER-Test
 
 ## CI und Freigabegrenzen
 
-`.github/workflows/tests.yml` hat ausschließlich lesende Repository-Berechtigungen und startet Python-, Cloudflare-Offlinetests sowie die UI-Speicherregression. Die Jobs sind auf öffentliche Repositories und Standardrunner begrenzt; es gibt darin kein Deployment. Ein GitHub-Actions-Lauf auf dem finalen PR-Commit liegt erst nach Erstellung des Draft-PRs vor und ist hier deshalb noch **nicht** als bestanden behauptet.
+`.github/workflows/tests.yml` hat ausschließlich lesende Repository-Berechtigungen und startet Python-, Cloudflare-Offlinetests sowie die UI-Speicherregression. Die Jobs sind auf öffentliche Repositories und Standardrunner begrenzt; es gibt darin kein Deployment. Beim Erstellen von Draft-PR #134 war der Pull-Request-Lauf für den ersten Head-SHA noch in Arbeit; das ist kein bestandenes Ergebnis. Für den aktuellen Head ist stets der neueste Check-Status im PR maßgeblich.
 
 ## Offene Blocker und Risiken
 
