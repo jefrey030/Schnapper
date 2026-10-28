@@ -228,7 +228,7 @@ async function barcodeSuchen(ev) {
 // Läuft komplett im Browser: Bilder werden weder gespeichert noch hochgeladen.
 const KAMERA_FORMATE = ["ean_13", "ean_8", "upc_a"];
 const KAMERA_ZEITLIMIT = 20000;
-const kamera = { stream: null, timer: null, frist: null, laeuft: false };
+const kamera = { stream: null, timer: null, frist: null, laeuft: false, lauf: 0 };  // lauf: Generationszähler
 
 async function kameraFormate() {
   try {
@@ -249,6 +249,7 @@ function kameraStoppen(meldung) {
   clearTimeout(kamera.frist);
   kamera.timer = kamera.frist = null;
   kamera.laeuft = false;
+  kamera.lauf++;  // offene Kamera-Anfragen älterer Läufe verfallen
   if (kamera.stream) kamera.stream.getTracks().forEach((t) => t.stop());
   kamera.stream = null;
   $("kamera-bild").srcObject = null;
@@ -268,14 +269,15 @@ async function kameraScannen() {
   kamera.laeuft = true;
   $("kamera-knopf").disabled = true;
   $("kamera-status").textContent = "Kamera wird gestartet …";
+  const lauf = ++kamera.lauf;
   let stream;
   try {
     stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment" }, audio: false });
   } catch (err) {
-    kameraStoppen(kameraFehler(err));
+    if (lauf === kamera.lauf) kameraStoppen(kameraFehler(err));  // veralteter Fehler stört neueren Lauf nicht
     return;
   }
-  if (!kamera.laeuft) { stream.getTracks().forEach((t) => t.stop()); return; }  // inzwischen abgebrochen
+  if (lauf !== kamera.lauf) { stream.getTracks().forEach((t) => t.stop()); return; }  // abgebrochen oder neu gestartet
   kamera.stream = stream;
   const video = $("kamera-bild");
   try {

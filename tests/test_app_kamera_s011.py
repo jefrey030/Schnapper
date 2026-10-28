@@ -89,6 +89,34 @@ DETEKTOR = """
 
 OHNE_DETEKTOR = "delete window.BarcodeDetector;"
 
+# Verzögerte Kamera: getUserMedia löst erst auf Kommando auf (wie ein offener Berechtigungsdialog).
+# __aufloesen(i) liefert den Stream für Anfrage i, __ablehnen(i, name) lehnt sie mit DOMException ab.
+MEDIEN_VERZOEGERT = """
+(() => {
+  window.__gum = 0; window.__gestoppt = 0; window.__tracks = []; window.__streams = []; window.__anfragen = [];
+  const md = navigator.mediaDevices || {};
+  md.getUserMedia = (vorgabe) => {
+    window.__gum++;
+    return new Promise((ja, nein) => window.__anfragen.push({ ja, nein }));
+  };
+  window.__aufloesen = (i) => {
+    const c = document.createElement("canvas");
+    c.width = 64; c.height = 48;
+    const g = c.getContext("2d"); g.fillStyle = "#888"; g.fillRect(0, 0, 64, 48);
+    const s = c.captureStream(10);
+    for (const t of s.getTracks()) {
+      const stop = t.stop.bind(t);
+      t.stop = () => { window.__gestoppt++; stop(); };
+      window.__tracks.push(t);
+    }
+    window.__streams[i] = s;
+    window.__anfragen[i].ja(s);
+  };
+  window.__ablehnen = (i, name) => window.__anfragen[i].nein(new DOMException("simuliert", name));
+  if (!navigator.mediaDevices) Object.defineProperty(navigator, "mediaDevices", { value: md, configurable: true });
+})();
+"""
+
 
 class Statisch(unittest.TestCase):
     """AK1, AK9, AK10, AK11: Markup, keine Bildspeicherung, kein innerHTML, CSP unverändert."""
@@ -173,12 +201,12 @@ class Browser(unittest.TestCase):
                       body=json.dumps({"treffer": [], "lizenz": "", "begrenzung": "", "hinweise": []}))
 
     # ---------- Hilfen ----------
-    def oeffne(self, detektor="treffer", fehler=None, uhr=False):
+    def oeffne(self, detektor="treffer", fehler=None, uhr=False, verzoegert=False):
         if detektor is None:
             self.seite.add_init_script(OHNE_DETEKTOR)
         else:
             self.seite.add_init_script(DETEKTOR % {"modus": json.dumps(detektor)})
-        self.seite.add_init_script(MEDIEN % {"fehler": json.dumps(fehler)})
+        self.seite.add_init_script(MEDIEN_VERZOEGERT if verzoegert else MEDIEN % {"fehler": json.dumps(fehler)})
         if uhr:
             self.seite.clock.install()
         self.seite.goto(self.basis + "/")
@@ -208,6 +236,17 @@ class Browser(unittest.TestCase):
         self.assertTrue(self.wert("document.getElementById('kamera-bild').srcObject === null"))
         self.assertTrue(self.wert("document.getElementById('kamera-bereich').hidden"))
         self.assertFalse(self.wert("document.getElementById('kamera-knopf').disabled"))
+
+    def verstecken(self):
+        """Seite in den Hintergrund: visibilityState 'hidden' plus visibilitychange, danach wieder sichtbar."""
+        self.wert("""(() => {
+          Object.defineProperty(document, 'visibilityState', { value: 'hidden', configurable: true });
+          document.dispatchEvent(new Event('visibilitychange'));
+          delete document.visibilityState;
+        })()""")
+
+    def kurz_warten(self):
+        self.wert("new Promise((r) => setTimeout(r, 100))")
 
     def starte(self):
         self.warte("!document.getElementById('kamera-knopf').disabled")
@@ -302,6 +341,71 @@ class Browser(unittest.TestCase):
 
     def test_ak7_keine_kamera(self):
         self.fehlerfall("NotFoundError", "Keine Kamera gefunden – Barcode bitte eintippen.")
+
+    # ---------- Neustart während offener Kamera-Anfrage (Lauf-ID) ----------
+    def neustart_waehrend_anfrage(self):
+        """Klick, Seite versteckt (Lauf 1 abgebrochen), zweiter Klick: zwei offene getUserMedia-Anfragen."""
+        self.oeffne("leer", verzoegert=True)
+        self.starte()
+        self.warte("window.__gum === 1")
+        self.verstecken()
+        self.assertEqual(self.status(), "Kamera-Scan beendet.")
+        self.assertFalse(self.wert("document.getElementById('kamera-knopf').disabled"))
+        self.seite.click("#kamera-knopf")
+        self.warte("window.__gum === 2")
+
+    def test_neustart_alter_stream_sofort_gestoppt(self):
+        self.neustart_waehrend_anfrage()
+        self.wert("window.__aufloesen(0)")
+        # Stream aus Anfrage 1 ist sofort nach seiner Auflösung beendet, nicht erst nach dem Abbrechen.
+        self.warte("window.__streams[0].getTracks().every((t) => t.readyState === 'ended')", sekunden=3)
+        self.assertEqual(self.wert("window.__gestoppt"), 1)
+        self.assertTrue(self.wert("document.getElementById('kamera-bereich').hidden"))
+        self.wert("window.__aufloesen(1)")
+        self.warte("!document.getElementById('kamera-bereich').hidden && window.__detect > 0")
+        # Lauf 2 ist ungestört aktiv.
+        self.assertTrue(self.wert("document.getElementById('kamera-bild').srcObject === window.__streams[1]"))
+        self.assertTrue(self.wert("window.__streams[1].getTracks().every((t) => t.readyState === 'live')"))
+        self.assertTrue(self.wert("document.getElementById('kamera-knopf').disabled"))
+        self.assertEqual(self.status(), "Barcode vor die Kamera halten …")
+        self.seite.click("#kamera-abbrechen")
+        self.assertEqual(self.wert("window.__gum"), 2)
+        self.assertEqual(self.wert("window.__tracks.length"), 2)
+        self.assertEqual(self.wert("window.__gestoppt"), 2)
+        self.alles_gestoppt()
+        self.assertEqual(self.status(), "Kamera-Scan abgebrochen.")
+
+    def test_neustart_alter_fehler_stoert_nicht(self):
+        self.neustart_waehrend_anfrage()
+        self.wert("window.__aufloesen(1)")
+        self.warte("!document.getElementById('kamera-bereich').hidden && window.__detect > 0")
+        self.wert("window.__ablehnen(0, 'NotAllowedError')")
+        self.kurz_warten()
+        self.assertFalse(self.wert("document.getElementById('kamera-bereich').hidden"))
+        self.assertTrue(self.wert("document.getElementById('kamera-bild').srcObject === window.__streams[1]"))
+        self.assertTrue(self.wert("window.__streams[1].getTracks().every((t) => t.readyState === 'live')"))
+        self.assertEqual(self.wert("window.__gestoppt"), 0)
+        self.assertTrue(self.wert("document.getElementById('kamera-knopf').disabled"))
+        self.assertNotIn("Kamerazugriff verweigert", self.status())
+        self.seite.click("#kamera-abbrechen")
+        self.assertEqual(self.wert("window.__tracks.length"), 1)
+        self.alles_gestoppt()
+
+    # ---------- Seite verlassen ----------
+    def test_visibilitychange_beendet_scan(self):
+        self.oeffne("leer")
+        self.starte()
+        self.warte("!document.getElementById('kamera-bereich').hidden && window.__detect > 0")
+        self.verstecken()
+        self.assertEqual(self.status(), "Kamera-Scan beendet.")
+        self.alles_gestoppt()
+
+    def test_pagehide_beendet_scan(self):
+        self.oeffne("leer")
+        self.starte()
+        self.warte("!document.getElementById('kamera-bereich').hidden && window.__detect > 0")
+        self.wert("window.dispatchEvent(new Event('pagehide'))")
+        self.alles_gestoppt()
 
 
 if __name__ == "__main__":
