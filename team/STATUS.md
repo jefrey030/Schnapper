@@ -165,3 +165,13 @@ Hinweis: `team/tasks.json` wurde nicht separat geändert; die tasks.json-Änderu
 - `team/tasks.json`: S-010 bleibt `review`, Laufvermerk im Hinweis ergänzt.
 - Offen: eBay-Sandbox-Schlüssel für #45 (F6) fehlen weiterhin. Hinweis: Im flachen Klon (depth 50) ist `tests/test_branches_s006.py` rot, nach `git fetch --unshallow` grün.
 - Bericht: `team/runs/20261028-1433-master.md` (auf `agent/master/reports`)
+
+## SCHNAPPER MASTER – letzter Lauf (28.10.2026, 15:32 UTC, Lauf 20261028-1532)
+
+- F5 / S-012 / PR #44 (Branch `agent/master/20261022-23`): `sh start-schnapper.sh` (sh → dash) bricht jetzt verständlich mit „Bitte mit bash starten: bash start-schnapper.sh“ und Exit 2 ab statt mit „Bad substitution“. POSIX-Wächter vor `set -eu`, Hinweis in `docs/HANDY-START.md` Schritt 4, neuer Test `test_start_mit_sh_meldet_bash`. Gegenprobe mit dem Skript aus a584774: rot.
+- Commit 779e8b7, Push a584774..779e8b7 als Fast-Forward ohne Force. Ein Merge von main war nicht nötig, main 6dbe114 steckt schon im Branch (INDEX-Vermerk überholt).
+- Tests: discover 233 OK (vorher 232), `tests.test_start_skript_s012` 17/17 OK, 0 skipped, Cloudflare 10/10 pass, CI `python-tests` success. CHECK bestanden (AK 1–12).
+- PR #44: Draft, Kopf 779e8b7, Body um Nachtrag „Update Lauf 20261028-1532“ ergänzt. Merge-Entscheidung bei Jefrey (ebenso #36, #39, #40, #41, #45). Auf echtem Gerät (Termux) weiterhin ungetestet.
+- `team/tasks.json`: S-012 bleibt `review`, Laufvermerk im Hinweis ergänzt.
+- Offen: eBay-Sandbox-Schlüssel für #45 (F6) fehlen weiterhin. Nächster kleiner Schritt in #44: `SCHNAPPER_PYTHON=echo` besteht die Versionsprüfung im Startskript (nur Exit-Code geprüft).
+- Bericht: `team/runs/20261028-1532-master.md` (auf `agent/master/reports`)
