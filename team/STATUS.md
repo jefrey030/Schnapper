@@ -155,3 +155,13 @@ Hinweis: `team/tasks.json` wurde nicht separat geändert; die tasks.json-Änderu
 - `team/tasks.json` ist unverändert, S-013 steht in #36 bereits auf `review`.
 - Offen: Für #45 fehlen eBay-Sandbox-Schlüssel (Umgebungsvariablen laut `docs/EBAY.md`). Zu 2666d8b (#39) fehlt ein Bericht. #50 ist ausgeklammert.
 - Bericht: `team/runs/20261028-0828-master.md` (auf `agent/master/reports`)
+
+## SCHNAPPER MASTER – letzter Lauf (28.10.2026, 14:33 UTC, Lauf 20261028-1433)
+
+- F3 / S-010 / PR #40 (Branch `agent/master/20261022-22`): Ein Merkschlüssel `"__proto__"` wird beim Wiederherstellen jetzt als ungültig gemeldet (`Merkliste: Eintrag „__proto__“ ungültig (Schlüssel)`) statt still verworfen. Das Ergebnisobjekt in `sicherungPruefen` ist prototypfrei (`Object.create(null)`). Neuer Browsertest `test_proto_schluessel_wird_gemeldet`. Gegenprobe mit app.js aus f0cc84c: rot.
+- Commit 4274324, Push f0cc84c..4274324 als Fast-Forward ohne Force.
+- Tests: discover 227 OK, `tests.test_app_sicherung_s010` 11/11 OK (Browsertests ausgeführt), Cloudflare 10/10 pass, CI `python-tests` success. CHECK bestanden.
+- PR #40: Draft, Kopf 4274324, Body um Nachtrag „Lauf 20261028-1433“ ergänzt. Merge-Entscheidung bei Jefrey (ebenso #36, #39, #41, #44, #45).
+- `team/tasks.json`: S-010 bleibt `review`, Laufvermerk im Hinweis ergänzt.
+- Offen: eBay-Sandbox-Schlüssel für #45 (F6) fehlen weiterhin. Hinweis: Im flachen Klon (depth 50) ist `tests/test_branches_s006.py` rot, nach `git fetch --unshallow` grün.
+- Bericht: `team/runs/20261028-1433-master.md` (auf `agent/master/reports`)
