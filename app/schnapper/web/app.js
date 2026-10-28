@@ -21,10 +21,11 @@ const speicher = {
     } catch { /* weiter mit Ersatz */ }
     return name in this.ersatz ? this.ersatz[name] : standard;
   },
+  // Gibt true zurück, wenn der Wert dauerhaft im Browser-Speicher liegt.
   schreiben(name, wert) {
     this.ersatz[name] = wert;
-    try { window.localStorage.setItem("schnapper." + name, JSON.stringify(wert)); }
-    catch { $("speicher-hinweis").hidden = false; }
+    try { window.localStorage.setItem("schnapper." + name, JSON.stringify(wert)); return true; }
+    catch { $("speicher-hinweis").hidden = false; return false; }
   },
 };
 
@@ -448,6 +449,42 @@ function sicherungMelden(text, fehler) {
   $("sicherung-fehler").replaceChildren(...fehler.map((f) => el("li", f)));
 }
 
+// Schreibt Merkliste und Alarme ganz oder gar nicht. Schlägt ein Schreibvorgang fehl,
+// wird der vorherige Stand (Browser-Speicher und Ersatz) wiederhergestellt und gemeldet.
+function sicherungUebernehmen(neueMerkliste, neueAlarme) {
+  const NAMEN = ["merkliste", "alarme"];
+  const vorher = {};
+  try { for (const name of NAMEN) vorher[name] = window.localStorage.getItem("schnapper." + name); }
+  catch {
+    $("speicher-hinweis").hidden = false;
+    sicherungMelden("Wiederherstellung fehlgeschlagen: Browser-Speicher ist nicht verfügbar. Nichts geändert.", []);
+    return false;
+  }
+  const ersatzVorher = { ...speicher.ersatz };
+  const neu = { merkliste: neueMerkliste, alarme: neueAlarme };
+  const geschrieben = [];
+  for (const name of NAMEN) {
+    if (!speicher.schreiben(name, neu[name])) break;
+    geschrieben.push(name);
+  }
+  if (geschrieben.length === NAMEN.length) return true;
+  // Ein fehlgeschlagenes setItem ändert den Eintrag nicht; zurückgesetzt werden nur bereits geschriebene.
+  let zurueck = true;
+  for (const name of geschrieben) {
+    const schluessel = "schnapper." + name;
+    try { if (vorher[name] === null) window.localStorage.removeItem(schluessel); else window.localStorage.setItem(schluessel, vorher[name]); }
+    catch { zurueck = false; }
+  }
+  speicher.ersatz = ersatzVorher;
+  sicherungMelden(zurueck
+    ? "Wiederherstellung fehlgeschlagen: Browser-Speicher ist voll oder gesperrt. Nichts geändert."
+    : "Wiederherstellung fehlgeschlagen: Browser-Speicher ist voll oder gesperrt; der vorherige Stand konnte nicht vollständig zurückgeschrieben werden. Bitte Seite neu laden und prüfen.", []);
+  zaehler();
+  merklisteZeigen();
+  alarmePruefen();
+  return false;
+}
+
 async function sicherungLaden(ev) {
   const datei = ev.target.files[0];
   ev.target.value = "";
@@ -458,8 +495,7 @@ async function sicherungLaden(ev) {
   catch { sicherungMelden("Sicherung abgewiesen: Die Datei ist kein gültiges JSON. Nichts geändert.", []); return; }
   const ergebnis = sicherungPruefen(obj);
   if (!ergebnis.ok) { sicherungMelden("Sicherung abgewiesen: " + ergebnis.fehler[0] + " Nichts geändert.", []); return; }
-  speicher.schreiben("merkliste", ergebnis.merkliste);
-  speicher.schreiben("alarme", ergebnis.alarme);
+  if (!sicherungUebernehmen(ergebnis.merkliste, ergebnis.alarme)) return;
   const n = Object.keys(ergebnis.merkliste).length;
   sicherungMelden(`Wiederhergestellt: ${n} gemerkt, ${ergebnis.alarme.length} Alarme; ` +
                   `${ergebnis.fehler.length} ungültige Einträge übersprungen`, ergebnis.fehler);

@@ -299,6 +299,49 @@ class Browser(unittest.TestCase):
             "Object.getPrototypeOf(JSON.parse(localStorage.getItem('schnapper.merkliste'))) === Object.prototype"))
         self.assertIsNone(self.seite.evaluate("({}).titel"))
 
+    # ---------- Speicherfehler bei der Wiederherstellung (Befund 28.10.2026) ----------
+    def _speicherfehler(self, art):
+        """Lässt localStorage gezielt fehlschlagen: 'merkliste'/'alarme' = setItem dieses Schlüssels, 'lesen' = getItem."""
+        self.seite.evaluate("""(art) => {
+          const setOrig = Storage.prototype.setItem, getOrig = Storage.prototype.getItem;
+          window.__speicherfehlerAus = () => { Storage.prototype.setItem = setOrig; Storage.prototype.getItem = getOrig; };
+          if (art === 'lesen') {
+            Storage.prototype.getItem = function () { throw new DOMException('gesperrt', 'SecurityError'); };
+          } else {
+            Storage.prototype.setItem = function (k, v) {
+              if (k === 'schnapper.' + art) throw new DOMException('voll', 'QuotaExceededError');
+              return setOrig.call(this, k, v);
+            };
+          }
+        }""", art)
+
+    def _speicherfehler_pruefen(self, art):
+        self.stand_anlegen()
+        vorher_roh = self.roh()
+        self.seite.click('[data-ansicht="alarme"]')
+        self._speicherfehler(art)
+        meldung = self.lade(sicherung(merkliste={"neu": merk("Neu")}, alarme=[alarm("Neu")]))
+        self.assertIn("Wiederherstellung fehlgeschlagen", meldung)
+        self.assertIn("Nichts geändert", meldung)
+        self.assertNotIn("Wiederhergestellt", meldung)
+        self.seite.evaluate("window.__speicherfehlerAus()")
+        self.assertEqual(self.roh(), vorher_roh)
+        # Anzeige zeigt weiter den alten Stand, auch nach Neuladen.
+        self.assertEqual(self.seite.locator("#anzahl-merk").text_content(), "2")
+        self.seite.reload()
+        self.seite.wait_for_selector("#treffer li")
+        self.assertEqual(self.roh(), vorher_roh)
+        self.assertEqual(self.seite.locator("#anzahl-merk").text_content(), "2")
+
+    def test_speicherfehler_erster_schreibvorgang(self):
+        self._speicherfehler_pruefen("merkliste")
+
+    def test_speicherfehler_zweiter_schreibvorgang_rollback(self):
+        self._speicherfehler_pruefen("alarme")
+
+    def test_speicherfehler_vor_dem_schreiben(self):
+        self._speicherfehler_pruefen("lesen")
+
     def test_alarmgrenzen_wie_server(self):
         """Nur Alarme übernehmen, die /api/suche auch akzeptiert (max_preis > 0, 2 Nachkommastellen, Rabatt 0–100)."""
         self.seite.click('[data-ansicht="alarme"]')
