@@ -91,6 +91,15 @@ class EbayKommandozeileTests(unittest.TestCase):
                 main(argv)
             self.assertEqual(cm.exception.code, 2)
 
+    # Nachbesserung N1: leere EAN darf nicht in lies_datei(None) durchfallen
+    def test_openprices_leer_sauberer_fehler(self):
+        err = io.StringIO()
+        with redirect_stderr(err), self.assertRaises(SystemExit) as cm:
+            main(["--openprices", ""])
+        self.assertEqual(cm.exception.code, 2)
+        self.assertIn("--openprices braucht eine EAN", err.getvalue())
+        self.assertNotIn("Traceback", err.getvalue())
+
     # AK 3
     def test_ohne_schalter_gesperrt_ohne_netz(self):
         code, out, err = self.lauf(["--ebay", "fahrrad"])

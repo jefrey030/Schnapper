@@ -41,9 +41,11 @@ def main(argv=None) -> int:
     a = p.parse_args(argv)
     if sum(x is not None for x in (a.datei, a.openprices, a.ebay)) != 1:
         p.error("genau eines angeben: DATEI, --openprices EAN oder --ebay SUCHBEGRIFF")
+    if a.openprices == "":
+        p.error("--openprices braucht eine EAN")
 
     lizenz = None
-    if a.openprices:
+    if a.openprices is not None:
         from .openprices import LIZENZ, OpenPricesAdapter, OpenPricesFehler, OpenPricesGesperrt
         try:
             adapter = OpenPricesAdapter(a.openprices, a.tage)
