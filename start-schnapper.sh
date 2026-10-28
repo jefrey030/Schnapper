@@ -16,6 +16,7 @@
 #   - Der Server lauscht immer nur auf 127.0.0.1 (nur dieses Gerät). Das ist hier fest.
 #   - Port muss eine ganze Zahl von 1 bis 65535 sein, sonst Exit 2.
 #   - Python 3.8 oder neuer nötig (python3 bevorzugt, sonst python), sonst Exit 2.
+#   - Kein echtes Python (z. B. SCHNAPPER_PYTHON=echo oder true) -> Exit 2.
 #   - Lädt nichts herunter, installiert nichts. Beenden mit Strg+C.
 #   - Nutzt nur bash-Befehle und Python (keine weiteren Programme).
 #   - Start mit sh/dash (statt bash) -> Hinweis "Bitte mit bash starten", Exit 2.
@@ -86,8 +87,11 @@ if [ -z "$PY" ]; then
     printf '%s\n' "In Termux installieren mit:  pkg install python" >&2
     exit 2
 fi
-if ! "$PY" -c 'import sys; sys.exit(sys.version_info < (3, 8))' 2>/dev/null; then
-    printf '%s\n' "Python ist zu alt ($PY). SCHNAPPER braucht Python 3.8 oder neuer." >&2
+# Echtes Python muss genau "py-ok:42" ausgeben. Der Wert wird berechnet und steht
+# nicht wörtlich im Code, damit z. B. echo/true die Prüfung nicht bestehen.
+PY_OK=$("$PY" -c 'import sys; print("py-ok:%d" % (6 * 7) if sys.version_info >= (3, 8) else "py-alt")' 2>/dev/null || true)
+if [ "$PY_OK" != "py-ok:42" ]; then
+    printf '%s\n' "Python ist zu alt oder kein Python ($PY). SCHNAPPER braucht Python 3.8 oder neuer." >&2
     printf '%s\n' "In Termux aktualisieren mit:  pkg install python" >&2
     exit 2
 fi

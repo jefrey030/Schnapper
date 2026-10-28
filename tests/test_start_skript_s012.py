@@ -139,6 +139,24 @@ class StartSkriptLauf(unittest.TestCase):
         self.assertIn("pkg install python", r.stderr)
         self.assertEqual(r.stdout, "")
 
+    def test_falscher_interpreter_wird_abgelehnt(self):
+        echo_pfad = "/bin/echo" if os.path.exists("/bin/echo") else shutil.which("echo")
+        for interp in ("echo", echo_pfad, "true"):
+            if not interp:
+                continue
+            with self.subTest(interpreter=interp):
+                port = freier_port()
+                with tempfile.TemporaryDirectory() as tmp:
+                    r = subprocess.run([BASH, str(SKRIPT)], cwd=tmp,
+                                       env=ohne_schnapper_env(SCHNAPPER_PORT=str(port),
+                                                              SCHNAPPER_PYTHON=interp),
+                                       capture_output=True, text=True, timeout=15)
+                self.assertEqual(r.returncode, 2, r.stdout + r.stderr)
+                self.assertIn("Python", r.stderr)
+                self.assertIn("3.8", r.stderr)
+                self.assertNotIn("SCHNAPPER startet", r.stdout)
+                self.assertFalse(lauscht(port))
+
     def test_ungueltiger_port(self):
         for wert in ("abc", "0", "65536", "-1", "80a", "1234567"):
             with self.subTest(port=wert):
