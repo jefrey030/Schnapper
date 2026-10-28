@@ -149,6 +149,25 @@ class StartSkriptLauf(unittest.TestCase):
                 self.assertIn("Ungültiger Port", r.stderr)
                 self.assertNotIn("SCHNAPPER läuft", r.stdout)
 
+    def test_start_mit_sh_meldet_bash(self):
+        shell = shutil.which("dash")
+        if not shell and os.path.exists("/bin/sh") \
+                and os.path.basename(os.path.realpath("/bin/sh")) != "bash":
+            shell = "/bin/sh"
+        if not shell:
+            self.skipTest("keine Nicht-bash-Shell (dash bzw. /bin/sh) vorhanden")
+        port = freier_port()
+        with tempfile.TemporaryDirectory() as tmp:
+            r = subprocess.run([shell, str(SKRIPT)], cwd=tmp,
+                               env=ohne_schnapper_env(SCHNAPPER_PORT=str(port)),
+                               capture_output=True, text=True, timeout=15)
+        self.assertEqual(r.returncode, 2, r.stderr)
+        self.assertIn("Bitte mit bash starten", r.stderr)
+        self.assertIn("bash start-schnapper.sh", r.stderr)
+        self.assertNotIn("Bad substitution", r.stderr)
+        self.assertEqual(r.stdout, "")
+        self.assertFalse(lauscht(port))
+
     def test_bash_n(self):
         r = subprocess.run([BASH, "-n", str(SKRIPT)], capture_output=True, text=True, timeout=15)
         self.assertEqual(r.returncode, 0, r.stderr)

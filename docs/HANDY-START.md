@@ -24,6 +24,8 @@ SCHNAPPER braucht nur Python, keine weiteren Pakete und kein Internet im Betrieb
    - `bash start-schnapper.sh` ist der Hauptweg, weil beim ZIP-Download das
      Ausführungsrecht verloren gehen kann. Wer `./start-schnapper.sh` nutzen möchte,
      setzt es einmal mit `chmod +x start-schnapper.sh`.
+   - `sh start-schnapper.sh` funktioniert nicht: Das Skript meldet dann
+     „Bitte mit bash starten“. Also immer `bash start-schnapper.sh` verwenden.
    - **Eigene Datei:** `bash start-schnapper.sh app/beispiele/angebote.csv`
      (ohne Angabe wird `app/vorlagen/meine-angebote.csv` genommen).
    - **Anderer Port:** `SCHNAPPER_PORT=8800 bash start-schnapper.sh`, dann in Chrome

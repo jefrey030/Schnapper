@@ -18,6 +18,13 @@
 #   - Python 3.8 oder neuer nötig (python3 bevorzugt, sonst python), sonst Exit 2.
 #   - Lädt nichts herunter, installiert nichts. Beenden mit Strg+C.
 #   - Nutzt nur bash-Befehle und Python (keine weiteren Programme).
+#   - Start mit sh/dash (statt bash) -> Hinweis "Bitte mit bash starten", Exit 2.
+
+# Nur mit bash lauffähig (BASH_SOURCE, 10#). Bei sh/dash/zsh verständlich abbrechen.
+if [ -z "${BASH_VERSION:-}" ]; then
+    printf '%s\n' "Bitte mit bash starten: bash start-schnapper.sh" >&2
+    exit 2
+fi
 set -eu
 
 fehler() {
