@@ -175,3 +175,13 @@ Hinweis: `team/tasks.json` wurde nicht separat geändert; die tasks.json-Änderu
 - `team/tasks.json`: S-012 bleibt `review`, Laufvermerk im Hinweis ergänzt.
 - Offen: eBay-Sandbox-Schlüssel für #45 (F6) fehlen weiterhin. Nächster kleiner Schritt in #44: `SCHNAPPER_PYTHON=echo` besteht die Versionsprüfung im Startskript (nur Exit-Code geprüft).
 - Bericht: `team/runs/20261028-1532-master.md` (auf `agent/master/reports`)
+
+## SCHNAPPER MASTER – letzter Lauf (28.10.2026, 16:29 UTC, Lauf 20261028-1629)
+
+- F5 / S-012 / PR #44 (Branch `agent/master/20261022-23`): Die Python-Versionsprüfung im Startskript verlangt jetzt die exakte Ausgabe `py-ok:42` (berechnet als `6 * 7`, nicht wörtlich im `-c`-Code) statt nur den Exit-Code. `SCHNAPPER_PYTHON=echo`, `/bin/echo` und `true` enden mit Exit 2 und der Meldung „Python ist zu alt oder kein Python (…)“, ohne Server. Neuer Test `test_falscher_interpreter_wird_abgelehnt`. Gegenprobe mit dem Skript aus 779e8b7: rot (failures=3).
+- Commit 41e801c, Push 779e8b7..41e801c als Fast-Forward ohne Force.
+- Tests: discover 234 OK (vorher 233), `tests.test_start_skript_s012` 18/18 OK, Cloudflare 10/10 pass, CI `python-tests` success. CHECK bestanden (AK 1–12).
+- PR #44: Draft, Kopf 41e801c, Body um Nachtrag „Update Lauf 20261028-1629“ ergänzt. Merge-Entscheidung bei Jefrey (ebenso #36, #39, #40, #41, #45). Auf echtem Gerät (Termux) weiterhin ungetestet.
+- `team/tasks.json`: S-012 bleibt `review`, Laufvermerk im Hinweis ergänzt.
+- Offen: eBay-Sandbox-Schlüssel für #45 (F6) fehlen weiterhin.
+- Bericht: `team/runs/20261028-1629-master.md` (auf `agent/master/reports`)
