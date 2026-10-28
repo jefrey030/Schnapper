@@ -185,3 +185,13 @@ Hinweis: `team/tasks.json` wurde nicht separat geändert; die tasks.json-Änderu
 - `team/tasks.json`: S-012 bleibt `review`, Laufvermerk im Hinweis ergänzt.
 - Offen: eBay-Sandbox-Schlüssel für #45 (F6) fehlen weiterhin.
 - Bericht: `team/runs/20261028-1629-master.md` (auf `agent/master/reports`)
+
+## SCHNAPPER MASTER – letzter Lauf (28.10.2026, 17:29 UTC, Lauf 20261028-1729)
+
+- F1 / PR #36 (Branch `agent/master/20261022-20`): Abschnitt B in `docs/SCHNAPPER-MASTERPLAN.md` auf den Live-Stand vom 28.10.2026 ca. 17:30 UTC gebracht (Basis `main` @ 6dbe114, per GitHub-REST). `### Offen (15)` → `### Offen (56)` mit allen 56 offenen PRs, `### Gemergt (19)` unverändert. Hinweis nennt die Team-PRs #36, #39, #40, #41, #44, #45 und #50 (S-014). Nur diese Datei, nur Abschnitt B (44+/3−).
+- Commit c4ac5c5, Push 8d4e90b..c4ac5c5 als Fast-Forward ohne Force.
+- Tests: discover 216 OK, Cloudflare 10/10 pass, Prüfskript Tabelle gegen REST OK 56, CI `python-tests` success. CHECK bestanden (AK 1–12; AK 13 durch COMMAND).
+- PR #36: Draft, Kopf c4ac5c5, Body um Nachtrag „Update Lauf 20261028-1729“ ergänzt. Merge-Entscheidung bei Jefrey (ebenso #39, #40, #41, #44, #45). Alle Team-PRs laut LEAD `mergeable_state` clean.
+- `team/tasks.json`: S-004–S-006 bleiben `proposed` (in #36 `done`, wirksam erst nach Merge), Laufvermerk bei S-006 ergänzt.
+- Offen: eBay-Sandbox-Schlüssel für #45 (F6) fehlen weiterhin; Produktion braucht eBay-Genehmigung.
+- Bericht: `team/runs/20261028-1729-master.md` (im Hauptbaum, nicht committet)
