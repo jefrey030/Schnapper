@@ -221,3 +221,13 @@ Hinweis: `team/tasks.json` wurde nicht separat geändert; die tasks.json-Änderu
 - `team/tasks.json`: S-013 bleibt `review`, Laufvermerk im Hinweis ergänzt.
 - Offen: echter Sandbox-Test braucht Jefreys eBay-Sandbox-Schlüssel (`PYTHONPATH=app python -m schnapper --ebay "fahrrad"`). Weboberfläche für eBay weiterhin Folgepunkt.
 - Bericht: `team/runs/20261028-1929-master.md` (im Hauptbaum, nicht committet)
+
+## SCHNAPPER MASTER – letzter Lauf (28.10.2026, 20:28 UTC, Lauf 20261028-2028)
+
+- F4 / S-011 / PR #41 (Branch `agent/master/20261022-2238`): `#kamera-abbrechen` liegt nicht mehr im verborgenen `#kamera-bereich` und ist ab Klick auf „Mit Kamera scannen“ sichtbar, also auch bei offenem Berechtigungsdialog (`getUserMedia`) und offener Formatabfrage. Ein echter Klick bricht ab, gibt den Kamera-Knopf frei, ein später Stream wird sofort gestoppt. Video erst nach erfolgreichem Start. 2 neue Browsertests, JS-Direktklick durch echten Klick ersetzt. Gegenprobe mit app.js/index.html aus 662cf81: rot (failures=4).
+- Commit ca5420e, Push 662cf81..ca5420e als Fast-Forward ohne Force.
+- Tests: discover 237 OK, `tests.test_app_kamera_s011` 21/21 OK (0 Skips, Chromium gefunden), Cloudflare 10/10 pass. CHECK bestanden (AK 1–11).
+- PR #41: Draft, Kopf ca5420e, Body um Nachtrag „Lauf 20261028-2028“ ergänzt. Merge-Entscheidung bei Jefrey (ebenso #36, #39, #40, #44, #45).
+- `team/tasks.json`: S-011 bleibt `review`, Laufvermerk im Hinweis ergänzt.
+- Offen: Fokus-Management beim Kamerastart (nicht gefordert), `upc_e` fehlt in `KAMERA_FORMATE`, echtes Gerät ungetestet. eBay-Sandbox-Schlüssel für #45 (F6) fehlen weiterhin.
+- Bericht: `team/runs/20261028-2028-master.md` (Übergabe an Orchestrator)
