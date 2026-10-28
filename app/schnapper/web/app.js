@@ -396,11 +396,11 @@ function sicherungPruefen(obj) {
   if (ids.length > MAX_MERK) return abweisen(`Zu viele Merkeinträge: ${ids.length} (max. ${MAX_MERK}).`);
   if (obj.alarme.length > MAX_ALARME) return abweisen(`Zu viele Preisalarme: ${obj.alarme.length} (max. ${MAX_ALARME}).`);
 
-  const merk = {};
+  const merk = Object.create(null);
   for (const id of ids) {
     const e = obj.merkliste[id];
     let falsch = null;
-    if (!istText(id, 1, 200)) falsch = "Schlüssel";
+    if (!istText(id, 1, 200) || id === "__proto__") falsch = "Schlüssel";
     else if (!istObjekt(e)) falsch = "kein Objekt";
     else if (!istText(e.titel, 1, 500)) falsch = "titel";
     else if (!preisOk(e.gesamtpreis)) falsch = "gesamtpreis";

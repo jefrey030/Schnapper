@@ -284,6 +284,21 @@ class Browser(unittest.TestCase):
         self.assertIsNone(self.seite.evaluate("window.__xss"))
         self.assertEqual(self.seite.locator("#merk-liste .link").count(), 2)
 
+    def test_proto_schluessel_wird_gemeldet(self):
+        """Ein Merkeintrag mit Schlüssel "__proto__" wird gemeldet statt still verworfen (F3: ungültige melden)."""
+        self.seite.click('[data-ansicht="alarme"]')
+        daten = json.dumps(sicherung(merkliste={"__proto__": merk("Böse"), "gut": merk("Rad")})).encode("utf-8")
+        self.assertIn(b'"__proto__"', daten)
+        meldung = self.lade(daten)
+        self.assertIn("Wiederhergestellt: 1 gemerkt, 0 Alarme; 1 ungültige Einträge übersprungen", meldung)
+        fehler = self.fehlerliste()
+        self.assertEqual(len(fehler), 1)
+        self.assertIn("„__proto__“ ungültig (Schlüssel)", fehler[0])
+        self.assertEqual(sorted(self.stand()[0]), ["gut"])
+        self.assertTrue(self.seite.evaluate(
+            "Object.getPrototypeOf(JSON.parse(localStorage.getItem('schnapper.merkliste'))) === Object.prototype"))
+        self.assertIsNone(self.seite.evaluate("({}).titel"))
+
     def test_alarmgrenzen_wie_server(self):
         """Nur Alarme übernehmen, die /api/suche auch akzeptiert (max_preis > 0, 2 Nachkommastellen, Rabatt 0–100)."""
         self.seite.click('[data-ansicht="alarme"]')
