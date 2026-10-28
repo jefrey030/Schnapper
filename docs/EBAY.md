@@ -13,7 +13,7 @@ Stand 23.10.2026, Inhalte bei eBay prüfen.
 - Der Adapter schreibt nichts auf die Platte. Zugangsdaten und Token liegen nur im Arbeitsspeicher.
 - Es gibt kein Scraping. Erlaubt sind nur `api.ebay.com` und `api.sandbox.ebay.com` über HTTPS,
   Weiterleitungen werden nicht verfolgt.
-- Noch keine Anbindung an Kommandozeile oder Weboberfläche (Folgepunkt).
+- Kommandozeile: ja (`--ebay`), Weboberfläche: noch nicht (Folgepunkt).
 
 **Quelle bleibt gesperrt, solange Schalter oder Schlüssel fehlen.**
 
@@ -40,6 +40,21 @@ export SCHNAPPER_EBAY_FREIGABE=ja
 > - Schlüssel **nie** in Dateien des Repos, in Issues/PRs oder in Chats posten.
 > - Keine `.bashrc` oder andere Datei mit Schlüsseln einchecken.
 > - Ist ein Schlüssel doch einmal sichtbar geworden: im Entwicklerportal sofort neu erzeugen.
+
+## Sandbox-Test per Kommandozeile
+
+Nach dem Setzen der Variablen (siehe oben) im Repo-Stamm:
+
+```sh
+PYTHONPATH=app python -m schnapper --ebay "fahrrad"
+PYTHONPATH=app python -m schnapper --ebay "fahrrad" --json   # optional als JSON
+```
+
+- Sandbox-Angebote erscheinen mit dem Präfix `SANDBOX ` im Titel und der Quelle `[ebay]`.
+- Übersprungene Einträge (z. B. andere Währung) stehen als `eBay-Hinweis: …` auf stderr.
+- Filter wie `--suche` oder `--max-preis` wirken wie bei einer Datei.
+- Exit-Codes: `0` = OK, `3` = gesperrt (Schalter/Schlüssel fehlen), ungültiger Suchbegriff oder eBay-Fehler.
+  Die Meldung beginnt mit `eBay: ` und enthält nie Client ID, Secret oder Token.
 
 ## Produktion (echte Angebote)
 
