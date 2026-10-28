@@ -439,6 +439,21 @@ class AnfrageTests(OhneNetz):
         daten, _ = self.anfrage(antwort=Antwort(b'{"a": "' + b"y" * 1_999_990 + b'"}'))
         self.assertIn("a", daten)
 
+    def test_json_zu_tief_oder_zu_lange_zahl(self):  # AK 11 (S-013 Nachtrag)
+        for koerper in (b"[" * 100_000, b"1" * 5000):
+            with self.subTest(laenge=len(koerper), anfang=koerper[:1]):
+                opener = mock.Mock()
+                opener.open.return_value = Antwort(koerper)
+                with mock.patch.object(ebay, "_oeffner", return_value=opener):
+                    with self.assertRaises(ebay.EbayFehler) as cm:
+                        ebay._anfrage("GET", self.GUT, {}, None)
+                self.assertNotIsInstance(cm.exception, (RecursionError, AssertionError))
+                self.assertEqual(str(cm.exception), "eBay-Antwort ist kein gültiges JSON/UTF-8")
+                self.assertIsNone(cm.exception.__cause__)
+                self.assertTrue(cm.exception.__suppress_context__)
+                self.ohne_geheimnis(cm.exception)
+                self.assertIn("JSON", self.fehler(antwort=Antwort(koerper)))
+
     def test_status_nicht_200(self):
         self.assertIn("204", self.fehler(antwort=Antwort(b"{}", status=204)))
 

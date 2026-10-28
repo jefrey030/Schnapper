@@ -272,7 +272,7 @@ def _anfrage(methode: str, url: str, kopfzeilen: dict, daten: bytes | None = Non
         raise EbayFehler("eBay-Antwort zu groß")
     try:
         return json.loads(roh.decode("utf-8"))
-    except (json.JSONDecodeError, UnicodeDecodeError):
+    except (ValueError, RecursionError):  # inkl. JSONDecodeError, UnicodeDecodeError, zu tief, zu lange Zahl
         raise EbayFehler("eBay-Antwort ist kein gültiges JSON/UTF-8") from None
 
 
