@@ -22,13 +22,54 @@ Stand: 22.10.2026, 10:50 (Berlin) · Basis: `main` @ 4bc37e7 · Erstellt nach ec
 
 ## B. Pull Requests (echter GitHub-Stand)
 
-Stand: 23.10.2026, ca. 05:30 UTC · Basis `main` @ 6dbe114 · ermittelt per GitHub-REST `pulls?state=all`. #4 und #38 sind Issues, keine PRs.
+Stand: 28.10.2026, ca. 17:30 UTC · Basis `main` @ 6dbe114 · ermittelt per GitHub-REST `pulls?state=open` / `pulls?state=closed`. #4 und #38 sind Issues, keine PRs.
 Der frühere Abschnitt (Empfehlung #6 → #12 → #7 → #8) ist überholt: Diese PRs sind gemergt bzw. geschlossen.
 
-### Offen (15)
+### Offen (56)
 
 | PR | Titel | Branch | Status | Draft |
 | --- | --- | --- | --- | --- |
+| #134 | SCHNAPPER Final Master: atomarer Snapshot und sichere Speicheranzeigen | replit/final-integration-20261027 | offen | ja |
+| #133 | SCHNAPPER MASTER 7: sichere Speicherung, Backup und App-Integration | replit/master7-security-storage-backup-20261026 | offen | ja |
+| #132 | WORK MASTER 27: BLITZ-Speicherschutz und konkurrierende Meldungen | fix/work-master27-blitz-storage-20261026 | offen | ja |
+| #131 | P0 MASTER 27: alten KI-Stundenworkflow auf main sicher stilllegen | fix/work-master27-disable-hourly-20261026 | offen | ja |
+| #130 | SCHNAPPER MASTER 8: MISSION-Mehrinstanzen-Schutz (Draft) | fix/master8-mission-concurrency-20261026 | offen | ja |
+| #129 | SCHNAPPER MASTER 23: P0-Sicherheitsintegration und Module (Draft) | integration/p0-master23-20261026 | offen | ja |
+| #128 | P0: STOP für Prozessgruppen und sichere Agentenartefakte | fix/master4-p0-stop-paths-20261026 | offen | ja |
+| #127 | SCHNAPPER MASTER 5: lokale Missionsverwaltung und deduplizierte BLITZ-Meldungen | replit/master5-module-acceptance-20261026 | offen | ja |
+| #126 | SCHNAPPER Master 4: Betreiberfreigabe und aktiven STOP gemeinsam integrieren | integration/master4-security-20261026 | offen | ja |
+| #125 | integrate(MASTER 87): aktiven Betreiber-STOP in fertige Sicherheitskette aufnehmen | integration/master87-active-stop-20261025 | offen | ja |
+| #124 | MASTER 123: S-006-CI ohne SKIP in SCHNAPPER-Sicherheitskette integrieren | fix/master123-s006-ci-integration-20261025 | offen | ja |
+| #122 | MASTER 122 P0: Betreiberfreigabe-Dateien gegen FIFO-Hänger absichern | fix/master122-approval-fifo-nonblock-20261025 | offen | ja |
+| #121 | integrate(MASTER 86): Ollama-Abschlussnachweise in getestete Sicherheitskette übernehmen | integration/master86-ollama-proof-readiness-20261025 | offen | ja |
+| #120 | fix(MASTER 85): Runner-Lock-FD gegen Symlink, Hardlink, FIFO und Schreibfehler härten | fix/master85-runner-lock-fd-integrity-20261025 | offen | ja |
+| #110 | MASTER 121 P0: lokale KI nur mit separater kurzlebiger Betreiberfreigabe | security/master121-local-operator-consent-20261025 | offen | ja |
+| #109 | fix(MASTER 84): S-006-Branch-Gate ohne CI-SKIP in MASTER-83-Kette integrieren | integration/master84-s006-full-branch-ci-20261025 | offen | ja |
+| #108 | fix(MASTER 83): alle 7 lokalen Pflichtbelege an geprüfte Bytes binden | fix/master83-all-evidence-binding-20261025 | offen | ja |
+| #106 | fix(MASTER 82): Prozessnachweise an geprüfte Laufdaten binden (45-Punkte-Sicherheitsmaster) | fix/master82-process-manifest-binding-20261025 | offen | ja |
+| #103 | fix(MASTER 81): lokale Aufrufquote hart begrenzen und flock-Wartezeit absichern | fix/master81-counter-quota-lock-timeout-20261025 | offen | ja |
+| #102 | fix(MASTER 80): lokalen Ollama-Aufrufzähler symlink-sicher und atomar sperren | fix/master80-local-counter-integrity-20261025 | offen | ja |
+| #101 | fix(MASTER 79): sichere Pflichtnachweise per O_NOFOLLOW-Dateideskriptor | fix/master79-no-follow-artifact-20261025 | offen | ja |
+| #97 | fix(MASTER 78): Prozessrollen beweissicher prüfen und Manifest fail-closed härten | fix/master78-process-role-evidence-20261025 | offen | ja |
+| #95 | fix(web): lokale Host- und Origin-Prüfung vor Suche und Upload (Master 10) | fix/schnapper-local-web-origin-master10-20261025 | offen | ja |
+| #94 | fix(MASTER 77): lokale Vier-KI-Nachweise und CHECK-Gates fail-closed prüfen | fix/master77-local-proof-gates-20261025 | offen | ja |
+| #93 | MASTER 93: Replay-Schutz und ehrliche KI-Beleganzeige für SCHNAPPER | chatgpt/master93-replay-evidence-20261025 | offen | ja |
+| #92 | fix(P0): lokalen Agenten bei STOP auch während des Laufs beenden (Master 9) | fix/schnapper-stop-running-agent-master9-20261025 | offen | ja |
+| #91 | fix(P0): Cloudflare-KI nur mit ausdrücklich genehmigten offenen Aufgaben (Master 8) | fix/schnapper-approved-tasks-master8-20261025 | offen | ja |
+| #90 | MASTER 92: Ollama-Abschlussbelege verifizieren und lokale IDs korrekt kennzeichnen | chatgpt/master92-ollama-proof-20261025 | offen | ja |
+| #89 | fix(MASTER 76): lokale KI-Sperre nach Absturz wieder nutzbar machen | fix/master76-local-lock-recovery-20261025 | offen | ja |
+| #88 | fix(P1): S-006 Branch-Test in CI vollständig ausführen statt SKIP (Master 7) | fix/schnapper-s006-ci-refs-master7-20261025 | offen | ja |
+| #85 | ci(Master 75): Node-20-Warnungen beseitigen und SCHNAPPER-CI härten | fix/master75-ci-node24-ubuntu24-20261025 | offen | ja |
+| #80 | MASTER 91: lokale KI-Nachweise gegen widersprüchliche Rollenberichte härten | chatgpt/master91-proof-integrity-20261025 | offen | ja |
+| #74 | fix(P0): D1-Schreibbestätigung vor KI-Aufrufen erzwingen (Master 6) | fix/schnapper-d1-write-confirmation-20261025 | offen | ja |
+| #72 | MASTER 90: KI-Stundenlauf sicher stilllegen und P0-Gates integrieren | chatgpt/master90-schnapper-integration-20261025 | offen | ja |
+| #69 | fix(P0): Vier-KI-Pilotbelege strikt gegen Rollenartefakte prüfen (Master 5) | fix/schnapper-local-pilot-proof-20261025 | offen | ja |
+| #55 | SCHNAPPER P0: KI-Stilllegung + Sicherheitsgates auf aktuellem main (Draft) | integration/schnapper-p0-mainbased-20261025 | offen | ja |
+| #54 | SCHNAPPER P0: Security-Gates + Legacy-KI-Stilllegung integriert (Draft) | integration/schnapper-p0-safety-retirement-20261025 | offen | ja |
+| #53 | fix(SCHNAPPER): eingestellte GitHub Models sperren und KI-Stundenlauf stilllegen | fix/retired-github-models-20261024 | offen | ja |
+| #52 | SCHNAPPER ONE: eigenständiges 4-KI-Team als isoliertes Teilprojekt | project/schnapper-one-team-20261023 | offen | ja |
+| #51 | SCHNAPPER: Premium-Abo und weitere Einnahmen (Konzept, keine Zahlungen) | feature/schnapper-premium-konzept-20261023 | offen | ja |
+| #50 | SCHNAPPER: 4 KI-Master + offene S-014-Aufgabe für sicheren Diagnose-Lauf | agent/master/s014-viererteam-20261023 | offen | ja |
 | #45 | SCHNAPPER MASTER: F6 eBay vorbereiten – Browse-API-Adapter, gesperrt ohne Schlüssel (S-013) | agent/master/20261023-01 | offen | ja |
 | #44 | SCHNAPPER MASTER: F5 Ein-Befehl-Start für Android/Termux (S-012) | agent/master/20261022-23 | offen | ja |
 | #41 | SCHNAPPER MASTER: F4 Barcode per Kamera scannen (S-011) | agent/master/20261022-2238 | offen | ja |
@@ -45,7 +86,7 @@ Der frühere Abschnitt (Empfehlung #6 → #12 → #7 → #8) ist überholt: Dies
 | #23 | fix: Robuster Angebotsimport bei kaputten URLs und korrekte Port-Dubletten | fix/schnapper-url-validierung-20261022 | offen | ja |
 | #21 | Security: Fail-Closed-Abnahme, Not-Aus und getrennte Release-Gates | security/schnapper-failclosed-20261022 | offen | ja |
 
-Hinweis: #29 ist geschlossen. Überschneidungen bestehen noch bei #25, #26, #27 (Preisformate) und #28, #30 (Preisalarm). Neu: #39, #40 und #41 ändern dieselben Stellen in `app/schnapper/web/app.js` und `index.html`; nach dem Merge eines davon sind in den anderen Konflikte zu erwarten. Entscheidung bleibt bei Jefrey.
+Hinweis: #29 ist geschlossen. Überschneidungen bestehen noch bei #25, #26, #27 (Preisformate) und #28, #30 (Preisalarm). Neu: #39, #40 und #41 ändern dieselben Stellen in `app/schnapper/web/app.js` und `index.html`; nach dem Merge eines davon sind in den anderen Konflikte zu erwarten. Entscheidung bleibt bei Jefrey. Team-Draft-PRs F1–F6 = #36, #39, #40, #41, #44, #45 (alle `mergeable_state` clean am 28.10.), dazu #50 (S-014); die übrigen neuen PRs (#51–#134) stammen nicht aus dem MASTER-Team, Entscheidung bei Jefrey.
 
 ### Gemergt (19)
 
