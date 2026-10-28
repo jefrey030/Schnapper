@@ -398,6 +398,23 @@ class AnfrageTests(OhneNetz):
                     self.ohne_geheimnis(cm.exception)
         self.assertEqual(ebay.ERLAUBTE_HOSTS, frozenset({"api.ebay.com", "api.sandbox.ebay.com"}))
 
+    def test_kaputte_url_gesperrt(self):  # S-013: ValueError aus urlsplit wird EbayGesperrt
+        kaputt = [
+            ("POST", "https://[::1/identity/v1/oauth2/token"),
+            ("GET", "https://api.ebay.com]/buy/browse/v1/item_summary/search"),
+            ("POST", "https://api.ebay.com＃@evil.example/identity/v1/oauth2/token"),
+        ]
+        with mock.patch.object(ebay, "_oeffner", side_effect=AssertionError("Opener gebaut")), self.opener_verboten():
+            for methode, url in kaputt:
+                with self.subTest(url=url, methode=methode):
+                    with self.assertRaises(ebay.EbayGesperrt) as cm:
+                        ebay._anfrage(methode, url, self.KOPF, None)
+                    self.assertIsNone(cm.exception.__cause__)
+                    self.assertTrue(cm.exception.__suppress_context__)
+                    self.ohne_geheimnis(cm.exception)
+                    self.assertNotIn("evil", str(cm.exception))
+                    self.assertNotIn(url, str(cm.exception))
+
     def test_erlaubt_mit_port_443_und_timeout(self):  # AK 10
         daten, opener = self.anfrage(antwort=Antwort(b'{"ok": 1}'))
         self.assertEqual(daten, {"ok": 1})

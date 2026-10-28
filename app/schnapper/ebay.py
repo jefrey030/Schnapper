@@ -241,7 +241,11 @@ def _anfrage(methode: str, url: str, kopfzeilen: dict, daten: bytes | None = Non
     """Einzige Stelle mit Netzzugriff. Prüft Ziel, blockiert Weiterleitungen, begrenzt Größe."""
     if methode not in ("GET", "POST"):
         raise EbayGesperrt("Nur GET und POST sind erlaubt")
-    teile = urllib.parse.urlsplit(url)
+    try:
+        teile = urllib.parse.urlsplit(url)
+    except ValueError:  # syntaktisch kaputte URL: wie unerlaubtes Ziel, ohne URL im Kontext
+        raise EbayGesperrt("Nur Token- und Suchendpunkt auf https://api.ebay.com bzw. "
+                           "https://api.sandbox.ebay.com sind erlaubt") from None
     try:
         port_erlaubt = teile.port in (None, 443)
     except ValueError:
