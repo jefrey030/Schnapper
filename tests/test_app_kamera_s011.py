@@ -538,6 +538,57 @@ class Browser(unittest.TestCase):
         self.assertEqual(self.wert("window.__detect"), 0)
         self.alles_gestoppt()
 
+    # ---------- Tastaturfokus ----------
+    def starte_tastatur(self):
+        """Start ohne Maus: Fokus auf den Startknopf, dann Enter."""
+        self.warte("!document.getElementById('kamera-knopf').disabled")
+        self.seite.focus("#kamera-knopf")
+        self.seite.keyboard.press("Enter")
+
+    def fokus(self):
+        return self.wert("document.activeElement ? document.activeElement.id : ''")
+
+    def test_tastatur_fokus_start_und_abbrechen(self):
+        self.oeffne("leer")
+        self.starte_tastatur()
+        self.warte("document.activeElement && document.activeElement.id === 'kamera-abbrechen'")
+        self.seite.keyboard.press("Enter")
+        self.assertEqual(self.status(), "Kamera-Scan abgebrochen.")
+        self.alles_gestoppt()
+        self.assertEqual(self.fokus(), "kamera-knopf")
+
+    def test_fokus_waehrend_kamera_anfrage(self):
+        self.oeffne("leer", verzoegert=True)
+        self.starte_tastatur()
+        self.warte("window.__gum === 1")
+        self.assertEqual(self.status(), "Kamera wird gestartet …")
+        self.assertEqual(self.fokus(), "kamera-abbrechen")
+        self.kurz_warten()
+        self.assertEqual(self.fokus(), "kamera-abbrechen")  # bleibt, solange die Anfrage offen ist
+        self.seite.keyboard.press("Enter")
+        self.assertEqual(self.fokus(), "kamera-knopf")
+
+    def test_fokus_zurueck_nach_zeitlimit(self):
+        self.oeffne("leer", uhr=True)
+        self.starte_tastatur()
+        self.warte("document.activeElement && document.activeElement.id === 'kamera-abbrechen'")
+        self.warte("!document.getElementById('kamera-bereich').hidden && window.__detect > 0")
+        self.seite.clock.run_for(21000)
+        self.warte("document.getElementById('kamera-bereich').hidden")
+        self.alles_gestoppt()
+        self.assertEqual(self.status(), ZEITLIMIT)
+        self.assertEqual(self.fokus(), "kamera-knopf")
+
+    def test_fokus_bleibt_im_feld(self):
+        self.oeffne("leer")
+        self.starte_tastatur()
+        self.warte("!document.getElementById('kamera-bereich').hidden && window.__detect > 0")
+        self.seite.focus("#barcode")
+        self.verstecken()
+        self.assertEqual(self.status(), "Kamera-Scan beendet.")
+        self.alles_gestoppt()
+        self.assertEqual(self.fokus(), "barcode")
+
     # ---------- Seite verlassen ----------
     def test_visibilitychange_beendet_scan(self):
         self.oeffne("leer")

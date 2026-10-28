@@ -254,8 +254,10 @@ function kameraStoppen(meldung) {
   kamera.stream = null;
   $("kamera-bild").srcObject = null;
   $("kamera-bereich").hidden = true;
+  const fokusZurueck = document.activeElement === $("kamera-abbrechen");  // nur Fokus vom Abbrechen-Knopf zurückgeben
   $("kamera-abbrechen").hidden = true;
   $("kamera-knopf").disabled = false;
+  if (fokusZurueck) $("kamera-knopf").focus();
   if (meldung !== undefined) $("kamera-status").textContent = meldung;
 }
 
@@ -270,6 +272,7 @@ async function kameraScannen() {
   kamera.laeuft = true;
   $("kamera-knopf").disabled = true;
   $("kamera-abbrechen").hidden = false;  // Abbrechen schon während Berechtigungsdialog/Formatabfrage möglich
+  $("kamera-abbrechen").focus();  // deaktivierter Startknopf verliert den Fokus: Tastatur/Screenreader landen auf Abbrechen
   $("kamera-status").textContent = "Kamera wird gestartet …";
   const lauf = ++kamera.lauf;
   let stream;
