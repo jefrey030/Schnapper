@@ -46,6 +46,10 @@ MAX_ANGEBOT = 4096  # ein einzelnes, in der App erfasstes Angebot (S-009)
 CSV_SPALTEN = ("id", "titel", "preis", "versand", "referenzpreis", "zustand", "quelle", "kategorie", "url",
                "erfasst_am")
 ERFASSEN_FELDER = ("titel", "preis", "versand", "referenzpreis", "zustand", "url", "kategorie")
+TEXT_FELDER = ("titel", "zustand", "url", "kategorie")
+GELD_FELDER = ("preis", "versand", "referenzpreis")
+PFLICHT_FELDER = ("titel", "preis", "url")  # null gilt nur bei optionalen Feldern als leer
+MAX_KATEGORIE = 100  # gleich maxlength="100" im Formular (index.html)
 SICHERHEIT = {
     "Content-Security-Policy": "default-src 'none'; script-src 'self'; style-src 'self'; connect-src 'self'; "
                                "img-src 'self' data:; manifest-src 'self'; base-uri 'none'; form-action 'none'; frame-ancestors 'none'",
@@ -306,6 +310,9 @@ def baue_handler(zustand: Zustand):
             if not isinstance(eingabe, dict):
                 return self._json(HTTPStatus.BAD_REQUEST, {"fehler": "Angebot muss ein Objekt sein"})
             daten = {k: eingabe[k] for k in ERFASSEN_FELDER if k in eingabe}
+            fehler = typfehler(daten)
+            if fehler:
+                return self._json(HTTPStatus.UNPROCESSABLE_ENTITY, {"fehler": fehler})
             daten.update(id="e-" + secrets.token_hex(4), quelle="eigene",
                          erfasst_am=dt.datetime.now(dt.timezone.utc).isoformat())
             try:
@@ -323,6 +330,22 @@ def baue_handler(zustand: Zustand):
             return self._json(HTTPStatus.CREATED, {"id": angebot.id, "anzahl": anzahl})
 
     return Handler
+
+
+def typfehler(daten) -> str:
+    """Prüft Typen und Kategorielänge der erfassten Felder; liefert Fehlertext oder ""."""
+    for feld, wert in daten.items():
+        if wert is None:
+            if feld in PFLICHT_FELDER:
+                return f"Feld '{feld}' fehlt"
+            continue
+        if feld in TEXT_FELDER and not isinstance(wert, str):
+            return f"Feld '{feld}' muss Text sein"
+        if feld in GELD_FELDER and (isinstance(wert, bool) or not isinstance(wert, (str, int, float))):
+            return f"Feld '{feld}' muss Text oder Zahl sein"
+    if len((daten.get("kategorie") or "").strip()) > MAX_KATEGORIE:
+        return f"Feld 'kategorie' ist länger als {MAX_KATEGORIE} Zeichen"
+    return ""
 
 
 def erstelle_server(datei, host="127.0.0.1", port=8765, quellen=None, verlauf=None) -> ThreadingHTTPServer:

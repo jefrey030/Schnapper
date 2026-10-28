@@ -307,5 +307,48 @@ class Browser(ServerTest):
         self.assertEqual(meldungen, [])
 
 
+class ErfassenTypen(ServerTest):
+    """Lauf 20261028-1829: Typ- und Längenprüfung der Erfassungsfelder in POST /api/angebot."""
+
+    def pruefe_422(self, aenderung, feld):
+        vorher = self.suche()
+        status, antwort = self.erfasse({**GUELTIG, **aenderung})
+        self.assertEqual(status, 422, antwort)
+        self.assertIn(feld, antwort["fehler"])
+        self.assertEqual(self.suche(), vorher)
+
+    def test_textfelder_nur_text(self):
+        faelle = [("titel", {"a": 1}), ("titel", ["x"]), ("titel", True), ("titel", 5), ("titel", None),
+                  ("url", None), ("url", ["https://kleinanzeigen.example/rad/1"]),
+                  ("zustand", {"z": "neu"}), ("kategorie", {"k": 1}), ("kategorie", False), ("kategorie", 7)]
+        for feld, wert in faelle:
+            with self.subTest(feld=feld, wert=wert):
+                self.pruefe_422({feld: wert}, feld)
+
+    def test_geldfelder_nur_text_oder_zahl(self):
+        faelle = [("preis", True), ("preis", [450]), ("preis", {"p": 1}), ("preis", None),
+                  ("versand", False), ("versand", []), ("referenzpreis", {"r": 900}), ("referenzpreis", True)]
+        for feld, wert in faelle:
+            with self.subTest(feld=feld, wert=wert):
+                self.pruefe_422({feld: wert}, feld)
+
+    def test_zahlen_und_leere_optionale_felder_gueltig(self):
+        for aenderung in ({"preis": 450}, {"preis": 19.9, "versand": 0, "referenzpreis": 900},
+                          {"kategorie": None, "zustand": None, "versand": None, "referenzpreis": None}):
+            with self.subTest(aenderung):
+                status, antwort = self.erfasse({**GUELTIG, **aenderung})
+                self.assertEqual(status, 201, antwort)
+
+    def test_kategorie_laenge(self):
+        from schnapper.web import MAX_KATEGORIE
+        self.assertEqual(MAX_KATEGORIE, 100)
+        html = (ROOT / "app" / "schnapper" / "web" / "index.html").read_text(encoding="utf-8")
+        self.assertRegex(html, rf'name="kategorie"[^>]*maxlength="{MAX_KATEGORIE}"')
+        self.pruefe_422({"kategorie": "k" * 101}, "kategorie")
+        status, antwort = self.erfasse({**GUELTIG, "kategorie": "  " + "k" * 100 + "  "})
+        self.assertEqual(status, 201, antwort)
+        self.assertEqual(self.suche("text=Lastenrad")["treffer"][0]["kategorie"], "k" * 100)
+
+
 if __name__ == "__main__":
     unittest.main()
