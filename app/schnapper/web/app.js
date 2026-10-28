@@ -281,7 +281,9 @@ async function kameraScannen() {
   kamera.stream = stream;
   const video = $("kamera-bild");
   try {
-    const detektor = new BarcodeDetector({ formats: await kameraFormate() });
+    const formate = await kameraFormate();
+    if (lauf !== kamera.lauf || kamera.stream !== stream) return;  // während der Formatabfrage abgebrochen oder neu gestartet
+    const detektor = new BarcodeDetector({ formats: formate });
     video.srcObject = stream;
     $("kamera-bereich").hidden = false;
     await video.play();

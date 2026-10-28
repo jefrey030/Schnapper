@@ -89,6 +89,21 @@ DETEKTOR = """
 
 OHNE_DETEKTOR = "delete window.BarcodeDetector;"
 
+# Verzögerte Formatabfrage (nach DETEKTOR einbinden): der 1. Aufruf (kameraVerfuegbar() beim Laden)
+# löst sofort auf, ab dem 2. Aufruf erst auf Kommando __formateAufloesen(i) (i zählt ab dem 2. Aufruf).
+FORMATE_VERZOEGERT = """
+(() => {
+  window.__formatAufrufe = 0; window.__formatAnfragen = [];
+  const LISTE = ["ean_13", "ean_8", "upc_a", "qr_code"];
+  window.BarcodeDetector.getSupportedFormats = () => {
+    window.__formatAufrufe++;
+    if (window.__formatAufrufe === 1) return Promise.resolve(LISTE.slice());
+    return new Promise((ja) => window.__formatAnfragen.push(ja));
+  };
+  window.__formateAufloesen = (i) => window.__formatAnfragen[i](LISTE.slice());
+})();
+"""
+
 # Verzögerte Kamera: getUserMedia löst erst auf Kommando auf (wie ein offener Berechtigungsdialog).
 # __aufloesen(i) liefert den Stream für Anfrage i, __ablehnen(i, name) lehnt sie mit DOMException ab.
 MEDIEN_VERZOEGERT = """
@@ -201,11 +216,13 @@ class Browser(unittest.TestCase):
                       body=json.dumps({"treffer": [], "lizenz": "", "begrenzung": "", "hinweise": []}))
 
     # ---------- Hilfen ----------
-    def oeffne(self, detektor="treffer", fehler=None, uhr=False, verzoegert=False):
+    def oeffne(self, detektor="treffer", fehler=None, uhr=False, verzoegert=False, formate_verzoegert=False):
         if detektor is None:
             self.seite.add_init_script(OHNE_DETEKTOR)
         else:
             self.seite.add_init_script(DETEKTOR % {"modus": json.dumps(detektor)})
+            if formate_verzoegert:
+                self.seite.add_init_script(FORMATE_VERZOEGERT)
         self.seite.add_init_script(MEDIEN_VERZOEGERT if verzoegert else MEDIEN % {"fehler": json.dumps(fehler)})
         if uhr:
             self.seite.clock.install()
@@ -389,6 +406,50 @@ class Browser(unittest.TestCase):
         self.assertNotIn("Kamerazugriff verweigert", self.status())
         self.seite.click("#kamera-abbrechen")
         self.assertEqual(self.wert("window.__tracks.length"), 1)
+        self.alles_gestoppt()
+
+    # ---------- Abbruch/Neustart während offener Formatabfrage ----------
+    def test_abbrechen_waehrend_formatabfrage(self):
+        """Fall A: Abbrechen, während getSupportedFormats() noch offen ist; danach löst sie auf."""
+        self.oeffne("leer", formate_verzoegert=True)
+        self.starte()
+        self.warte("window.__formatAnfragen.length === 1")
+        self.assertEqual(self.wert("window.__gum"), 1)
+        # Der Knopf liegt im (noch) verborgenen #kamera-bereich, daher Klick-Ereignis direkt auslösen.
+        self.wert("document.getElementById('kamera-abbrechen').click()")
+        self.assertEqual(self.status(), "Kamera-Scan abgebrochen.")
+        self.wert("window.__formateAufloesen(0)")
+        self.kurz_warten()
+        self.assertTrue(self.wert("document.getElementById('kamera-bereich').hidden"))
+        self.assertTrue(self.wert("document.getElementById('kamera-bild').srcObject === null"))
+        self.assertEqual(self.status(), "Kamera-Scan abgebrochen.")
+        self.assertEqual(self.wert("window.__detect"), 0)
+        self.alles_gestoppt()
+
+    def test_neustart_waehrend_formatabfrage(self):
+        """Fall B: Seite versteckt und Neustart bei offener Formatabfrage von Lauf 1; Lauf 2 löst zuerst auf."""
+        self.oeffne("leer", formate_verzoegert=True)
+        self.starte()
+        self.warte("window.__formatAnfragen.length === 1")
+        self.verstecken()
+        self.assertEqual(self.status(), "Kamera-Scan beendet.")
+        self.seite.click("#kamera-knopf")
+        self.warte("window.__formatAnfragen.length === 2")
+        self.assertEqual(self.wert("window.__gum"), 2)
+        self.wert("window.__formateAufloesen(1)")
+        self.warte("!document.getElementById('kamera-bereich').hidden && window.__detect > 0")
+        self.wert("window.__formateAufloesen(0)")
+        self.kurz_warten()
+        # Lauf 2 bleibt angezeigt und aktiv, Lauf 1 ist beendet.
+        self.assertTrue(self.wert("document.getElementById('kamera-bild').srcObject !== null"
+                                  " && document.getElementById('kamera-bild').srcObject.getTracks()[0] === window.__tracks[1]"))
+        self.assertTrue(self.wert("window.__tracks[1].readyState === 'live'"))
+        self.assertTrue(self.wert("window.__tracks[0].readyState === 'ended'"))
+        self.assertFalse(self.wert("document.getElementById('kamera-bereich').hidden"))
+        self.assertEqual(self.status(), "Barcode vor die Kamera halten …")
+        self.assertGreater(self.wert("window.__detect"), 0)
+        self.seite.click("#kamera-abbrechen")
+        self.assertEqual(self.wert("window.__tracks.length"), 2)
         self.alles_gestoppt()
 
     # ---------- Seite verlassen ----------
