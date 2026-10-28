@@ -1,0 +1,13 @@
+# Preflight 20261028-1343 (Orchestrator, ohne Änderungen)
+- Klon: /home/claude/schnapper, origin/main = 6dbe114 (security(SCHNAPPER): token only via HTTPS, block redirects (#43))
+- Tests main: Python `python3 -m unittest discover -s tests` → 216/216 OK; Cloudflare `node --test test/*.test.mjs` → 10/10 pass
+- Secret-Scan (sk-ant-, ghp_, github_pat_, AKIA, PRIVATE KEY, Passwörter): keine Treffer außer Erkennungs-Regex in team/agent.py und Erwähnung in altem Bericht.
+- Offene PRs: 56 (REST). Team-Draft-PRs (agent/master/*):
+  - #36 F1 (agent/master/20261022-20) 8d4e90b, mergeable clean, 0 hinter main
+  - #39 F2 (agent/master/20261022-21) 2666d8b, clean, 0 hinter main
+  - #40 F3 (agent/master/20261022-22) f0cc84c, clean, 0 hinter main
+  - #41 F4 (agent/master/20261022-2238) a3b1f9d, clean, 0 hinter main
+  - #44 F5 (agent/master/20261022-23) a584774, clean, 0 hinter main
+  - #45 F6 (agent/master/20261023-01) 31b52d4, clean, 0 hinter main
+  - #50 S-014 (agent/master/s014-viererteam-20261023)
+- Ergebnis: main grün, keine Secrets → Lauf darf fortgesetzt werden.
