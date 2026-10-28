@@ -1,0 +1,36 @@
+✔ Fail-closed when Free tier unverified (1.092051ms)
+✔ Disabled switch prohibits inference (0.211027ms)
+✔ Wrong policy prohibits inference (0.12667ms)
+✔ Valid slot four real invocations (mocked), four hashes and audit (8.661667ms)
+{"slot":"2026102207","status":"BLOCKIERT","attempted_calls":2,"completed_roles":["LEAD"],"error":"Lauf blockiert: Free quota exhausted"}
+{"slot":"2026102210","status":"BLOCKIERT","attempted_calls":1,"completed_roles":[],"error":"Lauf blockiert: Empty/oversized model response"}
+{"slot":"2026102203","status":"BLOCKIERT","attempted_calls":1,"completed_roles":[],"error":"Lauf blockiert: D1 down"}
+✔ Capacity failure records interrupted role and refuses retry (1.040083ms)
+✔ Bad AI response blocks without fabricated report (0.31964ms)
+✔ No database or schema means zero calls (0.147171ms)
+✔ DB audit failure before inference prevents charges (0.212679ms)
+✔ Persistent emergency stop blocks all model calls (0.278699ms)
+✔ D1 emergency stop read error fails closed (0.329695ms)
+{"slot":"2026102215","status":"BLOCKIERT","attempted_calls":1,"completed_roles":["LEAD"],"error":"Lauf blockiert: Not-Aus aktiv oder nicht lesbar"}
+{"slot":"2026102216","status":"BLOCKIERT","attempted_calls":1,"completed_roles":[],"error":"Lauf blockiert: Geheimnisindikator in Modellantwort; Antwort verworfen"}
+✔ Emergency stop in the middle of a run blocks all next calls (6.078585ms)
+✔ Malformed timestamps not accepted (0.195844ms)
+✔ HTTP does not expose private reports (1.675187ms)
+✔ Model reply containing a synthetic credential is rejected before D1 report (0.400873ms)
+✔ Synthetic provider credential never leaks to returned reason, D1 or console (0.329365ms)
+{"slot":"2026102218","status":"BLOCKIERT","attempted_calls":2,"completed_roles":["LEAD"],"error":"Lauf blockiert: Geheimnisindikator in Modellantwort; Antwort verworfen"}
+✔ Second model reply with synthetic secret stops before persisting second answer (2.554729ms)
+✔ failed mission-ergebnisse persistence is never reported as saved (10.525708ms)
+✔ failed blitz persistence is never reported as saved (1.351371ms)
+✔ failed mission-laeufe persistence is never reported as saved (0.978581ms)
+✔ success is reported only after all three browser stores succeed (1.688928ms)
+✔ failed alarm persistence is never reported as created (1.276709ms)
+✔ 409 refreshes mission list, preserves form data, and never retries mutation (1.15116ms)
+ℹ tests 22
+ℹ suites 0
+ℹ pass 22
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 99.248384
