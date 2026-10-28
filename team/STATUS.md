@@ -195,3 +195,19 @@ Hinweis: `team/tasks.json` wurde nicht separat geändert; die tasks.json-Änderu
 - `team/tasks.json`: S-004–S-006 bleiben `proposed` (in #36 `done`, wirksam erst nach Merge), Laufvermerk bei S-006 ergänzt.
 - Offen: eBay-Sandbox-Schlüssel für #45 (F6) fehlen weiterhin; Produktion braucht eBay-Genehmigung.
 - Bericht: `team/runs/20261028-1729-master.md` (im Hauptbaum, nicht committet)
+
+## SCHNAPPER MASTER – letzter Lauf (28.10.2026, 18:29 UTC, Lauf 20261028-1829)
+
+- F2 / S-009 / PR #39 (Branch `agent/master/20261022-21`): `POST /api/angebot` prüft Typen und Längen jetzt serverseitig in `typfehler()` in `app/schnapper/web.py`, vor `Angebot.aus_dict`.
+  - Textfelder `titel`, `zustand`, `url` und `kategorie` müssen `str` sein.
+  - Geldfelder `preis`, `versand` und `referenzpreis` müssen `str`, `int` oder `float` sein, `bool` ist ausgeschlossen.
+  - `kategorie` darf höchstens 100 Zeichen haben (`MAX_KATEGORIE` = `maxlength` im Formular).
+  - Sonst gibt es 422 mit dem Feldnamen, Liste und Verlauf bleiben unverändert. `null` gilt bei optionalen Feldern als leer.
+  - Bisher wurden z. B. `{"titel": {"a":1}}` und eine Kategorie mit 3000 Zeichen mit 201 übernommen. `angebot.py` und `einlesen.py` sind unverändert.
+  - Neue Testklasse `ErfassenTypen` (4 Tests mit subTests). Gegenprobe gegen 2666d8b: rot (17 failures, 1 error).
+- Commit fd16763, Push 2666d8b..fd16763 als Fast-Forward ohne Force.
+- Tests: discover 237 OK (vorher 233), `tests.test_app_erfassen_s009` 21/21 OK (Browsertest ausgeführt), Cloudflare 10/10 pass, CI `python-tests` success. CHECK bestanden (AK 1–12).
+- PR #39: Draft, Kopf fd16763, Body um Nachtrag „Update Lauf 20261028-1829“ ergänzt. Merge-Entscheidung bei Jefrey (ebenso #36, #40, #41, #44, #45).
+- `team/tasks.json`: S-009 bleibt `review`, Laufvermerk im Hinweis ergänzt.
+- Offen: CSV-Formel-Injection in #39 (CHECK-Hinweis 1) bewusst zurückgestellt. eBay-Sandbox-Schlüssel für #45 (F6) fehlen weiterhin.
+- Bericht: `team/runs/20261028-1829-master.md` (auf `agent/master/reports`)
