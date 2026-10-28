@@ -254,6 +254,7 @@ function kameraStoppen(meldung) {
   kamera.stream = null;
   $("kamera-bild").srcObject = null;
   $("kamera-bereich").hidden = true;
+  $("kamera-abbrechen").hidden = true;
   $("kamera-knopf").disabled = false;
   if (meldung !== undefined) $("kamera-status").textContent = meldung;
 }
@@ -268,6 +269,7 @@ async function kameraScannen() {
   if (kamera.laeuft) return;
   kamera.laeuft = true;
   $("kamera-knopf").disabled = true;
+  $("kamera-abbrechen").hidden = false;  // Abbrechen schon während Berechtigungsdialog/Formatabfrage möglich
   $("kamera-status").textContent = "Kamera wird gestartet …";
   const lauf = ++kamera.lauf;
   let stream;

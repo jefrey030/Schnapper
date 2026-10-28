@@ -140,10 +140,14 @@ class Statisch(unittest.TestCase):
         html = (WEB / "index.html").read_text(encoding="utf-8")
         for teil in ('<button id="kamera-knopf" type="button" disabled>Mit Kamera scannen</button>',
                      '<div id="kamera-bereich" hidden>', '<video id="kamera-bild" muted playsinline></video>',
-                     '<button id="kamera-abbrechen" type="button">Abbrechen</button>',
+                     '<button id="kamera-abbrechen" type="button" hidden>Abbrechen</button>',
                      '<p id="kamera-status" class="status" aria-live="polite"></p>',
                      'id="barcode" inputmode="numeric"', 'id="barcode-knopf" type="submit"', 'id="barcode-form"'):
             self.assertIn(teil, html)
+        # Abbrechen liegt außerhalb des (bis zum Kamerastart verborgenen) Videobereichs.
+        bereich = html[html.index('<div id="kamera-bereich" hidden>'):]
+        bereich = bereich[:bereich.index("</div>")]
+        self.assertNotIn("kamera-abbrechen", bereich)
 
     def test_app_js(self):
         js = (WEB / "app.js").read_text(encoding="utf-8")
@@ -252,7 +256,15 @@ class Browser(unittest.TestCase):
         self.assertTrue(self.wert("window.__tracks.every((t) => t.readyState === 'ended')"))
         self.assertTrue(self.wert("document.getElementById('kamera-bild').srcObject === null"))
         self.assertTrue(self.wert("document.getElementById('kamera-bereich').hidden"))
+        self.assertFalse(self.seite.locator("#kamera-abbrechen").is_visible())
         self.assertFalse(self.wert("document.getElementById('kamera-knopf').disabled"))
+
+    def abbrechen_sichtbar(self):
+        """Abbrechen ist sofort sichtbar, das Video (noch) nicht."""
+        self.assertTrue(self.seite.locator("#kamera-abbrechen").is_visible())
+        self.assertTrue(self.wert("document.getElementById('kamera-knopf').disabled"))
+        self.assertTrue(self.wert("document.getElementById('kamera-bereich').hidden"))
+        self.assertFalse(self.seite.locator("#kamera-bild").is_visible())
 
     def verstecken(self):
         """Seite in den Hintergrund: visibilityState 'hidden' plus visibilitychange, danach wieder sichtbar."""
@@ -268,6 +280,7 @@ class Browser(unittest.TestCase):
     def starte(self):
         self.warte("!document.getElementById('kamera-knopf').disabled")
         self.assertEqual(self.wert("window.__gum"), 0)  # AK1: erst nach Klick
+        self.assertFalse(self.seite.locator("#kamera-abbrechen").is_visible())  # Ruhezustand
         self.seite.click("#kamera-knopf")
 
     # ---------- Tests ----------
@@ -291,6 +304,8 @@ class Browser(unittest.TestCase):
         self.starte()
         self.warte("!document.getElementById('kamera-bereich').hidden && window.__detect > 0")
         self.assertTrue(self.wert("document.getElementById('kamera-knopf').disabled"))  # kein Doppelstart
+        self.assertTrue(self.seite.locator("#kamera-bild").is_visible())
+        self.assertTrue(self.seite.locator("#kamera-abbrechen").is_visible())
         self.kein_quer_scrollen()
         self.seite.click("#kamera-abbrechen")
         self.alles_gestoppt()
@@ -347,6 +362,7 @@ class Browser(unittest.TestCase):
         self.assertEqual(self.wert("window.__tracks.length"), 0)  # kein Stream offen
         self.assertTrue(self.wert("document.getElementById('kamera-bild').srcObject === null"))
         self.assertTrue(self.wert("document.getElementById('kamera-bereich').hidden"))
+        self.assertFalse(self.seite.locator("#kamera-abbrechen").is_visible())
         self.assertFalse(self.wert("document.getElementById('kamera-knopf').disabled"))
         self.seite.fill("#barcode", "40084004")
         self.seite.click("#barcode-knopf")
@@ -415,9 +431,11 @@ class Browser(unittest.TestCase):
         self.starte()
         self.warte("window.__formatAnfragen.length === 1")
         self.assertEqual(self.wert("window.__gum"), 1)
-        # Der Knopf liegt im (noch) verborgenen #kamera-bereich, daher Klick-Ereignis direkt auslösen.
-        self.wert("document.getElementById('kamera-abbrechen').click()")
+        self.abbrechen_sichtbar()
+        self.seite.click("#kamera-abbrechen")
         self.assertEqual(self.status(), "Kamera-Scan abgebrochen.")
+        self.assertFalse(self.wert("document.getElementById('kamera-knopf').disabled"))
+        self.assertFalse(self.seite.locator("#kamera-abbrechen").is_visible())
         self.wert("window.__formateAufloesen(0)")
         self.kurz_warten()
         self.assertTrue(self.wert("document.getElementById('kamera-bereich').hidden"))
@@ -425,6 +443,42 @@ class Browser(unittest.TestCase):
         self.assertEqual(self.status(), "Kamera-Scan abgebrochen.")
         self.assertEqual(self.wert("window.__detect"), 0)
         self.alles_gestoppt()
+
+    # ---------- Abbruch während offener Kamera-Anfrage (Berechtigungsdialog) ----------
+    def test_abbrechen_waehrend_kamera_anfrage(self):
+        """getUserMedia offen: Abbrechen sofort sichtbar und per echtem Klick bedienbar; später Stream wird gestoppt."""
+        self.oeffne("leer", verzoegert=True)
+        self.starte()
+        self.warte("window.__gum === 1")
+        self.assertEqual(self.status(), "Kamera wird gestartet …")
+        self.abbrechen_sichtbar()
+        self.kein_quer_scrollen()
+        self.seite.click("#kamera-abbrechen")
+        self.assertEqual(self.status(), "Kamera-Scan abgebrochen.")
+        self.assertFalse(self.wert("document.getElementById('kamera-knopf').disabled"))
+        self.assertFalse(self.seite.locator("#kamera-abbrechen").is_visible())
+        # Berechtigung wird nachträglich erteilt: der späte Stream wird sofort beendet.
+        self.wert("window.__aufloesen(0)")
+        self.warte("window.__streams[0].getTracks().every((t) => t.readyState === 'ended')", sekunden=3)
+        self.kurz_warten()
+        self.alles_gestoppt()
+        self.assertEqual(self.wert("window.__detect"), 0)
+        self.assertEqual(self.status(), "Kamera-Scan abgebrochen.")
+
+    def test_abbrechen_waehrend_kamera_anfrage_spaeter_fehler(self):
+        """getUserMedia offen, Abbrechen, danach lehnt die Anfrage ab: Meldung bleibt, nichts wird angezeigt."""
+        self.oeffne("leer", verzoegert=True)
+        self.starte()
+        self.warte("window.__gum === 1")
+        self.abbrechen_sichtbar()
+        self.seite.click("#kamera-abbrechen")
+        self.wert("window.__ablehnen(0, 'NotAllowedError')")
+        self.kurz_warten()
+        self.assertEqual(self.status(), "Kamera-Scan abgebrochen.")
+        self.assertFalse(self.seite.locator("#kamera-abbrechen").is_visible())
+        self.assertTrue(self.wert("document.getElementById('kamera-bereich').hidden"))
+        self.assertFalse(self.wert("document.getElementById('kamera-knopf').disabled"))
+        self.assertEqual(self.wert("window.__tracks.length"), 0)
 
     def test_neustart_waehrend_formatabfrage(self):
         """Fall B: Seite versteckt und Neustart bei offener Formatabfrage von Lauf 1; Lauf 2 löst zuerst auf."""
