@@ -452,6 +452,38 @@ class Browser(unittest.TestCase):
         self.assertEqual(self.wert("window.__tracks.length"), 2)
         self.alles_gestoppt()
 
+    def test_verstecken_waehrend_formatabfrage(self):
+        """Fall A über den realen Pfad: Seite versteckt (visibilitychange), während getSupportedFormats() offen ist."""
+        self.oeffne("leer", formate_verzoegert=True)
+        self.starte()
+        self.warte("window.__formatAnfragen.length === 1")
+        self.assertEqual(self.wert("window.__formatAnfragen.length"), 1)
+        self.assertEqual(self.wert("window.__gum"), 1)
+        self.verstecken()
+        self.assertEqual(self.status(), "Kamera-Scan beendet.")
+        self.wert("window.__formateAufloesen(0)")
+        self.kurz_warten()
+        self.assertTrue(self.wert("document.getElementById('kamera-bereich').hidden"))
+        self.assertTrue(self.wert("document.getElementById('kamera-bild').srcObject === null"))
+        self.assertEqual(self.status(), "Kamera-Scan beendet.")
+        self.assertEqual(self.wert("window.__detect"), 0)
+        self.alles_gestoppt()
+
+    def test_pagehide_waehrend_formatabfrage(self):
+        """Fall A über den realen Pfad: pagehide, während getSupportedFormats() offen ist."""
+        self.oeffne("leer", formate_verzoegert=True)
+        self.starte()
+        self.warte("window.__formatAnfragen.length === 1")
+        self.assertEqual(self.wert("window.__formatAnfragen.length"), 1)
+        self.assertEqual(self.wert("window.__gum"), 1)
+        self.wert("window.dispatchEvent(new Event('pagehide'))")
+        self.wert("window.__formateAufloesen(0)")
+        self.kurz_warten()
+        self.assertTrue(self.wert("document.getElementById('kamera-bereich').hidden"))
+        self.assertTrue(self.wert("document.getElementById('kamera-bild').srcObject === null"))
+        self.assertEqual(self.wert("window.__detect"), 0)
+        self.alles_gestoppt()
+
     # ---------- Seite verlassen ----------
     def test_visibilitychange_beendet_scan(self):
         self.oeffne("leer")
