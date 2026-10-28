@@ -146,3 +146,12 @@ Hinweis: `team/tasks.json` wurde nicht separat geändert; die tasks.json-Änderu
 
 ## Lauf 20261023-0629 (Bericht `team/runs/20261023-0629-master.md`)
 - F3 / PR #40: Browsertest findet Chromium automatisch statt fest `chromium-1194` (Commit f0cc84c, Fast-Forward-Push, kein Force). Tests 226 OK, Modul 10/10 ohne Skip, Cloudflare 10/10. CHECK bestanden. #40 bleibt Draft, Kopf f0cc84c. `team/tasks.json` ist unverändert (S-010 bleibt `review`). Merge-Entscheidung bei Jefrey, eBay-Sandbox-Schlüssel fehlen weiter.
+
+## SCHNAPPER MASTER – letzter Lauf (28.10.2026, 08:28 UTC)
+
+- Lauf 20261028-0828: In PR #45 (F6 / S-013, eBay, Branch `agent/master/20261023-01`) Commit 31677d0 gepusht, als Fast-Forward ohne Force. `_anfrage()` meldet zu tief verschachteltes JSON und Zahlen mit mehr als 4300 Ziffern jetzt als `EbayFehler` statt als rohe Ausnahme.
+- Tests: `tests.test_ebay` 35/35 OK, discover 251 OK, Cloudflare 10/10 pass, CI `python-tests` success.
+- PR #45: Draft, Kopf 31677d0, mergeable_state clean. Die Merge-Entscheidung trifft Jefrey, ebenso für #36, #39, #40, #41 und #44.
+- `team/tasks.json` ist unverändert, S-013 steht in #36 bereits auf `review`.
+- Offen: Für #45 fehlen eBay-Sandbox-Schlüssel (Umgebungsvariablen laut `docs/EBAY.md`). Zu 2666d8b (#39) fehlt ein Bericht. #50 ist ausgeklammert.
+- Bericht: `team/runs/20261028-0828-master.md` (auf `agent/master/reports`)
