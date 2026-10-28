@@ -211,3 +211,13 @@ Hinweis: `team/tasks.json` wurde nicht separat geändert; die tasks.json-Änderu
 - `team/tasks.json`: S-009 bleibt `review`, Laufvermerk im Hinweis ergänzt.
 - Offen: CSV-Formel-Injection in #39 (CHECK-Hinweis 1) bewusst zurückgestellt. eBay-Sandbox-Schlüssel für #45 (F6) fehlen weiterhin.
 - Bericht: `team/runs/20261028-1829-master.md` (auf `agent/master/reports`)
+
+## SCHNAPPER MASTER – letzter Lauf (28.10.2026, 19:29 UTC, Lauf 20261028-1929)
+
+- F6 / S-013 / PR #45 (Branch `agent/master/20261023-01`): Neue Kommandozeilen-Option `python -m schnapper --ebay SUCHBEGRIFF` für den Sandbox-Test (lazy Import, genau eine Quelle, Sperren/Fehler mit Exit 3 und `eBay: …` auf stderr, Sandbox standardmäßig mit Präfix `SANDBOX `). Neue Tests `tests/test_ebay_cli.py` (10, ohne Netz), Abschnitt „Sandbox-Test per Kommandozeile“ in `docs/EBAY.md`. Nachbesserung: `--openprices ""` wieder Exit 2 statt Traceback.
+- Commits c09c9dc + d1a9eef, Push 31b52d4..d1a9eef als Fast-Forward ohne Force.
+- Tests: discover 262 OK (vorher 252), ohne Netz 73 OK, Cloudflare 10/10 pass. CHECK Runde 1 nachbessern, Runde 2 bestanden.
+- PR #45: Draft, Kopf d1a9eef, Body um Nachtrag „Lauf 20261028-1929“ ergänzt. Merge-Entscheidung bei Jefrey (ebenso #36, #39, #40, #41, #44).
+- `team/tasks.json`: S-013 bleibt `review`, Laufvermerk im Hinweis ergänzt.
+- Offen: echter Sandbox-Test braucht Jefreys eBay-Sandbox-Schlüssel (`PYTHONPATH=app python -m schnapper --ebay "fahrrad"`). Weboberfläche für eBay weiterhin Folgepunkt.
+- Bericht: `team/runs/20261028-1929-master.md` (im Hauptbaum, nicht committet)
