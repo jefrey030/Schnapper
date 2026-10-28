@@ -231,3 +231,13 @@ Hinweis: `team/tasks.json` wurde nicht separat geändert; die tasks.json-Änderu
 - `team/tasks.json`: S-011 bleibt `review`, Laufvermerk im Hinweis ergänzt.
 - Offen: Fokus-Management beim Kamerastart (nicht gefordert), `upc_e` fehlt in `KAMERA_FORMATE`, echtes Gerät ungetestet. eBay-Sandbox-Schlüssel für #45 (F6) fehlen weiterhin.
 - Bericht: `team/runs/20261028-2028-master.md` (Übergabe an Orchestrator)
+
+## SCHNAPPER MASTER – letzter Lauf (28.10.2026, 23:28 UTC, Lauf 20261028-2328)
+
+- F4 / S-011 / PR #41 (Branch `agent/master/20261022-2238`): Tastaturfokus beim Kamera-Scan. Beim Start erhält `#kamera-abbrechen` sofort den Fokus (vor `getUserMedia`, also auch bei offenem Berechtigungsdialog). Beim Stoppen geht der Fokus nur dann zurück auf „Mit Kamera scannen“, wenn er auf Abbrechen lag; sonst bleibt er, wo er ist (z. B. im Barcode-Feld). Gilt zentral für alle Stopp-Wege. 4 neue Browsertests (Start per Tastatur, kein Klick). Gegenprobe mit app.js aus ca5420e: rot (failures=3).
+- Commit 6165af4, Push ca5420e..6165af4 als Fast-Forward ohne Force.
+- Tests: discover 241 OK, `tests.test_app_kamera_s011` 25/25 OK (0 Skips, Chromium gefunden), Cloudflare 10/10 pass. CHECK bestanden (AK 1–11), Secret-Scan leer.
+- PR #41: Draft, Kopf 6165af4, Body um Nachtrag „Lauf 20261028-2328“ ergänzt. Merge-Entscheidung bei Jefrey (ebenso #36, #39, #40, #44, #45).
+- `team/tasks.json`: S-011 bleibt `review` (in Arbeit in PR #41), Laufvermerk im Hinweis ergänzt.
+- Offen: `upc_e` fehlt in `KAMERA_FORMATE` (braucht Normalisierung auf UPC-A/EAN-13), eigener Fokus-Test für Treffer-/Fehler-Pfad, echtes Gerät ungetestet. eBay-Sandbox-Schlüssel für #45 (F6) fehlen weiterhin.
+- Bericht: `team/runs/20261028-2328-master.md` (Übergabe an Orchestrator)
