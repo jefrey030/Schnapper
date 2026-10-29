@@ -281,3 +281,13 @@ Hinweis: `team/tasks.json` wurde nicht separat geändert; die tasks.json-Änderu
 - `team/tasks.json`: S-004–S-006 bleiben `proposed` (in #36 `done`, wirksam erst nach Merge), Laufvermerk bei S-006 ergänzt.
 - Offen: eBay-Sandbox-Schlüssel für #45 (F6) fehlen weiterhin.
 - Bericht: `team/runs/20261029-0328-master.md` (Übergabe an Orchestrator)
+
+## SCHNAPPER MASTER – letzter Lauf (29.10.2026, 04:28 UTC, Lauf 20261029-0428)
+
+- F6 / S-013 / PR #45 (Branch `agent/master/20261023-01`): Ein eBay-`access_token` mit Steuerzeichen konnte über einen rohen `ValueError` aus `http.client.putheader` samt Wert auf stderr landen (`--ebay`). Behoben: `_token()` nimmt nur noch druckbares ASCII ohne Leerzeichen an (`[\x21-\x7e]+`), sonst kommt „Token-Antwort unbrauchbar“ ohne Wert. `_anfrage()` meldet einen `ValueError` als `EbayFehler("Anfrage an eBay ungültig (Kopfzeile)")` ohne Ausnahmetext. Neue Tests A (5 subTests), A2, B (echter http.client, Socket gesperrt) und C (CLI). Gegenproben rot (failures=5 bzw. errors=1).
+- Commit 9cde1ee, Push d1a9eef..9cde1ee als Fast-Forward ohne Force.
+- Tests: discover 265 OK (vorher 262), `tests.test_ebay tests.test_ebay_cli` 49 OK, Cloudflare 10/10 pass. CHECK bestanden (AK 1–9), Secret-Scan leer.
+- PR #45: Draft, Kopf 9cde1ee, Body um Nachtrag „Update Lauf 20261029-0428“ ergänzt. Merge-Entscheidung bei Jefrey (ebenso #36, #39, #40, #41, #44, #50).
+- `team/tasks.json`: S-013 bleibt `review`, Laufvermerk im Hinweis ergänzt.
+- Offen: eBay-Sandbox-Schlüssel für #45 fehlen weiterhin (nur Jefrey, nur als Umgebungsvariablen).
+- Bericht: `team/runs/20261029-0428-master.md` (Übergabe an Orchestrator)
