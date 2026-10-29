@@ -261,3 +261,13 @@ Hinweis: `team/tasks.json` wurde nicht separat geändert; die tasks.json-Änderu
 - `team/tasks.json`: S-012 bleibt `review` (in Arbeit in PR #44), Laufvermerk im Hinweis ergänzt.
 - Offen: kosmetische Fehlermeldung bei `SCHNAPPER_PYTHON=echo`/`true` (künstlicher Pfad im Text, Exit 2 bleibt richtig). eBay-Sandbox-Schlüssel für #45 (F6) fehlen weiterhin.
 - Bericht: `team/runs/20261029-0128-master.md` (Übergabe an Orchestrator)
+
+## SCHNAPPER MASTER – letzter Lauf (29.10.2026, 02:29 UTC, Lauf 20261029-0229)
+
+- F2 / S-009 / PR #39 (Branch `agent/master/20261022-21`): Der CSV-Export `/api/angebote.csv` ist gegen Formel-Injektion abgesichert (CWE-1236). Textzellen (id, titel, zustand, quelle, kategorie, url), die mit `=`, `+`, `-`, `@`, Tab oder CR beginnen, bekommen ein führendes `'`. Der CSV-Import (`_zeilen_csv`) entfernt dieses `'` nur vor genau diesen Zeichen (`'Normal` bleibt). Die Konstante `CSV_FORMEL_START` ist nur in `einlesen.py` definiert, der JSON-Import ist unverändert. Bisher wurde z. B. `=HYPERLINK(...)` ungeschützt exportiert. 6 neue Tests (`CsvFormelSchutz`, `CsvImportApostroph`). Gegenprobe mit dem App-Code aus fd16763: rot (failures=3).
+- Commit a87a977, Push fd16763..a87a977 als Fast-Forward ohne Force.
+- Tests: discover 243 OK (vorher 237), `tests.test_app_erfassen_s009` 27/27 OK (Browsertest ohne Skip), weitere Nutzer von `lies_text` 64 OK, Cloudflare 10/10 pass. CHECK bestanden (AK 1–7, AK 8 durch COMMAND), Secret-Scan leer.
+- PR #39: Draft, Kopf a87a977, Body um Nachtrag „Lauf 20261029-0229“ ergänzt. Merge-Entscheidung bei Jefrey (ebenso #36, #40, #41, #44, #45, #50).
+- `team/tasks.json`: S-009 bleibt `review` (in Arbeit in PR #39), Laufvermerk im Hinweis ergänzt.
+- Offen: Randfall `'=x` als Originalwert kommt als `=x` zurück (nicht blockierend; Lösung wäre symmetrisches Escaping). eBay-Sandbox-Schlüssel für #45 (F6) fehlen weiterhin.
+- Bericht: `team/runs/20261029-0229-master.md` (Übergabe an Orchestrator)
