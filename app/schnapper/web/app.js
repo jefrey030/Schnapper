@@ -21,10 +21,11 @@ const speicher = {
     } catch { /* weiter mit Ersatz */ }
     return name in this.ersatz ? this.ersatz[name] : standard;
   },
+  // Gibt true zurück, wenn der Wert dauerhaft im Browser-Speicher liegt.
   schreiben(name, wert) {
     this.ersatz[name] = wert;
-    try { window.localStorage.setItem("schnapper." + name, JSON.stringify(wert)); }
-    catch { $("speicher-hinweis").hidden = false; }
+    try { window.localStorage.setItem("schnapper." + name, JSON.stringify(wert)); return true; }
+    catch { $("speicher-hinweis").hidden = false; return false; }
   },
 };
 
@@ -246,9 +247,36 @@ function wunschText(w, mitText = true) {
   return teile.join(" · ");
 }
 
+// Gemeinsame Alarmprüfung für Anlegen und Wiederherstellen (wie der Server /api/suche):
+// Höchstpreis > 0 mit höchstens 2 Nachkommastellen (kein mehrdeutiges "1,234"),
+// Mindestrabatt 0–100. Komma gilt als Dezimaltrenner. Gibt null oder den Feldnamen zurück.
+function zahlWert(x) { return Number(x.replace(",", ".")); }
+const maxPreisOk = (x) => typeof x === "string" &&
+  (x === "" || (/^[0-9]{1,9}(?:[.,][0-9]{1,2})?$/.test(x) && zahlWert(x) > 0));
+const minRabattOk = (x) => typeof x === "string" &&
+  (x === "" || (/^[0-9]{1,3}(?:[.,][0-9]{1,2})?$/.test(x) && zahlWert(x) >= 0 && zahlWert(x) <= 100));
+function alarmFehler(w) {
+  if (typeof w.text !== "string" || !w.text.trim() || w.text.length > 200) return "text";
+  if (!maxPreisOk(w.max_preis)) return "max_preis";
+  if (!minRabattOk(w.min_rabatt)) return "min_rabatt";
+  if (!w.max_preis && !w.min_rabatt) return "max_preis/min_rabatt";
+  if (typeof w.zustand !== "string" || !(w.zustand === "" || Object.hasOwn(ZUSTAND, w.zustand))) return "zustand";
+  return null;
+}
+
+const ALARM_FEHLERTEXT = {
+  text: "Suchbegriff höchstens 200 Zeichen.",
+  max_preis: "„Bis €“ als Zahl größer 0 mit höchstens 2 Nachkommastellen, ohne Tausenderpunkt und ohne €, z. B. 1299,99.",
+  min_rabatt: "„Ab % billiger“ zwischen 0 und 100, höchstens 2 Nachkommastellen.",
+  "max_preis/min_rabatt": "„Bis €“ oder „Ab % billiger“ angeben.",
+  zustand: "Zustand unbekannt.",
+};
+
 async function alarmAnlegen() {
   const w = aktuellerWunsch();
   if (!w) return;
+  const falsch = alarmFehler(w);
+  if (falsch) { $("status").textContent = `Preisalarm nicht angelegt: ${ALARM_FEHLERTEXT[falsch] || falsch}`; return; }
   const liste = alarme();
   if (liste.some((x) => wunschText(x) === wunschText(w))) { $("status").textContent = "Diesen Preisalarm gibt es schon."; return; }
   if (liste.length >= MAX_ALARME) { $("status").textContent = `Höchstens ${MAX_ALARME} Preisalarme.`; return; }
@@ -352,6 +380,146 @@ async function merklisteZeigen() {
   $("merk-leer").hidden = ids.length > 0;
 }
 
+// ---------- Sichern & Wiederherstellen ----------
+// Merkliste und Preisalarme als JSON-Datei sichern. Beim Wiederherstellen wird der
+// bisherige Stand ersetzt (nicht gemischt); nur geprüfte Felder werden übernommen.
+const SICHERUNG_VERSION = 1;
+const MAX_SICHERUNG = 1024 * 1024;
+
+function sicherungErstellen() {
+  const obj = { format: "schnapper-sicherung", version: SICHERUNG_VERSION, erstellt_am: new Date().toISOString(),
+                merkliste: merkliste(), alarme: alarme() };
+  const blob = new Blob([JSON.stringify(obj, null, 2)], { type: "application/json" });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = `schnapper-sicherung-${obj.erstellt_am.slice(0, 10)}.json`;
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  setTimeout(() => URL.revokeObjectURL(url), 0);
+  $("sicherung-status").textContent =
+    `Gesichert: ${Object.keys(obj.merkliste).length} gemerkt, ${obj.alarme.length} Alarme.`;
+  $("sicherung-fehler").replaceChildren();
+}
+
+function istObjekt(x) { return x !== null && typeof x === "object" && !Array.isArray(x); }
+function istText(x, min, max) { return typeof x === "string" && x.length >= min && x.length <= max; }
+// Der Server liefert gesamtpreis als Dezimal-String ("54.89"); ältere Einträge können Zahlen sein.
+function preisOk(x) {
+  if (typeof x === "number") return Number.isFinite(x) && x >= 0;
+  return typeof x === "string" && x.length <= 20 && /^[0-9]+(?:\.[0-9]+)?$/.test(x);
+}
+function kurz(x) { const s = String(x); return s.length > 40 ? s.slice(0, 40) + "…" : s; }
+
+// Reine Funktion: prüft eine eingelesene Sicherung, ohne etwas zu speichern.
+function sicherungPruefen(obj) {
+  const fehler = [];
+  const abweisen = (grund) => ({ ok: false, merkliste: {}, alarme: [], fehler: [grund] });
+  if (!istObjekt(obj) || obj.format !== "schnapper-sicherung") return abweisen("Keine SCHNAPPER-Sicherung (format fehlt oder falsch).");
+  if (obj.version !== SICHERUNG_VERSION) return abweisen(`Version ${kurz(obj.version)} wird nicht unterstützt (erwartet ${SICHERUNG_VERSION}).`);
+  if (!istObjekt(obj.merkliste)) return abweisen("Merkliste fehlt oder ist kein Objekt.");
+  if (!Array.isArray(obj.alarme)) return abweisen("Alarme fehlen oder sind keine Liste.");
+  const ids = Object.keys(obj.merkliste);
+  if (ids.length > MAX_MERK) return abweisen(`Zu viele Merkeinträge: ${ids.length} (max. ${MAX_MERK}).`);
+  if (obj.alarme.length > MAX_ALARME) return abweisen(`Zu viele Preisalarme: ${obj.alarme.length} (max. ${MAX_ALARME}).`);
+
+  const merk = Object.create(null);
+  for (const id of ids) {
+    const e = obj.merkliste[id];
+    let falsch = null;
+    if (!istText(id, 1, 200) || id === "__proto__") falsch = "Schlüssel";
+    else if (!istObjekt(e)) falsch = "kein Objekt";
+    else if (!istText(e.titel, 1, 500)) falsch = "titel";
+    else if (!preisOk(e.gesamtpreis)) falsch = "gesamtpreis";
+    else if (typeof e.url !== "string" || !(e.url === "" || /^https?:\/\//i.test(e.url))) falsch = "url";
+    else if (typeof e.quelle !== "string") falsch = "quelle";
+    else if (typeof e.zustand !== "string") falsch = "zustand";
+    else if (e.gemerkt_am !== undefined && typeof e.gemerkt_am !== "string") falsch = "gemerkt_am";
+    if (falsch) { fehler.push(`Merkliste: Eintrag „${kurz(id)}“ ungültig (${falsch})`); continue; }
+    const neu = { titel: e.titel, gesamtpreis: e.gesamtpreis, url: e.url, quelle: e.quelle, zustand: e.zustand };
+    if (e.gemerkt_am !== undefined) neu.gemerkt_am = e.gemerkt_am;
+    merk[id] = neu;
+  }
+
+  const alarmListe = [];
+  const gesehen = new Set();
+  obj.alarme.forEach((w, i) => {
+    let falsch = null;
+    if (!istObjekt(w)) falsch = "kein Objekt";
+    else falsch = alarmFehler(w);
+    if (!falsch && w.angelegt_am !== undefined && typeof w.angelegt_am !== "string") falsch = "angelegt_am";
+    if (falsch) { fehler.push(`Alarme: Eintrag ${i + 1} ungültig (${falsch})`); return; }
+    const neu = { text: w.text, max_preis: w.max_preis, min_rabatt: w.min_rabatt, zustand: w.zustand };
+    if (w.angelegt_am !== undefined) neu.angelegt_am = w.angelegt_am;
+    const schluessel = wunschText(neu);
+    if (gesehen.has(schluessel)) { fehler.push(`Alarme: Eintrag ${i + 1} doppelt, übersprungen`); return; }
+    gesehen.add(schluessel);
+    alarmListe.push(neu);
+  });
+  return { ok: true, merkliste: merk, alarme: alarmListe, fehler };
+}
+
+function sicherungMelden(text, fehler) {
+  $("sicherung-status").textContent = text;
+  $("sicherung-fehler").replaceChildren(...fehler.map((f) => el("li", f)));
+}
+
+// Schreibt Merkliste und Alarme ganz oder gar nicht. Schlägt ein Schreibvorgang fehl,
+// wird der vorherige Stand (Browser-Speicher und Ersatz) wiederhergestellt und gemeldet.
+function sicherungUebernehmen(neueMerkliste, neueAlarme) {
+  const NAMEN = ["merkliste", "alarme"];
+  const vorher = {};
+  try { for (const name of NAMEN) vorher[name] = window.localStorage.getItem("schnapper." + name); }
+  catch {
+    $("speicher-hinweis").hidden = false;
+    sicherungMelden("Wiederherstellung fehlgeschlagen: Browser-Speicher ist nicht verfügbar. Nichts geändert.", []);
+    return false;
+  }
+  const ersatzVorher = { ...speicher.ersatz };
+  const neu = { merkliste: neueMerkliste, alarme: neueAlarme };
+  const geschrieben = [];
+  for (const name of NAMEN) {
+    if (!speicher.schreiben(name, neu[name])) break;
+    geschrieben.push(name);
+  }
+  if (geschrieben.length === NAMEN.length) return true;
+  // Ein fehlgeschlagenes setItem ändert den Eintrag nicht; zurückgesetzt werden nur bereits geschriebene.
+  let zurueck = true;
+  for (const name of geschrieben) {
+    const schluessel = "schnapper." + name;
+    try { if (vorher[name] === null) window.localStorage.removeItem(schluessel); else window.localStorage.setItem(schluessel, vorher[name]); }
+    catch { zurueck = false; }
+  }
+  speicher.ersatz = ersatzVorher;
+  sicherungMelden(zurueck
+    ? "Wiederherstellung fehlgeschlagen: Browser-Speicher ist voll oder gesperrt. Nichts geändert."
+    : "Wiederherstellung fehlgeschlagen: Browser-Speicher ist voll oder gesperrt; der vorherige Stand konnte nicht vollständig zurückgeschrieben werden. Bitte Seite neu laden und prüfen.", []);
+  zaehler();
+  merklisteZeigen();
+  alarmePruefen();
+  return false;
+}
+
+async function sicherungLaden(ev) {
+  const datei = ev.target.files[0];
+  ev.target.value = "";
+  if (!datei) return;
+  if (datei.size > MAX_SICHERUNG) { sicherungMelden("Sicherung abgewiesen: Datei ist größer als 1 MiB. Nichts geändert.", []); return; }
+  let obj;
+  try { obj = JSON.parse(await datei.text()); }
+  catch { sicherungMelden("Sicherung abgewiesen: Die Datei ist kein gültiges JSON. Nichts geändert.", []); return; }
+  const ergebnis = sicherungPruefen(obj);
+  if (!ergebnis.ok) { sicherungMelden("Sicherung abgewiesen: " + ergebnis.fehler[0] + " Nichts geändert.", []); return; }
+  if (!sicherungUebernehmen(ergebnis.merkliste, ergebnis.alarme)) return;
+  const n = Object.keys(ergebnis.merkliste).length;
+  sicherungMelden(`Wiederhergestellt: ${n} gemerkt, ${ergebnis.alarme.length} Alarme; ` +
+                  `${ergebnis.fehler.length} ungültige Einträge übersprungen`, ergebnis.fehler);
+  zaehler();
+  merklisteZeigen();
+  alarmePruefen();
+}
+
 // ---------- Ansichten ----------
 function zaehler() {
   const n = Object.keys(merkliste()).length;
@@ -408,6 +576,8 @@ document.addEventListener("DOMContentLoaded", () => {
   $("filter").addEventListener("submit", (e) => { e.preventDefault(); suchen(); });
   $("datei").addEventListener("change", hochladen);
   $("alarm-anlegen").addEventListener("click", alarmAnlegen);
+  $("sicherung-export").addEventListener("click", sicherungErstellen);
+  $("sicherung-datei").addEventListener("change", sicherungLaden);
   for (const knopf of document.querySelectorAll(".ansichten button")) {
     knopf.addEventListener("click", () => zeige(knopf.dataset.ansicht));
   }

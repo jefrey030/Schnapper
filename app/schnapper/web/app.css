@@ -118,3 +118,11 @@ main { max-width: 720px; margin: 0 auto; padding: 0 16px 48px; }
 #angebot-form input, #angebot-form select { width: 100%; min-width: 0; box-sizing: border-box; min-height: 44px;
   padding: 10px 12px; border: 1px solid var(--linie); border-radius: 10px; font: inherit; background: var(--grund); color: var(--text); }
 #csv-download { display: inline-block; margin-top: 6px; color: var(--akzent); font-weight: 600; min-height: 32px; padding: 4px 0; }
+
+/* S-010: Sicherung */
+#sicherung { display: grid; gap: 8px; margin-top: 20px; padding-top: 12px; border-top: 1px solid var(--linie); }
+#sicherung h2 { margin: 0; font-size: 17px; }
+#sicherung .knopf { padding: 0 14px; }
+.sicherung-laden { display: grid; gap: 4px; font-size: 14px; color: var(--leise); }
+.sicherung-laden input { max-width: 100%; font: inherit; }
+#sicherung-fehler { margin: 0; padding-left: 18px; font-size: 13px; color: var(--gefahr); overflow-wrap: anywhere; }

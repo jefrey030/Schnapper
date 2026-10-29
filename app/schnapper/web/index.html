@@ -123,6 +123,16 @@
     <p class="status">Preisalarme prüfen bei jedem Öffnen die geladene Liste. Verdächtige und veraltete Angebote lösen keinen Alarm aus.</p>
     <ol id="alarm-liste" class="treffer"></ol>
     <p id="alarm-leer" class="leer" hidden>Noch kein Preisalarm. Lege in der Suche einen an.</p>
+    <section id="sicherung" aria-label="Sichern und wiederherstellen">
+      <h2>Sichern &amp; wiederherstellen</h2>
+      <p class="leise">Speichert Merkliste und Preisalarme als JSON-Datei. Beim Wiederherstellen wird der bisherige Stand ersetzt.</p>
+      <button id="sicherung-export" type="button" class="knopf">Merkliste &amp; Alarme sichern</button>
+      <label class="sicherung-laden">Sicherung wiederherstellen
+        <input id="sicherung-datei" type="file" accept=".json,application/json">
+      </label>
+      <p id="sicherung-status" class="status" aria-live="polite"></p>
+      <ul id="sicherung-fehler"></ul>
+    </section>
   </section>
 </main>
 
