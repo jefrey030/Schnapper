@@ -193,7 +193,11 @@ class Browser(unittest.TestCase):
         cls.pw.stop()
 
     def setUp(self):
-        self.server = erstelle_server(BEISPIEL, port=0)
+        # Wie die CLI: eigenes Datenverzeichnis, damit Missionen/BLITZ nicht 503 melden.
+        self._daten = tempfile.TemporaryDirectory()
+        os.chmod(self._daten.name, 0o700)
+        self.addCleanup(self._daten.cleanup)
+        self.server = erstelle_server(BEISPIEL, port=0, datenverzeichnis=self._daten.name)
         self.basis = f"http://127.0.0.1:{self.server.server_address[1]}"
         threading.Thread(target=self.server.serve_forever, daemon=True).start()
         self.meldungen, self.fremd, self.abfragen = [], [], []
