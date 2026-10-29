@@ -432,7 +432,7 @@ function sicherungPruefen(obj) {
     else if (!istObjekt(e)) falsch = "kein Objekt";
     else if (!istText(e.titel, 1, 500)) falsch = "titel";
     else if (!preisOk(e.gesamtpreis)) falsch = "gesamtpreis";
-    else if (typeof e.url !== "string" || !(e.url === "" || /^https?:\/\//.test(e.url))) falsch = "url";
+    else if (typeof e.url !== "string" || !(e.url === "" || /^https?:\/\//i.test(e.url))) falsch = "url";
     else if (typeof e.quelle !== "string") falsch = "quelle";
     else if (typeof e.zustand !== "string") falsch = "zustand";
     else if (e.gemerkt_am !== undefined && typeof e.gemerkt_am !== "string") falsch = "gemerkt_am";

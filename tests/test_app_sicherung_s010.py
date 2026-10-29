@@ -452,6 +452,44 @@ class Browser(unittest.TestCase):
         self.assertIn("Wiederhergestellt: 0 gemerkt, 1 Alarme; 0 ungültige Einträge übersprungen", meldung)
         self.assertEqual(self.stand()[1], vorher)
 
+    def test_rundreise_url_schema_grossgeschrieben(self):
+        """Eine selbst exportierte Sicherung mit HTTPS://… bzw. Https://… ergibt nach Leeren denselben Stand."""
+        start = {"gross": merk("Rad gross", url="HTTPS://beispiel.example/gross"),
+                 "misch": merk("Rad misch", url="Https://beispiel.example/misch")}
+        self.seite.evaluate("m => localStorage.setItem('schnapper.merkliste', JSON.stringify(m))", start)
+        self.seite.reload()
+        self.seite.wait_for_selector("#treffer li")
+        vorher = self.stand()[0]
+        self.assertEqual(vorher, start)
+        self.seite.click('[data-ansicht="alarme"]')
+        with self.seite.expect_download() as info:
+            self.seite.click("#sicherung-export")
+        inhalt = pathlib.Path(info.value.path()).read_bytes()
+        self.assertEqual(json.loads(inhalt)["merkliste"], vorher)
+        self.seite.evaluate("localStorage.clear()")
+        self.seite.reload()
+        self.seite.wait_for_selector("#treffer li")
+        self.assertEqual(self.roh(), [None, None])
+        self.seite.click('[data-ansicht="alarme"]')
+        meldung = self.lade(inhalt)
+        self.assertIn("Wiederhergestellt: 2 gemerkt, 0 Alarme; 0 ungültige Einträge übersprungen", meldung)
+        self.assertEqual(self.fehlerliste(), [])
+        nachher = self.stand()[0]
+        self.assertEqual(nachher, vorher)
+        self.assertEqual(nachher["gross"]["url"], "HTTPS://beispiel.example/gross")
+        self.assertEqual(nachher["misch"]["url"], "Https://beispiel.example/misch")
+
+    def test_url_anderes_schema_grossgeschrieben_bleibt_ungueltig(self):
+        """Abgrenzung: Das i-Flag lässt nur http(s) zu, JAVASCRIPT: bleibt ungültig (url)."""
+        self.seite.click('[data-ansicht="alarme"]')
+        meldung = self.lade(sicherung(merkliste={"js-gross": merk(url="JAVASCRIPT:alert(1)"),
+                                                 "gut": merk(url="HTTPS://beispiel.example/ok")}))
+        self.assertIn("Wiederhergestellt: 1 gemerkt, 0 Alarme; 1 ungültige Einträge übersprungen", meldung)
+        fehler = self.fehlerliste()
+        self.assertEqual(len(fehler), 1)
+        self.assertIn("„js-gross“ ungültig (url)", fehler[0])
+        self.assertEqual(sorted(self.stand()[0]), ["gut"])
+
     def test_gueltige_alarme_weiter_anlegbar(self):
         for i, (feld, wert) in enumerate((("max_preis", "80"), ("max_preis", "12,50"), ("max_preis", "1299,99"),
                                           ("min_rabatt", "20,5")), 1):
@@ -463,6 +501,19 @@ class Browser(unittest.TestCase):
                 self.seite.click("#alarm-anlegen")
                 self.warte(f"JSON.parse(localStorage.getItem('schnapper.alarme')||'[]').length === {i}")
                 self.assertTrue(self.seite.locator("#status").text_content().startswith("Preisalarm angelegt"))
+
+
+class ServerUrlSchema(unittest.TestCase):
+    def test_server_nimmt_grossgeschriebenes_schema_unveraendert_an(self):
+        """Beleg: Der Server akzeptiert HTTPS://… und reicht die URL unverändert weiter."""
+        import datetime as dt
+        from schnapper.angebot import Angebot
+        jetzt = dt.datetime(2026, 10, 29, 12, 0, tzinfo=dt.timezone.utc)
+        for url in ("HTTPS://beispiel.example/x", "Https://beispiel.example/y"):
+            with self.subTest(url):
+                angebot = Angebot.aus_dict({"id": "x", "titel": "Rad", "preis": "10", "url": url,
+                                            "quelle": "beispielmarkt", "erfasst_am": "2026-10-29T10:00:00Z"}, jetzt)
+                self.assertEqual(angebot.url, url)
 
 
 if __name__ == "__main__":
