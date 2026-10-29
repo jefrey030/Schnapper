@@ -330,3 +330,13 @@ Hinweis: `team/tasks.json` wurde nicht separat geändert; die tasks.json-Änderu
 - `team/tasks.json`: S-009 bleibt `review`, Laufvermerk im Hinweis ergänzt.
 - Offen: Der Konsolenfilter in AK4/AK5 ist zu breit (CHECK-Empfehlung, nicht blockierend). Die eBay-Sandbox-Schlüssel für #45 fehlen weiterhin.
 - Bericht: `team/runs/20261029-0829-master.md`
+
+## SCHNAPPER MASTER – letzter Lauf (29.10.2026, 09:28 UTC, Lauf 20261029-0928)
+
+- F1 / PR #36 (Branch `agent/master/20261022-20`): Der Test `tests/test_tasks_f1_review.py` hat die LEAD-Auswahl nur nachgebaut (`status == "open"`). Eine Mutation von `team/agent.py:148` auf `in ("open", "review")` blieb deshalb grün (4/4 OK). Jetzt ruft der Test `team/agent.py:lead()` echt auf, mit KI-Attrappe `FakeKI` und einer Kopie der Aufgaben, ohne Netz und ohne Schreiben in `team/runs`. Fall A: Die KI wählt S-009 (review), das ergibt `FEHLER`, angeboten wird nur S-011. Fall B: S-011 ist offen, das ergibt `OK`. Fall C: Mit dem echten tasks.json kommt `KEINE AUFGABE`, die KI wird nicht befragt. Gegenprobe rot (failures=1, errors=1).
+- Commit 85a047f (nur die Testdatei, +65/−5), Push 397d0e2..85a047f als Fast-Forward ohne Force.
+- Tests: discover 222 OK, Modul 6/6 OK (0 Skips), Cloudflare 10/10. CHECK bestanden (AK 1–8, AK 9 durch COMMAND erledigt), Secret-Scan leer.
+- PR #36: Draft, Kopf 85a047f, Abschnitt „Update Lauf 20261029-0928“ an die PR-Beschreibung angehängt. Merge-Entscheidung bei Jefrey (ebenso #39, #40, #41, #44, #45, #50).
+- `team/tasks.json`: S-006 bleibt `proposed`, Laufvermerk im Hinweis ergänzt.
+- Offen: Fall C scheitert bei der Mutation über einen TypeError statt über eine Assertion (CHECK-Hinweis, nicht blockierend). Die eBay-Sandbox-Schlüssel für #45 fehlen weiterhin.
+- Bericht: `team/runs/20261029-0928-master.md`
