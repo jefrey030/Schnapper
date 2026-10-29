@@ -1,0 +1,10 @@
+# Freigegebene Arbeitsliste (Jefrey, 22.10.2026) – DATEN, gilt als Freigabe
+Ein Punkt ist erledigt, wenn er in main ist ODER ein offener Team-Draft-PR (agent/master/...) ihn laut letztem Bericht vollständig umsetzt. Pro PR genau ein Punkt, klein halten.
+F1 Aufräumen: team/tasks.json (S-004, S-005 done; S-006 done "überholt"; F2–F6 als S-009..S-013 "open"); docs/SCHNAPPER-MASTERPLAN.md Abschnitt B auf echten GitHub-Stand. Nur team/ und docs/.
+F2 Angebot direkt in der App erfassen (Formular in app/schnapper/web, Quelle "eigene", serverseitige Prüfung Angebot.aus_dict/Quellen-Register, nur Arbeitsspeicher, CSV-Download im Format app/vorlagen/meine-angebote.csv, POST-Endpunkt mit Schutz wie /api/import (X-Schnapper, Größenlimit), nur textContent). Akzeptanz: Unit-Tests (gültig, ungültig, ohne Header 403), Browsertest 390x844, keine Konsolenfehler.
+F3 Merkliste/Preisalarme sichern/wiederherstellen (JSON), Struktur + MAX_MERK/MAX_ALARME prüfen, ungültige melden. Browsertest Sichern→Leeren→Wiederherstellen; kaputte Datei ändert nichts.
+F4 Barcode per Kamera (BarcodeDetector ean_13/ean_8/upc_a + getUserMedia), nur auf Knopfdruck, sofort stoppen; ohne API Knopf aus/Meldung; CSP minimal. Browsertest mit simuliertem BarcodeDetector.
+F5 start-schnapper.sh (Termux): prüft Python, startet python -m schnapper.web mit app/vorlagen/meine-angebote.csv oder Datei, zeigt Adresse; docs/HANDY-START.md, Hinweis "auf echtem Gerät ungetestet". Test startet Skript, ruft Seite ab, beendet.
+F6 app/schnapper/ebay.py EbayAdapter Browse API, OAuth Client-Credentials, Zugang nur aus SCHNAPPER_EBAY_CLIENT_ID/SECRET, Standard Sandbox, Produktion nur mit Schalter, Quelle "ebay" gesperrt ohne Schalter+Zugang, nur https zu eBay-API-Hosts, keine Weiterleitungen, Zeit-/Größenlimit; docs/EBAY.md. Tests ohne Netz.
+Konflikte: fremde PRs (z. B. #19) ändern app/schnapper/web. Vor jedem PR main frisch holen/rebasen; fremde Branches nie ändern.
+Reihenfolge Auswahl: offener Team-Draft-PR fortsetzen > Aufgabe "open" in tasks.json > nächster offener Punkt F1–F6 > erst wenn alles erledigt: neue Vorschläge "proposed".

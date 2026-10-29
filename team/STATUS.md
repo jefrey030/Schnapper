@@ -251,3 +251,13 @@ Hinweis: `team/tasks.json` wurde nicht separat geändert; die tasks.json-Änderu
 - `team/tasks.json`: S-010 bleibt `review` (in Arbeit in PR #40), Laufvermerk im Hinweis ergänzt.
 - Offen: `maxlength` am Suchfeld (wegen Konflikten mit #39/#41 bewusst nicht umgesetzt). eBay-Sandbox-Schlüssel für #45 (F6) fehlen weiterhin.
 - Bericht: `team/runs/20261029-0029-master.md` (Übergabe an Orchestrator)
+
+## SCHNAPPER MASTER – letzter Lauf (29.10.2026, 01:28 UTC, Lauf 20261029-0128)
+
+- F5 / S-012 / PR #44 (Branch `agent/master/20261022-23`): Ein relativer `SCHNAPPER_PYTHON` (z. B. `bin/python`, `./bin/python`) oder ein relativer PATH-Eintrag wird jetzt vor der Versionsprüfung gegen den Aufrufort absolut gemacht (`case "$PY" in /*) ;; *) PY=$AUFRUF_DIR/$PY ;; esac`, nur Builtins). Bisher prüfte das Skript den Interpreter im Aufrufort, wechselte dann per `cd` in den Skriptordner und startete per `exec` einen anderen Pfad (Exit 127 nach der Startmeldung oder ungeprüfter Interpreter). Neuer Test `test_relativer_python_pfad_zum_aufrufort` (Subtests `bin/python`, `./bin/python`). Gegenprobe mit dem Skript aus 41e801c: rot (failures=2).
+- Commit b03b986, Push 41e801c..b03b986 als Fast-Forward ohne Force.
+- Tests: discover 235 OK (vorher 234), `tests.test_start_skript_s012` 19/19 OK, Cloudflare 10/10 pass, `bash -n` OK. CHECK bestanden (AK 1–10), Secret-Scan leer. Rückfrage zu `SCHNAPPER_PYTHON=python3`: keine Regression (alt und neu 200/rc 0).
+- PR #44: Draft, Kopf b03b986, Body um Nachtrag „Lauf 20261029-0128“ ergänzt. Merge-Entscheidung bei Jefrey (ebenso #36, #39, #40, #41, #45, #50). Auf echtem Gerät (Termux) weiterhin ungetestet.
+- `team/tasks.json`: S-012 bleibt `review` (in Arbeit in PR #44), Laufvermerk im Hinweis ergänzt.
+- Offen: kosmetische Fehlermeldung bei `SCHNAPPER_PYTHON=echo`/`true` (künstlicher Pfad im Text, Exit 2 bleibt richtig). eBay-Sandbox-Schlüssel für #45 (F6) fehlen weiterhin.
+- Bericht: `team/runs/20261029-0128-master.md` (Übergabe an Orchestrator)
