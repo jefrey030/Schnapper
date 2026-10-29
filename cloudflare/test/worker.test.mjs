@@ -196,7 +196,7 @@ test('D1 successful HTTP result with zero changed audit rows blocks BEFORE infer
  x.env.DB.prepare=(sql)=>sql.startsWith('UPDATE schnapper_runs SET attempted_calls=')
   ? {bind(){return {async run(){return {meta:{changes:0}}}}}}
   : original(sql);
- const out=await runSlot(x.env,Date.UTC(2026,9,22,19));
+ const out=await runMockSlot(x.env,Date.UTC(2026,9,22,19));
  assert.equal(out.status,'BLOCKIERT');
  assert.equal(out.attempted_calls,0);
  assert.equal(x.getCalls(),0);
@@ -209,7 +209,7 @@ test('D1 unconfirmed audit metadata also prevents any model call',async()=>{
  x.env.DB.prepare=(sql)=>sql.startsWith('UPDATE schnapper_runs SET attempted_calls=')
   ? {bind(){return {async run(){return {}}}}}
   : original(sql);
- const out=await runSlot(x.env,Date.UTC(2026,9,22,20));
+ const out=await runMockSlot(x.env,Date.UTC(2026,9,22,20));
  assert.equal(out.status,'BLOCKIERT');
  assert.equal(out.attempted_calls,0);
  assert.equal(x.getCalls(),0);
@@ -220,7 +220,7 @@ test('D1 no-op model report insert prevents false role completion and next model
  x.env.DB.prepare=(sql)=>sql.startsWith('INSERT INTO schnapper_reports')
   ? {bind(){return {async run(){return {meta:{changes:0}}}}}}
   : original(sql);
- const out=await runSlot(x.env,Date.UTC(2026,9,22,21));
+ const out=await runMockSlot(x.env,Date.UTC(2026,9,22,21));
  assert.equal(out.status,'BLOCKIERT');
  assert.equal(out.attempted_calls,1);
  assert.deepEqual(out.completed_roles,[]);
@@ -239,7 +239,7 @@ test('D1 no-op completed status write must NOT return a success verdict',async()
    return stmt.bind(...args);
   }};
  };
- const out=await runSlot(x.env,Date.UTC(2026,9,22,22));
+ const out=await runMockSlot(x.env,Date.UTC(2026,9,22,22));
  assert.equal(x.getCalls(),4);
  assert.equal(x.db.reports.length,4);
  assert.equal(out.status,'BLOCKIERT');
