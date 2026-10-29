@@ -33,6 +33,11 @@ class BrowseResponseShapeTests(unittest.TestCase):
         with self.assertRaises(EbayFehler):
             zeilen_aus_antwort({})
 
+    def test_boolean_or_string_zero_without_list_is_error(self):
+        for total in (False, "0", 0.0):
+            with self.subTest(total=total), self.assertRaises(EbayFehler):
+                zeilen_aus_antwort({"total": total})
+
     def test_explicit_empty_list_still_accepted(self):
         rows, notes = zeilen_aus_antwort({"total": 0, "itemSummaries": []})
         self.assertEqual((rows, notes), ([], []))
