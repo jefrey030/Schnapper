@@ -140,6 +140,11 @@ def zeilen_aus_antwort(antwort, umgebung: str = "sandbox",
         items = []
     if not isinstance(items, list):
         raise EbayFehler("'itemSummaries' ist keine Liste – Format hat sich geändert?")
+    # An explicitly empty list is only a verified zero-result response when
+    # total is the integer 0. Positive, missing or malformed totals must not
+    # silently become a false "no offers found" result.
+    if not items and (type(antwort.get("total")) is not int or antwort["total"] != 0):
+        raise EbayFehler("'itemSummaries' ist leer bei unbestätigter Nulltrefferzahl")
     jetzt = jetzt or dt.datetime.now(dt.timezone.utc)
     if jetzt.tzinfo is None:
         raise ValueError("Prüfzeitpunkt muss eine Zeitzone enthalten")
