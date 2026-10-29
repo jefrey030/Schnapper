@@ -1,0 +1,15 @@
+# Preflight 20261029-0528 (Orchestrator, ohne Änderungen)
+- Start: 05:29 UTC
+- main: 6dbe114 (security(SCHNAPPER): token only via HTTPS, block redirects (#43))
+- Tests main: Python `python3 -m unittest discover -s tests` 216/216 OK; Cloudflare `node --test test/*.test.mjs` 10/10 pass
+- Secret-Scan (sk-ant-, ghp_, github_pat_, AKIA, PRIVATE KEY, password=): keine Funde außer den Suchmustern selbst in team/agent.py:59-60 (kein Secret)
+- Offene PRs (REST): 40+ fremde Draft-PRs (u. a. #134, #136 …), Team-Draft-PRs (Branch agent/master/...):
+  - #36 F1 agent/master/20261022-20 head 397d0e2, CI python-tests success, mergeable clean, 0 Kommentare
+  - #39 F2 agent/master/20261022-21 head a87a977, success, clean, 0 Kommentare
+  - #40 F3 agent/master/20261022-22 head 87eebba, success, clean, 2 Kommentare (Sicherheitsbefund P0 28.10. + Antwort „behoben in 33a9487“)
+  - #41 F4 agent/master/20261022-2238 head 6165af4, success, clean, 0 Kommentare
+  - #44 F5 agent/master/20261022-23 head b03b986, success, clean, 0 Kommentare
+  - #45 F6 agent/master/20261023-01 head 9cde1ee, success, clean, 0 Kommentare
+  - #50 agent/master/s014-viererteam-20261023 (S-014, nicht Teil F1–F6)
+- Alle Punkte F1–F6 haben einen offenen Team-Draft-PR. Letzte Läufe (INDEX.md): 0029 F3, 0128 F5, 0229 F2, 0328 F1, 0428 F6, davor 2328 F4.
+- Ergebnis: main grün, kein Secret → Lauf darf fortfahren.

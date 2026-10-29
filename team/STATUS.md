@@ -291,3 +291,13 @@ Hinweis: `team/tasks.json` wurde nicht separat geändert; die tasks.json-Änderu
 - `team/tasks.json`: S-013 bleibt `review`, Laufvermerk im Hinweis ergänzt.
 - Offen: eBay-Sandbox-Schlüssel für #45 fehlen weiterhin (nur Jefrey, nur als Umgebungsvariablen).
 - Bericht: `team/runs/20261029-0428-master.md` (Übergabe an Orchestrator)
+
+## SCHNAPPER MASTER – letzter Lauf (29.10.2026, 05:28 UTC, Lauf 20261029-0528)
+
+- F4 / S-011 / PR #41 (Branch `agent/master/20261022-2238`): Ein Kamera-Treffer während einer laufenden Handsuche löste per `requestSubmit()` trotz deaktiviertem `#barcode-knopf` eine zweite Barcode-Abfrage aus. Die zuletzt eintreffende Antwort gewann, sodass Preise und Lizenz von A unter dem Feld mit B stehen konnten, und der Knopf wurde zu früh freigegeben. Behoben mit dem Generationszähler `barcodeAbfrage` in `barcodeSuchen()`: Nur die zuletzt gestartete Abfrage schreibt Treffer, Lizenz und Status und gibt den Knopf frei. Veraltete Antworten (Erfolg, HTTP-Fehler, Netzfehler) werden verworfen. Neue Browsertests T1, T2 und T3. Gegenprobe rot (failures=4).
+- Commit 175d7b7, Push 6165af4..175d7b7 als Fast-Forward ohne Force. CI `python-tests` success.
+- Tests: discover 244 OK (0 Skips), S-011-Modul 28/28 OK (vorher 25), Cloudflare 10/10 pass. CHECK bestanden (AK 1–9, AK 10 Push durch COMMAND), Secret-Scan leer.
+- PR #41: Draft, Kopf 175d7b7, Body um Abschnitt „Lauf 20261029-0528“ ergänzt. Merge-Entscheidung bei Jefrey (ebenso #36, #39, #40, #44, #45, #50).
+- `team/tasks.json`: S-011 bleibt `review`, Laufvermerk im Hinweis ergänzt.
+- Offen: Test von #41 auf einem echten Gerät. eBay-Sandbox-Schlüssel für #45 (F6) fehlen weiterhin.
+- Bericht: `team/runs/20261029-0528-master.md` (Übergabe an Orchestrator)
