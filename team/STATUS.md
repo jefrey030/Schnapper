@@ -350,3 +350,13 @@ Hinweis: `team/tasks.json` wurde nicht separat geändert; die tasks.json-Änderu
 - `team/tasks.json`: S-013 bleibt `review`, Laufvermerk im Hinweis ergänzt.
 - Offen: Die Header-Phase von `open()` ist durch die Frist noch nicht begrenzt. Die eBay-Sandbox-Schlüssel für #45 fehlen weiterhin (nur als Umgebungsvariablen).
 - Bericht: `team/runs/20261029-1028-master.md`
+
+## SCHNAPPER MASTER – letzter Lauf (29.10.2026, 11:30 UTC, Lauf 20261029-1130)
+
+- F4 / S-011 / PR #41 (Branch `agent/master/20261022-2238`): Endete der Video-Track von außen (Berechtigung entzogen, Kamera von anderer App übernommen, USB-Kamera abgezogen), lief der Scan mit totem Bild bis zu 20 s weiter, Status, Videobereich und „Abbrechen“ blieben stehen, und am Ende kam fälschlich „Kein Barcode erkannt“. Behoben in `kameraScannen()` (`app.js` +5): `ended`-Listener je Video-Track (`{ once: true }`), der nur bei `kamera.stream === stream` `kameraStoppen("Kamera wurde getrennt – Barcode bitte eintippen.")` aufruft. Ein veraltetes `ended` stört keinen neueren Lauf. 2 neue Browsertests (`test_track_ended_von_aussen`, `test_veraltetes_track_ended_stoert_nicht`), Gegenprobe rot (beide Pflicht-Mutationen FAIL, CHECK zusätzlich 2 eigene Mutationen FAIL).
+- Commit 6fd9ffd, Push 175d7b7..6fd9ffd als Fast-Forward ohne Force. CI `python-tests` success.
+- Tests: discover 246 OK (vorher 244), S-011-Modul 30/30 OK (vorher 28, 0 Skips), Cloudflare 10/10. CHECK bestanden (AK 1–11), Secret-Scan leer.
+- PR #41: Draft, Kopf 6fd9ffd, Abschnitt „Update Lauf 20261029-1130“ an die PR-Beschreibung angehängt. Merge-Entscheidung bei Jefrey (ebenso #36, #39, #40, #44, #45, #50).
+- `team/tasks.json`: S-011 bleibt `review`, Laufvermerk im Hinweis ergänzt.
+- Offen: Test von #41 auf einem echten Gerät. Die eBay-Sandbox-Schlüssel für #45 (F6) fehlen weiterhin (nur als Umgebungsvariablen).
+- Bericht: `team/runs/20261029-1130-master.md`
