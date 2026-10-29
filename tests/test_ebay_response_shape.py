@@ -42,6 +42,20 @@ class BrowseResponseShapeTests(unittest.TestCase):
         rows, notes = zeilen_aus_antwort({"total": 0, "itemSummaries": []})
         self.assertEqual((rows, notes), ([], []))
 
+    def test_explicit_empty_list_with_positive_total_is_error(self):
+        # Regression: the prior guard covered missing/null lists only.
+        with self.assertRaises(EbayFehler):
+            zeilen_aus_antwort({"total": 2, "itemSummaries": []})
+
+    def test_explicit_empty_list_requires_strict_integer_zero(self):
+        for total in (None, False, "0", 0.0, -1):
+            with self.subTest(total=total), self.assertRaises(EbayFehler):
+                zeilen_aus_antwort({"total": total, "itemSummaries": []})
+
+    def test_explicit_empty_list_without_total_is_error(self):
+        with self.assertRaises(EbayFehler):
+            zeilen_aus_antwort({"itemSummaries": []})
+
 
 if __name__ == "__main__":
     unittest.main()
