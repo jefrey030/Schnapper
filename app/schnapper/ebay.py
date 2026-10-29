@@ -130,8 +130,13 @@ def zeilen_aus_antwort(antwort, umgebung: str = "sandbox",
     """
     if not isinstance(antwort, dict):
         raise EbayFehler("Antwort ist kein JSON-Objekt – Format hat sich geändert?")
-    items = antwort.get("itemSummaries", [])
+    items = antwort.get("itemSummaries")
     if items is None:
+        # Browse may omit itemSummaries for a genuine zero-result search.
+        # A missing list with positive/unknown total must not look like a
+        # successful empty search (e.g. upstream response format changed).
+        if antwort.get("total") != 0:
+            raise EbayFehler("'itemSummaries' fehlt bei unbekannter oder positiver Trefferzahl")
         items = []
     if not isinstance(items, list):
         raise EbayFehler("'itemSummaries' ist keine Liste – Format hat sich geändert?")
