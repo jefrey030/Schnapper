@@ -340,3 +340,13 @@ Hinweis: `team/tasks.json` wurde nicht separat geändert; die tasks.json-Änderu
 - `team/tasks.json`: S-006 bleibt `proposed`, Laufvermerk im Hinweis ergänzt.
 - Offen: Fall C scheitert bei der Mutation über einen TypeError statt über eine Assertion (CHECK-Hinweis, nicht blockierend). Die eBay-Sandbox-Schlüssel für #45 fehlen weiterhin.
 - Bericht: `team/runs/20261029-0928-master.md`
+
+## SCHNAPPER MASTER – letzter Lauf (29.10.2026, 10:28 UTC, Lauf 20261029-1028)
+
+- F6 / S-013 / PR #45 (Branch `agent/master/20261023-01`): `_anfrage()` gab das Zeitlimit (15 s) nur an `opener.open()` weiter, also pro Socket-Operation. Eine tröpfelnde Antwort hielt `read()` beliebig lange fest (lokaler Beleg 127.0.0.1: `timeout=0.5` ergab 6,0 s und Erfolg). Behoben: Frist `time.monotonic() + timeout` vor `open()`, Leseschleife mit `read1()` und Fristprüfung nach jedem Stück, `EbayFehler` „eBay antwortet zu langsam (Zeitlimit … s überschritten)“ ohne URL oder Token. Größen- und JSON-Prüfung unverändert, neue Zeile in `docs/EBAY.md`. 2 neue Tests, Gegenprobe rot (Mutation A und B: FAIL). Lokaler Beleg danach: `EbayFehler` nach etwa 0,75 s.
+- Commit e035a29, Push 9cde1ee..e035a29 als Fast-Forward ohne Force. CI `python-tests` success.
+- Tests: discover 267 OK (vorher 265), `tests.test_ebay` 40/40 (0 Skips), `tests.test_ebay_cli` 11/11, Cloudflare 10/10, offline (`unshare -rn`, nur Loopback) 267 OK. CHECK bestanden (AK 1–11), Secret-Scan leer (1 Fehlalarm: Regex-Testmuster aus ecad218).
+- PR #45: Draft, Kopf e035a29, Abschnitt „Update Lauf 20261029-1028“ an die PR-Beschreibung angehängt. Merge-Entscheidung bei Jefrey (ebenso #36, #39, #40, #41, #44, #50).
+- `team/tasks.json`: S-013 bleibt `review`, Laufvermerk im Hinweis ergänzt.
+- Offen: Die Header-Phase von `open()` ist durch die Frist noch nicht begrenzt. Die eBay-Sandbox-Schlüssel für #45 fehlen weiterhin (nur als Umgebungsvariablen).
+- Bericht: `team/runs/20261029-1028-master.md`
