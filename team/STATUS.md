@@ -241,3 +241,13 @@ Hinweis: `team/tasks.json` wurde nicht separat geändert; die tasks.json-Änderu
 - `team/tasks.json`: S-011 bleibt `review` (in Arbeit in PR #41), Laufvermerk im Hinweis ergänzt.
 - Offen: `upc_e` fehlt in `KAMERA_FORMATE` (braucht Normalisierung auf UPC-A/EAN-13), eigener Fokus-Test für Treffer-/Fehler-Pfad, echtes Gerät ungetestet. eBay-Sandbox-Schlüssel für #45 (F6) fehlen weiterhin.
 - Bericht: `team/runs/20261028-2328-master.md` (Übergabe an Orchestrator)
+
+## SCHNAPPER MASTER – letzter Lauf (29.10.2026, 00:29 UTC, Lauf 20261029-0029)
+
+- F3 / S-010 / PR #40 (Branch `agent/master/20261022-22`): Ein Preisalarm wird nur noch angelegt, wenn er die Prüfung beim Wiederherstellen bestehen würde. Gemeinsame Prüfregel `alarmFehler(w)` (Regex wortgleich) für `alarmAnlegen()` und `sicherungPruefen()`; Prüfung läuft vor `fetch`. Bisher wurden z. B. „Bis €“ 1.299,99 / 10€, Rabatt 12.345 oder Suchtext > 200 Zeichen angelegt und beim Wiederherstellen verworfen. 4 neue Tests (3 Browser, 1 statisch). Gegenprobe mit app.js aus 33a9487: rot (failures=5).
+- Commit 87eebba, Push 33a9487..87eebba als Fast-Forward ohne Force.
+- Tests: discover 234 OK, `tests.test_app_sicherung_s010` 18/18 OK (0 Skips, Chromium gefunden), Cloudflare 10/10 pass. CHECK bestanden (AK 1–10), Secret-Scan leer.
+- PR #40: Draft, Kopf 87eebba, Body um Nachtrag „Lauf 20261029-0029“ ergänzt. Merge-Entscheidung bei Jefrey (ebenso #36, #39, #41, #44, #45, #50).
+- `team/tasks.json`: S-010 bleibt `review` (in Arbeit in PR #40), Laufvermerk im Hinweis ergänzt.
+- Offen: `maxlength` am Suchfeld (wegen Konflikten mit #39/#41 bewusst nicht umgesetzt). eBay-Sandbox-Schlüssel für #45 (F6) fehlen weiterhin.
+- Bericht: `team/runs/20261029-0029-master.md` (Übergabe an Orchestrator)
