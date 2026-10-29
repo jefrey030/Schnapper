@@ -42,14 +42,14 @@ def ohne_schnapper_env(**extra):
 
 @unittest.skipUnless(BASH, "bash nicht verfügbar")
 class StartSkriptLauf(unittest.TestCase):
-    def starte(self, *args, cwd=None, env_extra=None):
+    def starte(self, *args, cwd=None, env_extra=None, skript=SKRIPT):
         port = freier_port()
         if cwd is None:
             tmp = tempfile.TemporaryDirectory()
             self.addCleanup(tmp.cleanup)
             cwd = tmp.name
         proc = subprocess.Popen(
-            [BASH, str(SKRIPT), *args], cwd=cwd,
+            [BASH, str(skript), *args], cwd=cwd,
             env=ohne_schnapper_env(SCHNAPPER_PORT=str(port), **(env_extra or {})),
             stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
 
@@ -96,6 +96,36 @@ class StartSkriptLauf(unittest.TestCase):
         self.assertIn("SCHNAPPER läuft: http://127.0.0.1:%d" % port, out)
         self.assertIn("meine-angebote.csv", out)
         self.assertFalse(lauscht(port))
+
+    @unittest.skipUnless(hasattr(os, "symlink"), "Symlinks nicht verfügbar")
+    def test_start_ueber_symlink(self):
+        vorlage = str(ROOT / "app" / "vorlagen" / "meine-angebote.csv")
+        for art in ("absolut", "relativ", "kette"):
+            with self.subTest(symlink=art):
+                tmp = tempfile.TemporaryDirectory()
+                self.addCleanup(tmp.cleanup)
+                aufruf = pathlib.Path(tmp.name)
+                self.assertNotEqual(aufruf.resolve(), ROOT)
+                bindir = aufruf / "bin"
+                bindir.mkdir()
+                link = bindir / "schnapper"
+                if art == "relativ":
+                    os.symlink(os.path.relpath(SKRIPT, bindir), link)
+                else:
+                    os.symlink(SKRIPT, link)
+                if art == "kette":
+                    kette = bindir / "kette"
+                    os.symlink(link, kette)
+                    link = kette
+                proc, port = self.starte(cwd=str(aufruf), skript=link)
+                status, html = self.warte_auf_seite(proc, port)
+                self.assertEqual(status, 200)
+                self.assertIn("SCHNAPPER", html)
+                out, err = self.beende(proc)
+                self.assertEqual(proc.returncode, 0, err)
+                self.assertIn("SCHNAPPER läuft: http://127.0.0.1:%d" % port, out)
+                self.assertIn(vorlage, out)
+                self.assertFalse(lauscht(port))
 
     def test_start_mit_datei_argument(self):
         proc, port = self.starte(str(BEISPIEL))

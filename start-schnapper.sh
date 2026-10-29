@@ -18,6 +18,7 @@
 #   - Python 3.8 oder neuer nötig (python3 bevorzugt, sonst python), sonst Exit 2.
 #   - Kein echtes Python (z. B. SCHNAPPER_PYTHON=echo oder true) -> Exit 2.
 #   - Relativer SCHNAPPER_PYTHON (z. B. bin/python) gilt relativ zum Aufrufort.
+#   - Aufruf über Symlink (z. B. ~/bin/schnapper) nutzt den echten SCHNAPPER-Ordner.
 #   - Lädt nichts herunter, installiert nichts. Beenden mit Strg+C.
 #   - Nutzt nur bash-Befehle und Python (keine weiteren Programme).
 #   - Start mit sh/dash (statt bash) -> Hinweis "Bitte mit bash starten", Exit 2.
@@ -36,41 +37,9 @@ fehler() {
 
 AUFRUF_DIR=$PWD
 
-# Eigenes Verzeichnis ermitteln (nur Builtins).
-QUELLE=${BASH_SOURCE[0]}
-case "$QUELLE" in
-    */*) SKRIPT_DIR=${QUELLE%/*} ;;
-    *) SKRIPT_DIR=. ;;
-esac
-SKRIPT_DIR=$(CDPATH= cd -- "$SKRIPT_DIR" && pwd)
-
 # Argumente prüfen.
 if [ "$#" -gt 1 ]; then
     fehler "Zu viele Argumente. Aufruf: bash start-schnapper.sh [DATEI]"
-fi
-if [ "$#" -eq 1 ]; then
-    case "$1" in
-        /*) DATEI=$1 ;;
-        *) DATEI=$AUFRUF_DIR/$1 ;;
-    esac
-else
-    DATEI=$SKRIPT_DIR/app/vorlagen/meine-angebote.csv
-fi
-if [ ! -f "$DATEI" ]; then
-    fehler "Datei nicht gefunden: $DATEI"
-fi
-
-# Port prüfen (nur Ziffern, 1 bis 65535).
-PORT=${SCHNAPPER_PORT:-8765}
-case "$PORT" in
-    ''|*[!0-9]*) fehler "Ungültiger Port in SCHNAPPER_PORT: '$PORT' (erlaubt: ganze Zahl 1 bis 65535)" ;;
-esac
-if [ "${#PORT}" -gt 5 ]; then
-    fehler "Ungültiger Port in SCHNAPPER_PORT: '$PORT' (erlaubt: ganze Zahl 1 bis 65535)"
-fi
-PORT=$((10#$PORT))
-if [ "$PORT" -lt 1 ] || [ "$PORT" -gt 65535 ]; then
-    fehler "Ungültiger Port in SCHNAPPER_PORT: '$PORT' (erlaubt: ganze Zahl 1 bis 65535)"
 fi
 
 # Python suchen.
@@ -101,6 +70,35 @@ if [ "$PY_OK" != "py-ok:42" ]; then
     printf '%s\n' "Python ist zu alt oder kein Python ($PY). SCHNAPPER braucht Python 3.8 oder neuer." >&2
     printf '%s\n' "In Termux aktualisieren mit:  pkg install python" >&2
     exit 2
+fi
+
+# Eigenes Verzeichnis ermitteln, auch bei Aufruf über einen Symlink.
+SKRIPT_DIR=$("$PY" -I -c 'import pathlib, sys; print(pathlib.Path(sys.argv[1]).resolve().parent)' "${BASH_SOURCE[0]}")
+
+# Datei bestimmen und prüfen.
+if [ "$#" -eq 1 ]; then
+    case "$1" in
+        /*) DATEI=$1 ;;
+        *) DATEI=$AUFRUF_DIR/$1 ;;
+    esac
+else
+    DATEI=$SKRIPT_DIR/app/vorlagen/meine-angebote.csv
+fi
+if [ ! -f "$DATEI" ]; then
+    fehler "Datei nicht gefunden: $DATEI"
+fi
+
+# Port prüfen (nur Ziffern, 1 bis 65535).
+PORT=${SCHNAPPER_PORT:-8765}
+case "$PORT" in
+    ''|*[!0-9]*) fehler "Ungültiger Port in SCHNAPPER_PORT: '$PORT' (erlaubt: ganze Zahl 1 bis 65535)" ;;
+esac
+if [ "${#PORT}" -gt 5 ]; then
+    fehler "Ungültiger Port in SCHNAPPER_PORT: '$PORT' (erlaubt: ganze Zahl 1 bis 65535)"
+fi
+PORT=$((10#$PORT))
+if [ "$PORT" -lt 1 ] || [ "$PORT" -gt 65535 ]; then
+    fehler "Ungültiger Port in SCHNAPPER_PORT: '$PORT' (erlaubt: ganze Zahl 1 bis 65535)"
 fi
 
 cd -- "$SKRIPT_DIR"

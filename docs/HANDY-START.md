@@ -32,6 +32,7 @@ SCHNAPPER braucht nur Python, keine weiteren Pakete und kein Internet im Betrieb
      `http://127.0.0.1:8800` öffnen.
    - **Beenden:** Strg+C, in Termux über die Tastenleiste **CTRL** und dann **C**.
    - Die Seite ist immer nur auf diesem Handy erreichbar (fest `127.0.0.1`).
+   - Auch über eine Verknüpfung (Symlink) startbar, z. B. `ln -s ~/Schnapper-main/start-schnapper.sh ~/bin/schnapper`.
 
    **Alternative ohne Skript:**
    ```
