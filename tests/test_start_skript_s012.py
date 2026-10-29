@@ -6,6 +6,7 @@ import shutil
 import signal
 import socket
 import subprocess
+import sys
 import tempfile
 import time
 import unittest
@@ -41,13 +42,15 @@ def ohne_schnapper_env(**extra):
 
 @unittest.skipUnless(BASH, "bash nicht verfügbar")
 class StartSkriptLauf(unittest.TestCase):
-    def starte(self, *args):
+    def starte(self, *args, cwd=None, env_extra=None):
         port = freier_port()
-        tmp = tempfile.TemporaryDirectory()
-        self.addCleanup(tmp.cleanup)
+        if cwd is None:
+            tmp = tempfile.TemporaryDirectory()
+            self.addCleanup(tmp.cleanup)
+            cwd = tmp.name
         proc = subprocess.Popen(
-            [BASH, str(SKRIPT), *args], cwd=tmp.name,
-            env=ohne_schnapper_env(SCHNAPPER_PORT=str(port)),
+            [BASH, str(SKRIPT), *args], cwd=cwd,
+            env=ohne_schnapper_env(SCHNAPPER_PORT=str(port), **(env_extra or {})),
             stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
 
         def aufraeumen():
@@ -102,6 +105,25 @@ class StartSkriptLauf(unittest.TestCase):
         out, _ = self.beende(proc)
         self.assertIn(str(BEISPIEL), out)
         self.assertNotIn("meine-angebote.csv", out)
+
+    def test_relativer_python_pfad_zum_aufrufort(self):
+        for rel in ("bin/python", "./bin/python"):
+            with self.subTest(schnapper_python=rel):
+                tmp = tempfile.TemporaryDirectory()
+                self.addCleanup(tmp.cleanup)
+                aufruf = pathlib.Path(tmp.name)
+                self.assertNotEqual(aufruf.resolve(), ROOT)
+                (aufruf / "bin").mkdir()
+                os.symlink(sys.executable, aufruf / "bin" / "python")
+                proc, port = self.starte(cwd=str(aufruf),
+                                         env_extra={"SCHNAPPER_PYTHON": rel})
+                status, html = self.warte_auf_seite(proc, port)
+                self.assertEqual(status, 200)
+                self.assertIn("SCHNAPPER", html)
+                out, err = self.beende(proc)
+                self.assertEqual(proc.returncode, 0, err)
+                self.assertIn("SCHNAPPER läuft: http://127.0.0.1:%d" % port, out)
+                self.assertFalse(lauscht(port))
 
     def test_fehlende_datei(self):
         port = freier_port()
