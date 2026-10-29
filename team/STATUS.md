@@ -320,3 +320,13 @@ Hinweis: `team/tasks.json` wurde nicht separat geändert; die tasks.json-Änderu
 - `team/tasks.json`: S-012 bleibt `review`, Laufvermerk im Hinweis ergänzt.
 - Offen: Test von #44 auf echtem Android/Termux-Gerät; eBay-Sandbox-Schlüssel für #45 fehlen weiterhin.
 - Bericht: `team/runs/20261029-0729-master.md`
+
+## SCHNAPPER MASTER – letzter Lauf (29.10.2026, 08:29 UTC, Lauf 20261029-0829)
+
+- F2 / S-009 / PR #39 (Branch `agent/master/20261022-21`): Ein Doppelklick auf „Angebot hinzufügen“ (oder zwei `requestSubmit()`) legte das Angebot doppelt an. Die CSV hatte dann 2 identische Zeilen, die Anzeige meldete „2 Angebote“. Behoben in `angebotSpeichern` (`app.js`): Das Flag `angebotLaeuft` blockiert ein zweites Absenden, `#angebot-knopf` ist während der Anfrage gesperrt, `finally` gibt beides in allen Ausgängen frei. 5 neue Browsertests (`DoppeltAbsenden`), Gegenprobe rot (failures=3).
+- Commit 778e998, Push a87a977..778e998 als Fast-Forward ohne Force. CI `python-tests` success.
+- Tests: discover 248 OK, S-009-Modul 32/32 OK (vorher 27, 0 Skips), Cloudflare 10/10. CHECK bestanden (AK 1–10), Secret-Scan leer.
+- PR #39: Draft, Kopf 778e998, REST-Kommentar „Lauf 20261029-0829“. Merge-Entscheidung bei Jefrey (ebenso #36, #40, #41, #44, #45, #50).
+- `team/tasks.json`: S-009 bleibt `review`, Laufvermerk im Hinweis ergänzt.
+- Offen: Der Konsolenfilter in AK4/AK5 ist zu breit (CHECK-Empfehlung, nicht blockierend). Die eBay-Sandbox-Schlüssel für #45 fehlen weiterhin.
+- Bericht: `team/runs/20261029-0829-master.md`
