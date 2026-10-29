@@ -7,6 +7,7 @@ import base64
 import builtins
 import datetime as dt
 import io
+import itertools
 import json
 import pathlib
 import re
@@ -86,11 +87,20 @@ class Transport:
 
 
 class Antwort:
-    def __init__(self, roh, status=200):
-        self.roh, self.status = roh, status
+    def __init__(self, roh, status=200, stueck=None):
+        self.roh, self.status, self.pos, self.stueck = roh, status, 0, stueck
+        self.read1_aufrufe = 0
 
     def read(self, n=-1):
-        return self.roh if n < 0 else self.roh[:n]
+        ende = len(self.roh) if n is None or n < 0 else min(len(self.roh), self.pos + n)
+        teil, self.pos = self.roh[self.pos:ende], ende
+        return teil
+
+    def read1(self, n=-1):
+        self.read1_aufrufe += 1
+        if self.stueck is not None:
+            n = self.stueck if n is None or n < 0 else min(n, self.stueck)
+        return self.read(n)
 
     def __enter__(self):
         return self
@@ -471,6 +481,33 @@ class AnfrageTests(OhneNetz):
         self.assertIn("UTF-8", self.fehler(antwort=Antwort(b'{"a": "\xff"}')))
         daten, _ = self.anfrage(antwort=Antwort(b'{"a": "' + b"y" * 1_999_990 + b'"}'))
         self.assertIn("a", daten)
+
+    def test_gesamtzeitlimit_tropfende_antwort(self):  # S-013: Frist über die ganze Anfrage
+        antwort = Antwort(b'{"a": 1}' + b" " * 40, stueck=1)
+        uhr = itertools.count(1000.0, 1.0)  # jede Abfrage: 1 s später
+        with mock.patch.object(ebay.time, "monotonic", side_effect=lambda: next(uhr)):
+            with self.assertRaises(ebay.EbayFehler) as cm:
+                self.anfrage(antwort=antwort, timeout=5)
+        text = str(cm.exception)
+        self.assertIn("Zeitlimit", text)
+        self.assertIn("5 s", text)
+        self.assertLessEqual(antwort.read1_aufrufe, 10)
+        self.assertLess(antwort.pos, len(antwort.roh))
+        self.assertIsNone(cm.exception.__cause__)
+        self.assertNotIn(self.GUT, text)
+        self.assertNotIn("api.sandbox.ebay.com", text)
+        self.assertNotIn(BASIS64, text)
+        self.ohne_geheimnis(cm.exception)
+
+    def test_schnelle_antwort_innerhalb_frist(self):  # S-013: Leseschleife setzt Stücke zusammen
+        antwort = Antwort(b'{"a": 1}' + b" " * 40, stueck=1)
+        daten, _ = self.anfrage(antwort=antwort, timeout=5)
+        self.assertEqual(daten, {"a": 1})
+        self.assertEqual(antwort.read1_aufrufe, 49)  # 48 Byte einzeln + Ende b""
+        antwort = Antwort(b'{"a": "' + b"y" * 200_000 + b'"}')
+        daten, _ = self.anfrage(antwort=antwort)
+        self.assertEqual(len(daten["a"]), 200_000)
+        self.assertGreater(antwort.read1_aufrufe, 2)  # mehrere 64-KiB-Stücke
 
     def test_json_zu_tief_oder_zu_lange_zahl(self):  # AK 11 (S-013 Nachtrag)
         for koerper in (b"[" * 100_000, b"1" * 5000):

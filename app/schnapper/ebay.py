@@ -257,11 +257,27 @@ def _anfrage(methode: str, url: str, kopfzeilen: dict, daten: bytes | None = Non
         raise EbayGesperrt("Nur Token- und Suchendpunkt auf https://api.ebay.com bzw. "
                            "https://api.sandbox.ebay.com sind erlaubt")
     req = urllib.request.Request(url, data=daten, headers=dict(kopfzeilen), method=methode)
+    # `timeout` gilt bei urllib nur pro Socket-Operation. Die Frist begrenzt die ganze Anfrage:
+    # read1() blockiert höchstens einen Socket-Timeout, also dauert es im schlimmsten Fall
+    # `timeout` + 1 Socket-Timeout, bis die Schleife abbricht.
+    frist = time.monotonic() + timeout
+    zu_langsam = False
     try:
         with _oeffner().open(req, timeout=timeout) as antwort:
             if antwort.status != 200:
                 raise EbayFehler(f"eBay HTTP {antwort.status}")
-            roh = antwort.read(MAX_ANTWORT_BYTES + 1)
+            stuecke: list[bytes] = []
+            gelesen = 0
+            while gelesen <= MAX_ANTWORT_BYTES:
+                stueck = antwort.read1(min(64 * 1024, MAX_ANTWORT_BYTES + 1 - gelesen))
+                if not stueck:
+                    break
+                stuecke.append(stueck)
+                gelesen += len(stueck)
+                if time.monotonic() > frist:
+                    zu_langsam = True
+                    break
+            roh = b"".join(stuecke)
     except urllib.error.HTTPError as exc:
         meldung = f"eBay HTTP {exc.code}"
         detail = _fehlertext(exc)
@@ -275,6 +291,8 @@ def _anfrage(methode: str, url: str, kopfzeilen: dict, daten: bytes | None = Non
     except OSError as exc:  # URLError, Timeout, Verbindungsfehler
         grund = getattr(exc, "reason", None) or exc.__class__.__name__
         raise EbayFehler(f"eBay nicht erreichbar: {str(grund)[:200]}") from None
+    if zu_langsam:
+        raise EbayFehler(f"eBay antwortet zu langsam (Zeitlimit {timeout:g} s überschritten)")
     if len(roh) > MAX_ANTWORT_BYTES:
         raise EbayFehler("eBay-Antwort zu groß")
     try:

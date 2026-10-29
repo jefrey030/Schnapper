@@ -83,6 +83,7 @@ PYTHONPATH=app python -m schnapper --ebay "fahrrad" --json   # optional als JSON
 | `eBay HTTP 401 … Zugangsdaten ungültig oder falscher Modus (Sandbox/Produktion)?` | Falsche Schlüssel oder Sandbox-Schlüssel in Produktion (bzw. umgekehrt) |
 | `eBay HTTP 429 …` | Tageslimit erreicht |
 | `eBay nicht erreichbar: …` | Kein Netz, Zeitüberschreitung (15 s) |
+| `eBay antwortet zu langsam (Zeitlimit …)` | Antwort dauert insgesamt länger als 15 s (z. B. tröpfelnd) |
 | `eBay-Antwort zu groß` / `kein gültiges JSON` | Unerwartete Antwort von eBay |
 
 Meldungen enthalten nie Client ID, Secret oder Token.
