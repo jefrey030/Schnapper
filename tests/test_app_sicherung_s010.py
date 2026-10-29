@@ -77,6 +77,16 @@ class Statisch(unittest.TestCase):
         funktion = js[start:js.index("\n}\n", start)]
         self.assertNotIn("fetch(", funktion)
 
+    def test_alarm_anlegen_nutzt_gemeinsame_pruefung(self):
+        js = (WEB / "app.js").read_text(encoding="utf-8")
+        self.assertEqual(js.count("function alarmFehler("), 1)
+        start = js.index("async function alarmAnlegen")
+        funktion = js[start:js.index("\n}\n", start)]
+        self.assertIn("alarmFehler(", funktion)
+        self.assertLess(funktion.index("alarmFehler("), funktion.index("fetch("))
+        start = js.index("function sicherungPruefen")
+        self.assertIn("alarmFehler(w)", js[start:js.index("\n}\n", start)])
+
     def test_alarmpruefung_wie_server(self):
         js = (WEB / "app.js").read_text(encoding="utf-8")
         self.assertFalse("zahlText" in js, "alte Prüfung zahlText noch vorhanden")
@@ -391,6 +401,68 @@ class Browser(unittest.TestCase):
                 status = self.seite.evaluate(
                     "async (q) => (await fetch('/api/suche?' + new URLSearchParams(q))).status", {feld: wert, "text": "X"})
                 self.assertEqual(status, 200)
+
+    def test_alarm_anlegen_nur_wenn_wiederherstellbar(self):
+        """Was die Wiederherstellung verwerfen würde, wird gar nicht erst angelegt (kein /api/suche-Request)."""
+        suchen = []
+        self.seite.on("request", lambda r: suchen.append(r.url) if "/api/suche" in r.url else None)
+        for text, feld, wert, hinweis in (("Rad", "max_preis", "1.299,99", "Bis €"), ("Rad", "max_preis", "10€", "Bis €"),
+                                          ("Rad", "min_rabatt", "12.345", "Ab % billiger"),
+                                          ("x" * 201, "max_preis", "5", "200 Zeichen")):
+            with self.subTest(feld=feld, wert=wert, laenge=len(text)):
+                self.seite.evaluate("document.getElementById('status').textContent = ''")
+                self.seite.fill("#text", text)
+                self.seite.fill('[name="max_preis"]', wert if feld == "max_preis" else "")
+                self.seite.fill('[name="min_rabatt"]', wert if feld == "min_rabatt" else "")
+                self.warte("!document.getElementById('alarm-anlegen').disabled")
+                # Die verzögerte Filtersuche abwarten, damit sie #status nicht nachträglich überschreibt.
+                self.warte("document.getElementById('status').textContent.length > 0")
+                self.seite.evaluate("document.getElementById('status').textContent = ''")
+                suchen.clear()
+                self.seite.click("#alarm-anlegen")
+                self.warte("document.getElementById('status').textContent.startsWith('Preisalarm nicht angelegt')")
+                self.seite.wait_for_timeout(300)
+                self.assertIn(self.stand()[1], (None, []))
+                self.assertIn(hinweis, self.seite.locator("#status").text_content())
+                # Genau die Anfrage, mit der alarmAnlegen() den Wunsch beim Server prüfen würde
+                ziel = self.basis + "/api/suche?" + self.seite.evaluate(
+                    "(w) => new URLSearchParams(Object.fromEntries(Object.entries({text: w.text, sortierung: 'preis', "
+                    "ohne_veraltet: '1', max_preis: w.max_preis, min_rabatt: w.min_rabatt}).filter(([, v]) => v))).toString()",
+                    {"text": text, "max_preis": wert if feld == "max_preis" else "", "min_rabatt": wert if feld == "min_rabatt" else ""})
+                self.assertNotIn(ziel, suchen)
+
+    def test_alarm_rundreise_1299_99(self):
+        self.seite.fill("#text", "Fernseher")
+        self.seite.fill('[name="max_preis"]', "1299,99")
+        self.warte("!document.getElementById('alarm-anlegen').disabled")
+        self.seite.click("#alarm-anlegen")
+        self.warte("JSON.parse(localStorage.getItem('schnapper.alarme')||'[]').length === 1")
+        vorher = self.stand()[1]
+        self.assertEqual(vorher[0]["max_preis"], "1299,99")
+        self.seite.click('[data-ansicht="alarme"]')
+        with self.seite.expect_download() as info:
+            self.seite.click("#sicherung-export")
+        inhalt = pathlib.Path(info.value.path()).read_bytes()
+        self.seite.evaluate("localStorage.clear()")
+        self.seite.reload()
+        self.seite.wait_for_selector("#treffer li")
+        self.assertEqual(self.roh(), [None, None])
+        self.seite.click('[data-ansicht="alarme"]')
+        meldung = self.lade(inhalt)
+        self.assertIn("Wiederhergestellt: 0 gemerkt, 1 Alarme; 0 ungültige Einträge übersprungen", meldung)
+        self.assertEqual(self.stand()[1], vorher)
+
+    def test_gueltige_alarme_weiter_anlegbar(self):
+        for i, (feld, wert) in enumerate((("max_preis", "80"), ("max_preis", "12,50"), ("max_preis", "1299,99"),
+                                          ("min_rabatt", "20,5")), 1):
+            with self.subTest(feld=feld, wert=wert):
+                self.seite.fill("#text", f"Ding{i}")
+                self.seite.fill('[name="max_preis"]', wert if feld == "max_preis" else "")
+                self.seite.fill('[name="min_rabatt"]', wert if feld == "min_rabatt" else "")
+                self.warte("!document.getElementById('alarm-anlegen').disabled")
+                self.seite.click("#alarm-anlegen")
+                self.warte(f"JSON.parse(localStorage.getItem('schnapper.alarme')||'[]').length === {i}")
+                self.assertTrue(self.seite.locator("#status").text_content().startswith("Preisalarm angelegt"))
 
 
 if __name__ == "__main__":
