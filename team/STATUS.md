@@ -301,3 +301,12 @@ Hinweis: `team/tasks.json` wurde nicht separat geändert; die tasks.json-Änderu
 - `team/tasks.json`: S-011 bleibt `review`, Laufvermerk im Hinweis ergänzt.
 - Offen: Test von #41 auf einem echten Gerät. eBay-Sandbox-Schlüssel für #45 (F6) fehlen weiterhin.
 - Bericht: `team/runs/20261029-0528-master.md` (Übergabe an Orchestrator)
+
+## SCHNAPPER MASTER – letzter Lauf (29.10.2026, 06:29 UTC, Lauf 20261029-0629)
+
+- F3 / S-010 / PR #40 (Branch `agent/master/20261022-22`): Gemerkte Angebote mit groß geschriebenem URL-Schema (`HTTPS://…`, vom Server angenommen) gingen beim Wiederherstellen als „ungültig (url)“ verloren. Behoben in `sicherungPruefen` (`/^https?:\/\//i`); `JAVASCRIPT:`, `data:`, `FTP://` bleiben abgelehnt, `href` weiter nur bei `https://`. 3 neue Tests, Gegenprobe rot (failures=2).
+- Commit e1532c9, Push 87eebba..e1532c9 als Fast-Forward ohne Force. CI `python-tests` success.
+- Tests: discover 237 OK, S-010-Modul 21/21 OK (0 Skips), Cloudflare 10/10. CHECK bestanden (AK 1–10), Secret-Scan leer.
+- `team/tasks.json`: S-010 bleibt `review`, Laufvermerk im Hinweis ergänzt.
+- Offen: Merge-Entscheidung #36, #39, #40, #41, #44, #45, #50 bei Jefrey; eBay-Sandbox-Schlüssel für #45 fehlen weiterhin. Späterer F3-Kandidat: Angebots-`id` > 200 Zeichen geht beim Wiederherstellen verloren.
+- Bericht: `team/runs/20261029-0629-master.md`
