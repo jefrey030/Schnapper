@@ -1,5 +1,7 @@
 """Kommandozeile: python -m schnapper DATEI [--suche TEXT] [--max-preis 50] ...
 
+Quellen (genau eine): DATEI, --openprices EAN oder --ebay SUCHBEGRIFF.
+
 Aufruf aus dem Repo-Stamm:  PYTHONPATH=app python -m schnapper beispiele/angebote.json
 """
 from __future__ import annotations
@@ -21,6 +23,10 @@ def main(argv=None) -> int:
     p.add_argument("datei", nargs="?", help=".json oder .csv mit Angeboten")
     p.add_argument("--openprices", metavar="EAN", help="Echte Ladenpreise zu diesem Barcode von Open Prices abrufen "
                    "(nur mit SCHNAPPER_OPENPRICES_FREIGABE=ja)")
+    p.add_argument("--ebay", metavar="SUCHBEGRIFF",
+                   help="Angebote über die eBay Browse API suchen (Sandbox standardmäßig; nur mit "
+                        "SCHNAPPER_EBAY_FREIGABE=ja sowie SCHNAPPER_EBAY_CLIENT_ID und "
+                        "SCHNAPPER_EBAY_CLIENT_SECRET; Produktion nur mit SCHNAPPER_EBAY_PRODUKTION=ja)")
     p.add_argument("--tage", type=int, default=90, help="Zeitraum für --openprices in Tagen")
     p.add_argument("--suche", default="", help="Suchwörter, alle müssen im Titel vorkommen")
     p.add_argument("--max-preis", help="Höchster Gesamtpreis inkl. Versand")
@@ -33,11 +39,13 @@ def main(argv=None) -> int:
     p.add_argument("--json", action="store_true", help="Ausgabe als JSON")
     p.add_argument("--verlauf", help="Preisverlauf-Datei: Preise festhalten und Tiefstpreise erkennen")
     a = p.parse_args(argv)
-    if bool(a.datei) == bool(a.openprices):
-        p.error("entweder DATEI oder --openprices EAN angeben")
+    if sum(x is not None for x in (a.datei, a.openprices, a.ebay)) != 1:
+        p.error("genau eines angeben: DATEI, --openprices EAN oder --ebay SUCHBEGRIFF")
+    if a.openprices == "":
+        p.error("--openprices braucht eine EAN")
 
     lizenz = None
-    if a.openprices:
+    if a.openprices is not None:
         from .openprices import LIZENZ, OpenPricesAdapter, OpenPricesFehler, OpenPricesGesperrt
         try:
             adapter = OpenPricesAdapter(a.openprices, a.tage)
@@ -46,6 +54,17 @@ def main(argv=None) -> int:
             print(f"Open Prices: {exc}", file=sys.stderr)
             return 3
         lizenz = LIZENZ
+    elif a.ebay is not None:
+        from .ebay import HINWEIS_QUELLE, EbayAdapter, EbayFehler, EbayGesperrt
+        try:
+            adapter = EbayAdapter(a.ebay)
+            ergebnis = adapter.lade()
+        except (ValueError, EbayGesperrt, EbayFehler) as exc:
+            print(f"eBay: {exc}", file=sys.stderr)
+            return 3
+        for hinweis in adapter.hinweise:
+            print(f"eBay-Hinweis: {hinweis}", file=sys.stderr)
+        lizenz = HINWEIS_QUELLE
     else:
         ergebnis = lies_datei(a.datei)
     verlauf = None
