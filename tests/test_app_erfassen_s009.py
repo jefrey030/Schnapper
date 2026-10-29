@@ -386,6 +386,116 @@ class Browser(ServerTest):
         self.assertEqual(meldungen, [])
 
 
+@unittest.skipUnless(sync_playwright is not None and (CHROMIUM is not None or os.environ.get("PLAYWRIGHT_BROWSERS_PATH")),
+                     "Playwright oder Chromium fehlt")
+class DoppeltAbsenden(ServerTest):
+    """Lauf 20261029-0829: Doppelklick/doppeltes Absenden darf nur ein Angebot anlegen."""
+
+    def setUp(self):
+        super().setUp()
+        self.meldungen = []
+        self.posts = []
+        self._pw = sync_playwright().start()
+        kw = {"executable_path": str(CHROMIUM)} if CHROMIUM else {}
+        self.browser = self._pw.chromium.launch(**kw)
+        kontext = self.browser.new_context(viewport={"width": 390, "height": 844})
+        # Nur der lokale Server; alles andere wird blockiert.
+        kontext.route(re.compile(r"^(?!" + re.escape(self.basis) + ").*"), lambda r: r.abort())
+        self.seite = kontext.new_page()
+        self.seite.on("console", lambda m: self.meldungen.append(m.text) if m.type == "error" else None)
+        self.seite.on("pageerror", lambda e: self.meldungen.append(str(e)))
+        self.seite.on("request", lambda r: self.posts.append(r.url)
+                      if r.method == "POST" and r.url.endswith("/api/angebot") else None)
+        self.seite.goto(self.basis + "/")
+        self.seite.wait_for_selector("#treffer li")
+        self.knopf = self.seite.locator("#angebot-knopf")
+
+    def tearDown(self):
+        try:
+            self.browser.close()
+            self._pw.stop()
+        finally:
+            super().tearDown()
+
+    def fuelle(self, url="https://x.example/1"):
+        form = self.seite.locator("#angebot-form")
+        form.locator('[name="titel"]').fill("Doppelt Rad")
+        form.locator('[name="preis"]').fill("10")
+        form.locator('[name="url"]').fill(url)
+
+    def warte_status(self, anfang):
+        self.seite.wait_for_function(
+            "a => document.getElementById('angebot-status').textContent.startsWith(a)", arg=anfang)
+        self.seite.wait_for_timeout(300)  # Zeit für eine eventuell nachlaufende zweite Anfrage
+
+    def csv_datenzeilen(self):
+        status, _, inhalt = self.hole("/api/angebote.csv")
+        self.assertEqual(status, 200)
+        zeilen = [z for z in inhalt.decode("utf-8-sig").splitlines() if z.strip()]
+        return zeilen[1:]
+
+    def test_ak1_doppelklick_ein_angebot(self):
+        self.fuelle()
+        self.seite.locator('#angebot-form button[type=submit]').dblclick()
+        self.warte_status("Gespeichert")
+        self.assertEqual(len(self.posts), 1)
+        self.assertEqual(len(self.csv_datenzeilen()), 1)
+        self.assertEqual(self.seite.locator("#angebot-status").text_content(),
+                         "Gespeichert. Deine Liste hat jetzt 1 Angebot.")
+        self.assertEqual(self.meldungen, [])
+
+    def test_ak2_zweimal_request_submit_ein_angebot(self):
+        self.fuelle()
+        self.seite.evaluate("() => { const f = document.getElementById('angebot-form');"
+                            " f.requestSubmit(); f.requestSubmit(); }")
+        self.warte_status("Gespeichert")
+        self.assertEqual(len(self.posts), 1)
+        self.assertEqual(len(self.csv_datenzeilen()), 1)
+        self.assertIn("jetzt 1 Angebot.", self.seite.locator("#angebot-status").text_content())
+        self.assertEqual(self.meldungen, [])
+
+    def test_ak3_knopf_gesperrt_waehrend_anfrage(self):
+        gehalten = []
+        self.seite.route(self.basis + "/api/angebot", lambda r: gehalten.append(r))
+        self.fuelle()
+        self.knopf.click()
+        for _ in range(250):
+            if gehalten:
+                break
+            self.seite.wait_for_timeout(20)
+        self.assertEqual(len(gehalten), 1)
+        self.assertTrue(self.knopf.is_disabled())
+        gehalten[0].continue_()
+        self.warte_status("Gespeichert")
+        self.assertTrue(self.knopf.is_enabled())
+        self.assertEqual(len(self.csv_datenzeilen()), 1)
+        self.assertEqual(self.meldungen, [])
+
+    def test_ak4_nach_fehlerantwort_wieder_aktiv(self):
+        self.fuelle(url="http://x.example/1")
+        self.knopf.click()
+        self.seite.wait_for_function(
+            "() => !['', 'Speichere …'].includes(document.getElementById('angebot-status').textContent)")
+        fehler = self.seite.locator("#angebot-status").text_content()
+        self.assertFalse(fehler.startswith("Gespeichert") or fehler.startswith("Server nicht erreichbar"), fehler)
+        self.assertTrue(self.knopf.is_enabled())
+        self.fuelle(url="https://x.example/1")
+        self.knopf.click()
+        self.warte_status("Gespeichert")
+        self.assertEqual(len(self.csv_datenzeilen()), 1)
+        # Die 422-Antwort selbst meldet Chromium als Ladefehler in der Konsole.
+        self.assertEqual([m for m in self.meldungen if "422" not in m], [])
+
+    def test_ak5_server_nicht_erreichbar_wieder_aktiv(self):
+        self.seite.route(self.basis + "/api/angebot", lambda r: r.abort())
+        self.fuelle()
+        self.knopf.click()
+        self.warte_status("Server nicht erreichbar")
+        self.assertTrue(self.knopf.is_enabled())
+        # Die abgebrochene Anfrage meldet Chromium als Ladefehler in der Konsole.
+        self.assertEqual([m for m in self.meldungen if "ERR_FAILED" not in m], [])
+
+
 class ErfassenTypen(ServerTest):
     """Lauf 20261028-1829: Typ- und Längenprüfung der Erfassungsfelder in POST /api/angebot."""
 

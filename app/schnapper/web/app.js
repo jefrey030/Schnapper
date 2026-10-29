@@ -361,9 +361,16 @@ function zaehler() {
   $("anzahl-alarm").textContent = `⚡${alarmTreffer}`;
 }
 
+// Sperre gegen doppeltes Absenden (Doppelklick, requestSubmit, Enter) während eine Anfrage läuft.
+let angebotLaeuft = false;
+
 async function angebotSpeichern(ev) {
   ev.preventDefault();
+  if (angebotLaeuft) return;
   const form = ev.target;
+  const knopf = $("angebot-knopf");
+  angebotLaeuft = true;
+  knopf.disabled = true;
   $("angebot-status").textContent = "Speichere …";
   try {
     const antwort = await fetch("/api/angebot", {
@@ -378,6 +385,9 @@ async function angebotSpeichern(ev) {
     await suchen();
   } catch {
     $("angebot-status").textContent = "Server nicht erreichbar. Läuft SCHNAPPER noch?";
+  } finally {
+    angebotLaeuft = false;
+    knopf.disabled = false;
   }
 }
 
