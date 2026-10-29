@@ -354,6 +354,8 @@ class Missionsspeicher:
             if index is None:
                 raise MissionsFehler("Mission nicht gefunden")
             alt = liste[index]
+            if zeit < alt.erstellt_am:
+                raise MissionsFehler("Laufzeitpunkt liegt vor der Erstellung")
             if not erzwingen and not alt.ist_faellig(zeit):
                 raise MissionsFehler("Mission ist nicht aktiv oder noch nicht fällig")
             neu = Mission(**{**alt.__dict__, "letzter_lauf_am": zeit})
