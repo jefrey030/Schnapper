@@ -127,7 +127,7 @@ class Mission:
         unbekannt = zustand_set - set(ZUSTAENDE)
         if unbekannt:
             raise MissionsFehler(f"Unbekannter Zustand: {', '.join(sorted(unbekannt))}")
-        ident = mission_id or uuid.uuid4().hex
+        ident = uuid.uuid4().hex if mission_id is None else mission_id
         if not isinstance(ident, str) or not _ID.fullmatch(ident):
             raise MissionsFehler("Missions-ID ist ungültig")
         return cls(
