@@ -589,6 +589,82 @@ class Browser(unittest.TestCase):
         self.alles_gestoppt()
         self.assertEqual(self.fokus(), "barcode")
 
+    # ---------- Überholende Barcode-Abfragen (Handsuche + Kamera-Treffer) ----------
+    def zwei_haengende_abfragen(self):
+        """Handsuche A hängt, Kamera-Treffer startet B, die ebenfalls hängt. Antworten steuert der Test."""
+        self.offen = []
+        self.seite.unroute(self.basis + "/api/openprices")
+
+        def halten(route):
+            self.abfragen.append(json.loads(route.request.post_data or "{}"))
+            self.offen.append(route)
+
+        self.seite.route(self.basis + "/api/openprices", halten)
+        self.oeffne("treffer")
+        self.seite.fill("#barcode", "12345678")
+        self.seite.click("#barcode-knopf")
+        self.warte_offen(1)
+        self.assertTrue(self.wert("document.getElementById('barcode-knopf').disabled"))
+        self.starte()
+        self.warte_offen(2)
+        self.assertEqual(self.abfragen, [{"ean": "12345678"}, {"ean": "4008400402222"}])
+        self.assertEqual(self.seite.input_value("#barcode"), "4008400402222")
+
+    def warte_offen(self, anzahl, sekunden=10):
+        ende = time.monotonic() + sekunden
+        while len(self.offen) < anzahl:
+            if time.monotonic() > ende:
+                self.fail(f"Zeitüberschreitung: {anzahl} offene Abfragen")
+            self.kurz_warten()  # hält die Ereignisschleife (Route-Handler) am Laufen
+
+    def antworte(self, i, lizenz=None, status=200, fehler=None):
+        if fehler is not None:
+            body = {"fehler": fehler}
+        else:
+            body = {"treffer": [], "lizenz": lizenz, "begrenzung": "", "hinweise": []}
+        self.offen[i].fulfill(status=status, content_type="application/json; charset=utf-8", body=json.dumps(body))
+        self.kurz_warten()
+
+    def barcode_anzeige(self):
+        return {
+            "lizenz": self.seite.locator("#barcode-lizenz").text_content(),
+            "status": self.seite.locator("#barcode-status").text_content(),
+            "treffer": self.wert("document.getElementById('barcode-treffer').children.length"),
+            "knopf_aus": self.wert("document.getElementById('barcode-knopf').disabled"),
+            "feld": self.seite.input_value("#barcode"),
+        }
+
+    B_ANGEZEIGT = {"lizenz": "LIZENZ-B", "status": "Keine passenden gemeldeten Preise gefunden.", "treffer": 0,
+                   "knopf_aus": False, "feld": "4008400402222"}
+
+    def test_kamera_treffer_waehrend_handsuche_neue_antwort_zuerst(self):
+        """T1: B (Kamera) antwortet zuerst, dann A (Handsuche): A wird verworfen."""
+        self.zwei_haengende_abfragen()
+        self.antworte(1, "LIZENZ-B")
+        self.assertEqual(self.barcode_anzeige(), self.B_ANGEZEIGT)
+        self.antworte(0, "LIZENZ-A")
+        self.assertEqual(self.barcode_anzeige(), self.B_ANGEZEIGT)
+
+    def test_kamera_treffer_waehrend_handsuche_alte_antwort_zuerst(self):
+        """T2: A antwortet zuerst: nichts von A sichtbar, Knopf bleibt aus, bis B da ist."""
+        self.zwei_haengende_abfragen()
+        self.antworte(0, "LIZENZ-A")
+        self.assertEqual(self.barcode_anzeige(), {"lizenz": "", "status": "Frage Ladenpreise ab …", "treffer": 0,
+                                                  "knopf_aus": True, "feld": "4008400402222"})
+        self.antworte(1, "LIZENZ-B")
+        self.assertEqual(self.barcode_anzeige(), self.B_ANGEZEIGT)
+
+    def test_veraltete_abfrage_mit_fehler(self):
+        """T3: A scheitert (429), nachdem B beantwortet ist: der Status von B bleibt stehen."""
+        self.zwei_haengende_abfragen()
+        self.antworte(1, "LIZENZ-B")
+        self.antworte(0, status=429, fehler="Es läuft bereits eine Barcode-Abfrage.")
+        self.assertEqual(self.barcode_anzeige(), self.B_ANGEZEIGT)
+        # Die Netzwerkmeldung des Browsers zum 429 ist erwartet und kein App-Fehler.
+        erwartet = "Failed to load resource: the server responded with a status of 429 (Too Many Requests)"
+        self.assertIn(erwartet, self.meldungen)
+        self.meldungen.remove(erwartet)
+
     # ---------- Seite verlassen ----------
     def test_visibilitychange_beendet_scan(self):
         self.oeffne("leer")

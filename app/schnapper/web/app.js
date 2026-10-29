@@ -8,6 +8,9 @@ const MAX_MERK = 200;
 const MAX_ALARME = 50;
 let timer = null;
 let anfrageNr = 0;
+// Generationszähler für Barcode-Abfragen: nur die zuletzt gestartete darf Anzeige und Knopf ändern
+// (Handsuche und Kamera-Treffer können sich überholen).
+let barcodeAbfrage = 0;
 
 // ---------- Speicher (nur auf diesem Gerät) ----------
 // localStorage kann fehlen oder Fehler werfen (privates Fenster, gesperrte Website-Daten).
@@ -184,6 +187,7 @@ async function hochladen(ev) {
 
 async function barcodeSuchen(ev) {
   ev.preventDefault();
+  const nr = ++barcodeAbfrage;  // ältere, noch laufende Abfragen verfallen
   const ean = $("barcode").value.trim();
   const status = $("barcode-status");
   const knopf = $("barcode-knopf");
@@ -191,6 +195,7 @@ async function barcodeSuchen(ev) {
   $("barcode-lizenz").textContent = "";
   if (!/^[0-9]{8,14}$/.test(ean)) {
     status.textContent = "Bitte einen Barcode mit 8 bis 14 Ziffern eingeben.";
+    knopf.disabled = false;  // eine verfallene ältere Abfrage gibt den Knopf nicht mehr frei
     return;
   }
   knopf.disabled = true;
@@ -201,7 +206,9 @@ async function barcodeSuchen(ev) {
       headers: { "X-Schnapper": "1", "Content-Type": "application/json" },
       body: JSON.stringify({ ean }),
     });
+    if (nr !== barcodeAbfrage) return;
     const daten = await antwort.json();
+    if (nr !== barcodeAbfrage) return;
     if (!antwort.ok) {
       status.textContent = daten.fehler || "Ladenpreise konnten nicht abgerufen werden.";
       return;
@@ -218,9 +225,9 @@ async function barcodeSuchen(ev) {
       : `${daten.treffer.length} Preise gefunden · ${daten.begrenzung}`;
     if (daten.hinweise.length) status.textContent += ` · ${daten.hinweise.length} Einträge übersprungen`;
   } catch {
-    status.textContent = "Server oder Preisquelle nicht erreichbar.";
+    if (nr === barcodeAbfrage) status.textContent = "Server oder Preisquelle nicht erreichbar.";
   } finally {
-    knopf.disabled = false;
+    if (nr === barcodeAbfrage) knopf.disabled = false;
   }
 }
 
