@@ -271,3 +271,13 @@ Hinweis: `team/tasks.json` wurde nicht separat geändert; die tasks.json-Änderu
 - `team/tasks.json`: S-009 bleibt `review` (in Arbeit in PR #39), Laufvermerk im Hinweis ergänzt.
 - Offen: Randfall `'=x` als Originalwert kommt als `=x` zurück (nicht blockierend; Lösung wäre symmetrisches Escaping). eBay-Sandbox-Schlüssel für #45 (F6) fehlen weiterhin.
 - Bericht: `team/runs/20261029-0229-master.md` (Übergabe an Orchestrator)
+
+## SCHNAPPER MASTER – letzter Lauf (29.10.2026, 03:28 UTC, Lauf 20261029-0328)
+
+- F1 / PR #36 (Branch `agent/master/20261022-20`): Neuer Test `tests/test_tasks_f1_review.py` (+70, offline). Er sichert ab, dass S-009–S-013 auf `review` bleiben (Hinweis nennt PR und Branch) und weder `choose_task` noch die LEAD-Liste aus `team/agent.py` sie doppelt vergibt. Dazu kommt eine Selbstprüfung auf einer `deepcopy`. Testname in `tests/test_branches_s006.py` auf `test_s006_erledigt_und_nennt_alle_kandidaten` korrigiert (1 −/1 +), damit ist K1 erledigt. `team/tasks.json` und der Masterplan sind im PR unverändert.
+- Commit 397d0e2, Push c4ac5c5..397d0e2 als Fast-Forward ohne Force.
+- Tests: discover 220 OK (vorher 216, +4), `tests.test_tasks_f1_review` 4/4 OK, Cloudflare 10/10 pass. Gegenproben rot (S-012 open → failures=15, ohne #44 → 1, S-009 open → 15). CHECK bestanden (AK 1–9), Secret-Scan leer.
+- PR #36: Draft, Kopf 397d0e2, Body um Nachtrag „Update Lauf 20261029-0328“ ergänzt (K1 erledigt, Vermerk zu tests/ als reiner Testergänzung). Merge-Entscheidung bei Jefrey (ebenso #39, #40, #41, #44, #45, #50).
+- `team/tasks.json`: S-004–S-006 bleiben `proposed` (in #36 `done`, wirksam erst nach Merge), Laufvermerk bei S-006 ergänzt.
+- Offen: eBay-Sandbox-Schlüssel für #45 (F6) fehlen weiterhin.
+- Bericht: `team/runs/20261029-0328-master.md` (Übergabe an Orchestrator)
