@@ -310,3 +310,13 @@ Hinweis: `team/tasks.json` wurde nicht separat geändert; die tasks.json-Änderu
 - `team/tasks.json`: S-010 bleibt `review`, Laufvermerk im Hinweis ergänzt.
 - Offen: Merge-Entscheidung #36, #39, #40, #41, #44, #45, #50 bei Jefrey; eBay-Sandbox-Schlüssel für #45 fehlen weiterhin. Späterer F3-Kandidat: Angebots-`id` > 200 Zeichen geht beim Wiederherstellen verloren.
 - Bericht: `team/runs/20261029-0629-master.md`
+
+## SCHNAPPER MASTER – letzter Lauf (29.10.2026, 07:29 UTC, Lauf 20261029-0729)
+
+- F5 / S-012 / PR #44 (Branch `agent/master/20261022-23`): Beim Aufruf über einen Symlink (z. B. `~/bin/schnapper` oder Termux:Widget-Verknüpfung) nahm `start-schnapper.sh` den Ordner des Symlinks als Skriptordner und brach ohne Argument mit „Datei nicht gefunden: …/bin/app/vorlagen/meine-angebote.csv“ (Exit 2) ab. Behoben: Python wird zuerst gesucht und geprüft, danach löst es den Skriptordner per `pathlib.Path(...).resolve().parent` auf (nur Builtins + Python). Absolute und relative Symlinks sowie Ketten funktionieren, Datei-Argument bleibt relativ zum Aufrufort. Neuer Test `test_start_ueber_symlink` (3 Subtests), Gegenprobe rot (failures=3).
+- Commit 7b9ae83, Push b03b986..7b9ae83 als Fast-Forward ohne Force. CI `python-tests` success.
+- Tests: discover 236 OK (0 Skips), S-012-Modul 20/20 OK (vorher 19), Cloudflare 10/10. CHECK bestanden (AK 1–10), Secret-Scan leer.
+- PR #44: Draft, Kopf 7b9ae83, Body um Abschnitt „Lauf 20261029-0729“ ergänzt. Merge-Entscheidung bei Jefrey (ebenso #36, #39, #40, #41, #45, #50).
+- `team/tasks.json`: S-012 bleibt `review`, Laufvermerk im Hinweis ergänzt.
+- Offen: Test von #44 auf echtem Android/Termux-Gerät; eBay-Sandbox-Schlüssel für #45 fehlen weiterhin.
+- Bericht: `team/runs/20261029-0729-master.md`
