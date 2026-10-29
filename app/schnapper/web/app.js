@@ -361,6 +361,36 @@ function zaehler() {
   $("anzahl-alarm").textContent = `⚡${alarmTreffer}`;
 }
 
+// Sperre gegen doppeltes Absenden (Doppelklick, requestSubmit, Enter) während eine Anfrage läuft.
+let angebotLaeuft = false;
+
+async function angebotSpeichern(ev) {
+  ev.preventDefault();
+  if (angebotLaeuft) return;
+  const form = ev.target;
+  const knopf = $("angebot-knopf");
+  angebotLaeuft = true;
+  knopf.disabled = true;
+  $("angebot-status").textContent = "Speichere …";
+  try {
+    const antwort = await fetch("/api/angebot", {
+      method: "POST",
+      headers: { "X-Schnapper": "1", "Content-Type": "application/json" },
+      body: JSON.stringify(Object.fromEntries(new FormData(form))),
+    });
+    const daten = await antwort.json();
+    if (!antwort.ok) { $("angebot-status").textContent = daten.fehler || "Angebot konnte nicht gespeichert werden."; return; }
+    form.reset();
+    $("angebot-status").textContent = `Gespeichert. Deine Liste hat jetzt ${daten.anzahl} Angebot${daten.anzahl === 1 ? "" : "e"}.`;
+    await suchen();
+  } catch {
+    $("angebot-status").textContent = "Server nicht erreichbar. Läuft SCHNAPPER noch?";
+  } finally {
+    angebotLaeuft = false;
+    knopf.disabled = false;
+  }
+}
+
 function zeige(ansicht) {
   for (const knopf of document.querySelectorAll(".ansichten button")) {
     knopf.setAttribute("aria-pressed", String(knopf.dataset.ansicht === ansicht));
@@ -373,6 +403,7 @@ function zeige(ansicht) {
 
 document.addEventListener("DOMContentLoaded", () => {
   $("barcode-form").addEventListener("submit", barcodeSuchen);
+  $("angebot-form").addEventListener("submit", angebotSpeichern);
   $("filter").addEventListener("input", spaeter);
   $("filter").addEventListener("submit", (e) => { e.preventDefault(); suchen(); });
   $("datei").addEventListener("change", hochladen);

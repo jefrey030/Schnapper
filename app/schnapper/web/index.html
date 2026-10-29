@@ -76,6 +76,33 @@
     <p id="barcode-lizenz" class="status"></p>
   </section>
 
+  <section id="erfassen" class="erfassen-bereich" aria-label="Angebot erfassen">
+    <h2>Angebot selbst erfassen</h2>
+    <p>Quelle: eigene</p>
+    <form id="angebot-form" class="angebot-form" autocomplete="off">
+      <label>Titel<input name="titel" required maxlength="300" placeholder="z. B. Fahrrad 28 Zoll"></label>
+      <div class="reihe">
+        <label>Preis €<input name="preis" inputmode="decimal" required placeholder="12,50"></label>
+        <label>Versand €<input name="versand" inputmode="decimal" placeholder="0"></label>
+      </div>
+      <div class="reihe">
+        <label>Referenzpreis €<input name="referenzpreis" inputmode="decimal" placeholder="optional"></label>
+        <label>Zustand
+          <select name="zustand">
+            <option value="neu">neu</option><option value="wie_neu">wie neu</option>
+            <option value="gebraucht">gebraucht</option><option value="defekt">defekt</option>
+            <option value="unbekannt" selected>unbekannt</option>
+          </select>
+        </label>
+      </div>
+      <label>Link<input name="url" type="url" required placeholder="https://"></label>
+      <label>Kategorie<input name="kategorie" maxlength="100" placeholder="optional"></label>
+      <button id="angebot-knopf" type="submit" class="knopf">Angebot hinzufügen</button>
+    </form>
+    <p id="angebot-status" class="status" aria-live="polite"></p>
+    <a id="csv-download" href="/api/angebote.csv" download>Liste als CSV herunterladen</a>
+  </section>
+
   <p id="status" class="status" aria-live="polite">Lade …</p>
   <details id="probleme" class="probleme" hidden>
     <summary id="probleme-titel"></summary>
