@@ -135,7 +135,7 @@ def zeilen_aus_antwort(antwort, umgebung: str = "sandbox",
         # Browse may omit itemSummaries for a genuine zero-result search.
         # A missing list with positive/unknown total must not look like a
         # successful empty search (e.g. upstream response format changed).
-        if antwort.get("total") != 0:
+        if type(antwort.get("total")) is not int or antwort["total"] != 0:
             raise EbayFehler("'itemSummaries' fehlt bei unbekannter oder positiver Trefferzahl")
         items = []
     if not isinstance(items, list):
