@@ -150,3 +150,13 @@ button, input, select { touch-action: manipulation; }
   .mission-karte .aktionsreihe .knopf { min-height: 44px; }
   .preis { font-size: 21px; }
 }
+/* S-009: Angebot selbst erfassen */
+.erfassen-bereich { margin: 18px 0; padding: 14px; background: var(--flaeche);
+  border: 1px solid var(--linie); border-radius: 14px; }
+.erfassen-bereich h2 { margin: 0; font-size: 18px; }
+.erfassen-bereich > p { margin: 8px 0; color: var(--leise); font-size: 14px; }
+#angebot-form { display: flex; flex-direction: column; gap: 8px; width: 100%; }
+#angebot-form label { display: flex; flex-direction: column; gap: 4px; font-size: 13px; color: var(--leise); min-width: 0; }
+#angebot-form input, #angebot-form select { width: 100%; min-width: 0; box-sizing: border-box; min-height: 44px;
+  padding: 10px 12px; border: 1px solid var(--linie); border-radius: 10px; font: inherit; background: var(--grund); color: var(--text); }
+#csv-download { display: inline-block; margin-top: 6px; color: var(--akzent); font-weight: 600; min-height: 32px; padding: 4px 0; }

@@ -15,10 +15,13 @@ Missionen und BLITZ-Deduplizierung werden getrennt davon lokal unter
 from __future__ import annotations
 
 import argparse
+import csv
 import datetime as dt
+import io
 import ipaddress
 import json
 import pathlib
+import secrets
 import sys
 import threading
 import uuid
@@ -29,9 +32,9 @@ from urllib.parse import parse_qs, urlsplit
 
 from .adapter import finde_in
 from .alarm import Wunsch
-from .angebot import ZUSTAENDE, AngebotFehler, geld
+from .angebot import ZUSTAENDE, Angebot, AngebotFehler, geld
 from .blitz import Blitz, BlitzFehler, BlitzKonflikt
-from .einlesen import Importergebnis, lies_datei, lies_text
+from .einlesen import CSV_FORMEL_START, Importergebnis, lies_datei, lies_text
 from .mission import Mission, Missionsspeicher, MissionsFehler, MissionsKonflikt
 from .quellen import QuellenFehler, Register
 from .sicherer_speicher import dateien_wiederherstellen, dateisperre, lese_fd, missionslauf_sperre
@@ -49,6 +52,14 @@ DATEIEN = {"/": ("index.html", "text/html; charset=utf-8"),
            "/sw.js": ("sw.js", "text/javascript; charset=utf-8")}
 MAX_UPLOAD = 5 * 1024 * 1024
 MAX_BACKUP_BYTES = 12 * 1024 * 1024
+MAX_ANGEBOT = 4096  # ein einzelnes, in der App erfasstes Angebot (S-009)
+CSV_SPALTEN = ("id", "titel", "preis", "versand", "referenzpreis", "zustand", "quelle", "kategorie", "url",
+               "erfasst_am")
+ERFASSEN_FELDER = ("titel", "preis", "versand", "referenzpreis", "zustand", "url", "kategorie")
+TEXT_FELDER = ("titel", "zustand", "url", "kategorie")
+GELD_FELDER = ("preis", "versand", "referenzpreis")
+PFLICHT_FELDER = ("titel", "preis", "url")  # null gilt nur bei optionalen Feldern als leer
+MAX_KATEGORIE = 100  # gleich maxlength="100" im Formular (index.html)
 SICHERHEIT = {
     "Content-Security-Policy": "default-src 'none'; script-src 'self'; style-src 'self'; connect-src 'self'; "
                                "img-src 'self' data:; manifest-src 'self'; base-uri 'none'; form-action 'none'; frame-ancestors 'none'",
@@ -154,6 +165,23 @@ class Zustand:
             with self._lock:
                 self._daten = (geladen, name, False)
 
+    def hinzufuegen(self, angebot: Angebot) -> int:
+        """Hängt ein selbst erfasstes Angebot an; die Beispielliste wird dabei verworfen
+        (keine ausgedachten Daten mit eigenen mischen). Gibt die neue Anzahl zurück."""
+        # Wie ersetzen(): erst den Verlauf atomar schreiben, dann aktivieren. Bei einem
+        # Speicherfehler (OSError) bleibt die bisherige Liste unverändert.
+        with self._import_lock:
+            self.preise_merken(Importergebnis(angebote=[angebot], fehler=[]))
+            with self._lock:
+                alt, name, beispiel = self._daten
+                if beispiel:
+                    neu = Importergebnis(angebote=[angebot], fehler=[])
+                    name = "Eigene Angebote"
+                else:
+                    neu = Importergebnis(angebote=[*alt.angebote, angebot], fehler=list(alt.fehler))
+                self._daten = (neu, name, False)
+                return len(neu.angebote)
+
     def preise_merken(self, geladen: Importergebnis):
         if self.verlauf is not None:
             # Atomarer Verlauf: keine ungespeicherten/verworfenen Beobachtungen
@@ -188,6 +216,28 @@ def filter_aus_query(q: dict) -> tuple[Filter, str]:
                region=eins("region")[:100], entfernung_km=entfernung,
                ohne_veraltet=eins("ohne_veraltet") == "1", ohne_verdacht=eins("mit_verdacht") != "1")
     return f, sortierung
+
+
+def _csv_zelle(text: str) -> str:
+    """Schutz vor Formel-Injektion (CWE-1236): führendes "'" vor = + - @ Tab CR."""
+    return "'" + text if text.startswith(CSV_FORMEL_START) else text
+
+
+def als_csv(angebote) -> str:
+    """Angebote im Format der Vorlage app/vorlagen/meine-angebote.csv (Semikolon, UTF-8).
+
+    Textzellen, die mit = + - @ Tab oder CR beginnen, bekommen ein führendes "'" (Formelschutz);
+    lies_text(..., "csv") entfernt es beim Wiedereinlesen.
+    """
+    z = _csv_zelle
+    puffer = io.StringIO()
+    w = csv.writer(puffer, delimiter=";", lineterminator="\n")
+    w.writerow(CSV_SPALTEN)
+    for a in angebote:
+        w.writerow([z(a.id), z(a.titel), str(a.preis), str(a.versand),
+                    "" if a.referenzpreis is None else str(a.referenzpreis),
+                    z(a.zustand), z(a.quelle), z(a.kategorie), z(a.url), a.erfasst_am.isoformat()])
+    return puffer.getvalue()
 
 
 def als_json(ergebnis, name: str, beispiel: bool, verlauf: Verlauf | None = None) -> dict:
@@ -314,6 +364,20 @@ def baue_handler(zustand: Zustand):
                 geladen, name, beispiel = zustand.lesen()
                 return self._json(HTTPStatus.OK, als_json(finde_in(geladen, f, sortierung), name, beispiel,
                                                          zustand.verlauf))
+            if teile.path == "/api/angebote.csv":
+                geladen, _, beispiel = zustand.lesen()
+                text = als_csv([] if beispiel else geladen.angebote)
+                self.send_response(HTTPStatus.OK)
+                inhalt = text.encode("utf-8")
+                self.send_header("Content-Type", "text/csv; charset=utf-8")
+                self.send_header("Content-Disposition", 'attachment; filename="meine-angebote.csv"')
+                self.send_header("Content-Length", str(len(inhalt)))
+                for k, v in SICHERHEIT.items():
+                    self.send_header(k, v)
+                self.end_headers()
+                if self.command != "HEAD":
+                    self.wfile.write(inhalt)
+                return None
             if teile.path == "/api/quellen":
                 return self._json(HTTPStatus.OK, {"quellen": [
                     {"kennung": q.kennung, "name": q.name, "entscheidung": q.entscheidung, "hinweis": q.hinweis}
@@ -359,12 +423,14 @@ def baue_handler(zustand: Zustand):
                 return self._json(HTTPStatus.FORBIDDEN, {"fehler": "Host nicht erlaubt"})
             if not _origin_erlaubt(self.headers.get("Origin"), *host):
                 return self._json(HTTPStatus.FORBIDDEN, {"fehler": "Fremde Webseite nicht erlaubt"})
-            if ziel not in ("/api/import", "/api/openprices", "/api/missionen", "/api/backup") \
+            if ziel not in ("/api/import", "/api/openprices", "/api/angebot", "/api/missionen", "/api/backup") \
                     and not ziel.startswith("/api/missionen/"):
                 return self._json(HTTPStatus.NOT_FOUND, {"fehler": "Nicht gefunden"})
             # Schutz gegen fremde Webseiten, die im Hintergrund Daten hochladen wollen
             if self.headers.get("X-Schnapper") != "1":
                 return self._json(HTTPStatus.FORBIDDEN, {"fehler": "Anfrage nicht erlaubt"})
+            if ziel == "/api/angebot":
+                return self._angebot_erfassen()
             if ziel == "/api/backup":
                 if zustand.missionen is None or zustand.blitz is None or zustand.datenverzeichnis is None:
                     return self._json(HTTPStatus.SERVICE_UNAVAILABLE,
@@ -546,7 +612,56 @@ def baue_handler(zustand: Zustand):
                                   {"fehler": "Liste nicht übernommen: Preisverlauf konnte nicht gespeichert werden"})
             return self._json(HTTPStatus.OK, {"eingelesen": len(geladen.angebote), "ungueltig": geladen.fehler})
 
+        def _angebot_erfassen(self):
+            try:
+                laenge = int(self.headers.get("Content-Length", ""))
+            except ValueError:
+                return self._json(HTTPStatus.LENGTH_REQUIRED, {"fehler": "Länge fehlt"})
+            if not 1 <= laenge <= MAX_ANGEBOT:
+                return self._json(HTTPStatus.REQUEST_ENTITY_TOO_LARGE, {"fehler": "Angebot leer oder zu groß"})
+            try:
+                eingabe = json.loads(self.rfile.read(laenge))
+            except (json.JSONDecodeError, UnicodeDecodeError):
+                return self._json(HTTPStatus.BAD_REQUEST, {"fehler": "Ungültiges JSON"})
+            if not isinstance(eingabe, dict):
+                return self._json(HTTPStatus.BAD_REQUEST, {"fehler": "Angebot muss ein Objekt sein"})
+            daten = {k: eingabe[k] for k in ERFASSEN_FELDER if k in eingabe}
+            fehler = typfehler(daten)
+            if fehler:
+                return self._json(HTTPStatus.UNPROCESSABLE_ENTITY, {"fehler": fehler})
+            daten.update(id="e-" + secrets.token_hex(4), quelle="eigene",
+                         erfasst_am=dt.datetime.now(dt.timezone.utc).isoformat())
+            try:
+                angebot = Angebot.aus_dict(daten)
+            except AngebotFehler as exc:
+                return self._json(HTTPStatus.UNPROCESSABLE_ENTITY, {"fehler": str(exc)})
+            grund = zustand.register.pruefe(angebot.quelle)
+            if grund:
+                return self._json(HTTPStatus.FORBIDDEN, {"fehler": grund})
+            try:
+                anzahl = zustand.hinzufuegen(angebot)
+            except OSError:
+                return self._json(HTTPStatus.INTERNAL_SERVER_ERROR,
+                                  {"fehler": "Angebot nicht übernommen: Preisverlauf konnte nicht gespeichert werden"})
+            return self._json(HTTPStatus.CREATED, {"id": angebot.id, "anzahl": anzahl})
+
     return Handler
+
+
+def typfehler(daten) -> str:
+    """Prüft Typen und Kategorielänge der erfassten Felder; liefert Fehlertext oder ""."""
+    for feld, wert in daten.items():
+        if wert is None:
+            if feld in PFLICHT_FELDER:
+                return f"Feld '{feld}' fehlt"
+            continue
+        if feld in TEXT_FELDER and not isinstance(wert, str):
+            return f"Feld '{feld}' muss Text sein"
+        if feld in GELD_FELDER and (isinstance(wert, bool) or not isinstance(wert, (str, int, float))):
+            return f"Feld '{feld}' muss Text oder Zahl sein"
+    if len((daten.get("kategorie") or "").strip()) > MAX_KATEGORIE:
+        return f"Feld 'kategorie' ist länger als {MAX_KATEGORIE} Zeichen"
+    return ""
 
 
 def erstelle_server(datei, host="127.0.0.1", port=8765, quellen=None, verlauf=None,

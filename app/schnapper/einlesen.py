@@ -34,12 +34,24 @@ def _zeilen_json(text: str) -> list:
     return daten
 
 
+# Zellen, die mit diesen Zeichen beginnen, werten Tabellenprogramme als Formel aus (CWE-1236).
+# Der CSV-Export (web.als_csv) stellt ihnen ein "'" voran; der CSV-Import entfernt genau dieses wieder.
+CSV_FORMEL_START = ("=", "+", "-", "@", "\t", "\r")
+
+
+def _ohne_formelschutz(wert):
+    if isinstance(wert, str) and len(wert) >= 2 and wert[0] == "'" and wert[1] in CSV_FORMEL_START:
+        return wert[1:]
+    return wert
+
+
 def _zeilen_csv(text: str) -> list:
     try:
         dialekt = csv.Sniffer().sniff(text[:4096], delimiters=";,\t")
     except csv.Error:
         dialekt = csv.excel
-    return list(csv.DictReader(io.StringIO(text), dialect=dialekt))
+    return [{k: _ohne_formelschutz(v) for k, v in zeile.items()}
+            for zeile in csv.DictReader(io.StringIO(text), dialect=dialekt)]
 
 
 def lies_text(text: str, format: str, register: Register | None = None, jetzt=None) -> Importergebnis:
