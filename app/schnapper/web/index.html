@@ -70,6 +70,12 @@
                placeholder="z. B. 4008400402222" aria-label="Produkt-Barcode" required>
         <button id="barcode-knopf" type="submit">Ladenpreise suchen</button>
       </div>
+      <button id="kamera-knopf" type="button" disabled>Mit Kamera scannen</button>
+      <div id="kamera-bereich" hidden>
+        <video id="kamera-bild" muted playsinline></video>
+      </div>
+      <button id="kamera-abbrechen" type="button" hidden>Abbrechen</button>
+      <p id="kamera-status" class="status" aria-live="polite"></p>
     </form>
     <p id="barcode-status" class="status" aria-live="polite">Noch keine Preisabfrage.</p>
     <ol id="barcode-treffer" class="treffer"></ol>
