@@ -21,6 +21,7 @@ import pathlib
 import re
 import subprocess
 import sys
+from safe_artifacts import read_text, write_text
 
 sys.path.insert(0, str(pathlib.Path(__file__).resolve().parent))
 from ki import KI as GitHubKI, KINichtVerfuegbar  # noqa: E402
@@ -65,13 +66,25 @@ def jetzt():
 
 
 def lies(ordner, rolle):
+    """Nur kleine, lesbare JSON-Objekte als gültige Vorgängerbelege zulassen."""
     pfad = ordner / f"{rolle}.json"
-    return json.loads(pfad.read_text(encoding="utf-8")) if pfad.exists() else None
+    try:
+        # Schutz gegen übergroße/korrupte oder nicht lesbare KI-Protokolle.
+        daten = json.loads(read_text(pfad, limit=128_000))
+    except (OSError, ValueError, UnicodeError):
+        return None
+    return daten if isinstance(daten, dict) else None
 
 
 def schreibe(ordner, rolle, daten):
-    ordner.mkdir(parents=True, exist_ok=True)
-    (ordner / f"{rolle}.json").write_text(json.dumps(daten, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
+    """KI-Antworten vor der Ablage redigieren; bei Fund nie positiv freigeben."""
+    roh = json.dumps(daten, ensure_ascii=False, indent=2)
+    if GEHEIMNIS_MUSTER.search(roh):
+        daten.update(status="FEHLER", geheimnis_redigiert=True,
+                     fehler="Geheimnisindikator entdeckt: Inhalt redigiert und Agent gesperrt.")
+        roh = json.dumps(daten, ensure_ascii=False, indent=2)
+        roh = GEHEIMNIS_MUSTER.sub("[REDACTED]", roh)
+    write_text(ordner / f"{rolle}.json", roh + "\n")
 
 
 def json_aus_text(text):
@@ -106,35 +119,64 @@ def repo_ueberblick(max_zeichen=6000):
 
 
 def tests_ausfuehren():
-    p = subprocess.run([sys.executable, "-m", "unittest", "discover", "-s", "tests", "-v"],
-                       cwd=ROOT, capture_output=True, text=True, timeout=120)
-    ausgabe = p.stdout + p.stderr
+    try:
+        p = subprocess.run([sys.executable, "-m", "unittest", "discover", "-s", "tests", "-v"],
+                           cwd=ROOT, capture_output=True, text=True, timeout=120)
+    except (OSError, subprocess.TimeoutExpired):
+        return {"ok": False, "anzahl": 0,
+                "ausgabe_ende": "Unit-Tests nicht ausführbar oder Zeitlimit überschritten."}
+    ausgabe = (p.stdout or "") + (p.stderr or "")
     anzahl = re.search(r"Ran (\d+) tests?", ausgabe)
     return {"ok": p.returncode == 0, "anzahl": int(anzahl.group(1)) if anzahl else 0,
             "ausgabe_ende": ausgabe[-1500:]}
 
 
 def geheimnis_scan(zusatztexte=()):
+    """Repository- und Antwortscan: Git-Fehler oder Lesefehler nie als PASS werten."""
     funde = []
-    for name in subprocess.run(["git", "ls-files"], cwd=ROOT, capture_output=True, text=True).stdout.split():
+    try:
+        # NUL-Trennung bewahrt Dateinamen mit Leerzeichen/Zeilenumbrüchen.
+        result = subprocess.run(
+            ["git", "ls-files", "-z"], cwd=ROOT, capture_output=True,
+            text=True, timeout=15,
+        )
+    except (OSError, subprocess.TimeoutExpired):
+        return ["git_scan_nicht_verfuegbar"]
+    if result.returncode != 0:
+        return ["git_scan_fehlgeschlagen"]
+    for name in result.stdout.split("\0"):
+        if not name:
+            continue
         p = ROOT / name
         try:
-            if p.is_file() and GEHEIMNIS_MUSTER.search(p.read_text(encoding="utf-8", errors="ignore")):
+            if not p.is_file():
+                funde.append(f"datei_fehlt:{name}")
+            elif GEHEIMNIS_MUSTER.search(p.read_text(encoding="utf-8", errors="ignore")):
                 funde.append(name)
         except OSError:
-            continue
+            funde.append(f"datei_nicht_lesbar:{name}")
     for i, text in enumerate(zusatztexte):
-        if text and GEHEIMNIS_MUSTER.search(text):
+        if text and GEHEIMNIS_MUSTER.search(str(text)):
             funde.append(f"agentenausgabe[{i}]")
     return funde
 
 
 def ki_teil(ki, rolle, nutzertext):
     """Echter KI-Aufruf. Gibt (ergebnis, fehler) zurück – nie beides."""
+    systemtext = GRUNDREGELN + "\n" + ROLLENAUFTRAG[rolle]
+    # Auch Eingaben aus Aufgaben, Status-Dateien und früheren Agenten gelten als
+    # untrusted. Scannen VOR jeder Übermittlung, nicht erst nach KI-Ausgabe.
+    if GEHEIMNIS_MUSTER.search(systemtext + "\n" + str(nutzertext)):
+        return None, "Geheimnisindikator in KI-Eingabe – kein externer Aufruf, Lauf gesperrt."
     try:
-        return ki.frage(GRUNDREGELN + "\n" + ROLLENAUFTRAG[rolle], nutzertext), None
+        antwort = ki.frage(systemtext, nutzertext)
     except KINichtVerfuegbar as exc:
         return None, str(exc)
+    # Vor Weitergabe an die nächste Rolle sperren, nicht erst vor Git-Speicherung.
+    # Keine gefundenen Tokenbestandteile in Logs oder Fehlermeldungen nennen.
+    if GEHEIMNIS_MUSTER.search(json.dumps(antwort, ensure_ascii=False, default=str)):
+        return None, "Geheimnisindikator in KI-Antwort – Lauf gesperrt, Inhalt verworfen."
+    return antwort, None
 
 
 def basis(rolle):
@@ -174,17 +216,25 @@ def brain(ordner, ki):
     if not l or l.get("status") != "OK":
         erg.update(status="ÜBERSPRUNGEN", fehler="Kein gültiger Auftrag von LEAD.")
         return erg
-    antwort, fehler = ki_teil(ki, "BRAIN", json.dumps({"auftrag_von_lead": l["plan"]}, ensure_ascii=False)
+    plan = l.get("plan")
+    task_id = plan.get("aufgabe_id") if isinstance(plan, dict) else None
+    if (not isinstance(task_id, str)
+            or re.fullmatch(r"[A-Za-z0-9][A-Za-z0-9_-]{0,63}", task_id) is None):
+        erg.update(status="ÜBERSPRUNGEN",
+                   fehler="LEAD-Auftrag unvollständig oder unsichere Aufgaben-ID; kein BRAIN-KI-Aufruf.")
+        return erg
+    antwort, fehler = ki_teil(ki, "BRAIN", json.dumps({"auftrag_von_lead": plan}, ensure_ascii=False)
                               + "\n\n" + repo_ueberblick())
     if fehler:
         erg["fehler"] = fehler
         return erg
     stempel = ordner.name
     vorschlag = TEAM / "proposals" / f"{stempel}-{l['plan']['aufgabe_id']}.md"
-    vorschlag.parent.mkdir(parents=True, exist_ok=True)
-    vorschlag.write_text(f"# BRAIN-Vorschlag {l['plan']['aufgabe_id']} ({stempel})\n\n"
+    write_text(vorschlag, f"# BRAIN-Vorschlag {l['plan']['aufgabe_id']} ({stempel})\n\n"
                          f"_Erzeugt von {antwort['modell']} über {antwort['laufzeit']}. "
-                         "Vorschlag, nicht automatisch umgesetzt._\n\n" + antwort["text"] + "\n", encoding="utf-8")
+                         "Vorschlag, nicht automatisch umgesetzt._\n\n" +
+                         GEHEIMNIS_MUSTER.sub("[REDACTED]", antwort["text"]) + "\n",
+                         encoding="utf-8")
     erg.update(ki=antwort, ki_echt=True, status="OK", vorschlag_datei=f"team/proposals/{vorschlag.name}")
     return erg
 
@@ -194,15 +244,33 @@ def check(ordner, ki):
     tests = tests_ausfuehren()
     b = lies(ordner, "BRAIN")
     l = lies(ordner, "LEAD")
-    funde = geheimnis_scan([((b or {}).get("ki") or {}).get("text", "")])
+    b_ki = (b or {}).get("ki")
+    b_text = b_ki.get("text", "") if isinstance(b_ki, dict) else ""
+    funde = geheimnis_scan([b_text])
     erg["werkzeug"] = {"tests": tests, "geheimnis_funde": funde}
     if not b or b.get("status") != "OK":
         erg.update(status="ÜBERSPRUNGEN", fehler="Kein BRAIN-Vorschlag zum Prüfen (Tests wurden trotzdem ausgeführt).")
         return erg
+    plan = (l or {}).get("plan")
+    antwortdaten = b.get("ki") or {}
+    vorschlag = antwortdaten.get("text") if isinstance(antwortdaten, dict) else None
+    if (not l or l.get("status") != "OK"
+            or not isinstance(plan, dict)
+            or not isinstance(vorschlag, str) or not vorschlag.strip()
+            or not isinstance(tests, dict)
+            or tests.get("ok") is not True
+            or not isinstance(tests.get("anzahl"), int) or tests["anzahl"] < 1
+            or funde):
+        erg.update(status="ÜBERSPRUNGEN",
+                   fehler="LEAD-/BRAIN-/Test- oder Geheimnisprüfung unvollständig; kein CHECK-KI-Aufruf.")
+        return erg
+    aufgabe = plan.get("aufgabe")
+    akzeptanz = plan.get("akzeptanzkriterien") or (
+        aufgabe.get("acceptance") if isinstance(aufgabe, dict) else None)
     antwort, fehler = ki_teil(ki, "CHECK", json.dumps({
-        "akzeptanzkriterien": l["plan"].get("akzeptanzkriterien") or l["plan"]["aufgabe"].get("acceptance"),
-        "auftrag_check": l["plan"].get("auftrag_check"),
-        "brain_vorschlag": b["ki"]["text"],
+        "akzeptanzkriterien": akzeptanz,
+        "auftrag_check": plan.get("auftrag_check"),
+        "brain_vorschlag": vorschlag,
         "echte_testergebnisse": {"ok": tests["ok"], "anzahl": tests["anzahl"]},
         "geheimnis_funde": funde}, ensure_ascii=False))
     if fehler:
@@ -222,6 +290,31 @@ def check(ordner, ki):
 def command(ordner, ki):
     erg = basis("COMMAND")
     vorher = {r: lies(ordner, r) for r in ROLES[:3]}
+    # Ohne offene LEAD-Aufgabe ist keine COMMAND-KI-Auswertung sinnvoll.
+    # Insbesondere darf ein grüner Workflow einen unnoetigen KI-Aufruf
+    # weder ausloesen noch als erfolgreichen Vier-Agenten-Lauf ausgeben.
+    if (vorher.get("LEAD") or {}).get("status") == "KEINE AUFGABE":
+        erg.update(status="ÜBERSPRUNGEN",
+                   fehler="Keine offene Aufgabe von LEAD; COMMAND-KI-Aufruf unterdrückt.")
+        return erg
+    # Kein kostenrelevanter COMMAND-Aufruf, wenn irgendeine Vorrolle fehlt,
+    # einen Fehler meldet oder die unabhängige CHECK-Prüfung nicht bestanden hat.
+    if any((vorher.get(r) or {}).get("status") != "OK" for r in ROLES[:3]):
+        erg.update(status="ÜBERSPRUNGEN",
+                   fehler="LEAD/BRAIN/CHECK unvollständig oder fehlgeschlagen; kein COMMAND-KI-Aufruf.")
+        return erg
+    check_erg = vorher["CHECK"]
+    check_tools = check_erg.get("werkzeug") or {}
+    tests = check_tools.get("tests") or {}
+    if (not (vorher["LEAD"].get("plan") or {}).get("aufgabe_id")
+            or (check_erg.get("urteil") or {}).get("urteil") != "bestanden"
+            or tests.get("ok") is not True
+            or not isinstance(tests.get("anzahl"), int)
+            or tests["anzahl"] < 1
+            or check_tools.get("geheimnis_funde") != []):
+        erg.update(status="ÜBERSPRUNGEN",
+                   fehler="CHECK-/Test-/Geheimnisfreigabe fehlt oder ist negativ; kein COMMAND-KI-Aufruf.")
+        return erg
     kurz = {r: {"status": (v or {}).get("status"), "fehler": (v or {}).get("fehler"),
                 "ki_text": (((v or {}).get("ki") or {}).get("text") or "")[:2500]} for r, v in vorher.items()}
     antwort, fehler = ki_teil(ki, "COMMAND", json.dumps(kurz, ensure_ascii=False))
@@ -286,11 +379,28 @@ def bericht(ordner):
         and len(set(antwort_ids)) == 4
         and ki_aufrufe >= 4
     )
+    # Keine positive Einsatzbereitschaft bei ablehnendem CHECK, fehlendem
+    # Geheimnis-Scan oder verweigerter COMMAND-Freigabe. Ein durchlaufener
+    # Agentenprozess allein ist keine erfolgreiche Sicherheitsprüfung.
+    check_werkzeug = alle["CHECK"].get("werkzeug") or {}
+    geheimnis_funde = check_werkzeug.get("geheimnis_funde")
+    command_freigabe = (alle["COMMAND"].get("protokoll") or {}).get("freigabe")
+    # Der CHECK-Lauf kennt seine eigene und die spätere COMMAND-Antwort noch nicht.
+    # Vor einer positiven Gesamtbewertung daher alle vier KI-Antworten prüfen.
+    # Nur Rollennamen als Fund protokollieren, niemals den gefundenen Geheimtext.
+    ki_geheimnis_rollen = [
+        r for r in ROLES
+        if alle[r].get("geheimnis_redigiert") is True
+        or GEHEIMNIS_MUSTER.search(str((alle[r].get("ki") or {}).get("text") or ""))
+    ]
     einsatzbereit = (
         len(echt) == 4
         and all(alle[r].get("status") == "OK" for r in ROLES)
         and bool(lead_plan.get("aufgabe_id"))
-        and urteil in ("bestanden", "nachbessern", "abgelehnt")
+        and urteil == "bestanden"
+        and command_freigabe == "ja"
+        and geheimnis_funde == []
+        and not ki_geheimnis_rollen
         and tests.get("ok") is True
         and tests.get("anzahl", 0) > 0
         and vier_eindeutige_antworten
@@ -304,11 +414,11 @@ def bericht(ordner):
                 "tests_ok": tests.get("ok"), "tests_anzahl": tests.get("anzahl"),
                 "ki_aufrufe": ki_aufrufe,
                 "antwort_ids_eindeutig": vier_eindeutige_antworten,
+                "ki_geheimnis_rollen": ki_geheimnis_rollen,
                 "naechster_schritt": proto.get("naechster_schritt"), "blocker": blocker,
                 "agenten": alle}
     runs = TEAM / "runs"
-    runs.mkdir(parents=True, exist_ok=True)
-    (runs / f"{ordner.name}.json").write_text(json.dumps(
+    write_text(runs / f"{ordner.name}.json", json.dumps(
         {**zusammen, "selected_task": {"id": lead_plan.get("aufgabe_id")} if lead_plan else None},
         ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
     zeilen = [f"# SCHNAPPER-KI-Team – Stundenbericht {ordner.name}", "",
@@ -333,8 +443,8 @@ def bericht(ordner):
         zeilen += ["", f"BRAIN-Vorschlag: `{alle['BRAIN']['vorschlag_datei']}`"]
     zeilen += ["", f"Rohdaten: `team/runs/{ordner.name}.json`"]
     text = "\n".join(zeilen) + "\n"
-    (runs / f"{ordner.name}.md").write_text(text, encoding="utf-8")
-    (TEAM / "STATUS.md").write_text(text, encoding="utf-8")
+    write_text(runs / f"{ordner.name}.md", text)
+    write_text(TEAM / "STATUS.md", text)
     print(json.dumps({k: zusammen[k] for k in ("lauf", "team_einsatzbereit", "agenten_mit_echter_ki",
                                                  "modelle", "aufgabe", "check_urteil", "tests_ok", "ki_aufrufe",
                                                  "blocker")},
@@ -349,20 +459,27 @@ def main(argv):
     if len(argv) != 3 or argv[1] not in (*AGENTEN, "BERICHT"):
         print(__doc__)
         return 2
-    rolle, ordner = argv[1], pathlib.Path(argv[2]).resolve()
+    rolle, ordner = argv[1], pathlib.Path(os.path.abspath(argv[2]))
     if rolle == "BERICHT":
         return bericht(ordner)
     ki = KI(ordner / "ki_aufrufe.txt")
     erg = AGENTEN[rolle](ordner, ki)
     erg["ende_utc"] = jetzt()
     schreibe(ordner, rolle, erg)
+    # Auch Modellbezeichnung und Antwort-ID sind fremde Modell-/Providerdaten.
+    # Niemals ungefiltert in öffentlich sichtbare Action-Logs übernehmen.
     print(f"[{rolle}] status={erg['status']} ki_echt={erg['ki_echt']} "
-          f"modell={(erg.get('ki') or {}).get('modell')} antwort_id={(erg.get('ki') or {}).get('antwort_id')} "
-          f"fehler={erg.get('fehler')}")
+          f"geheimnis_redigiert={erg.get('geheimnis_redigiert') is True} "
+          f"fehler={GEHEIMNIS_MUSTER.sub('[REDACTED]', str(erg.get('fehler') or ''))}")
     if erg.get("ki"):
-        print(f"[{rolle}] KI-Antwort (Anfang): {erg['ki']['text'][:600]}")
-    # Nicht abbrechen: COMMAND/BERICHT sollen auch Fehlschläge dokumentieren.
-    return 0
+        # Sicherheitsregel: Kein ungefilterter KI-Rohtext in den Workflow-Logs.
+        print(f"[{rolle}] KI-Antwort verarbeitet; Rohtext und Metadaten im Konsolenlog unterdrückt.")
+    # Schon ki_teil verwirft verdächtige Antworten vor der Ablage. Auch in
+    # diesem Fall müssen Folgerollen stoppen (nicht nur bei schreibseitigem Fund).
+    # Jeder nicht erfolgreiche Rollenstatus stoppt den lokalen Scheduler
+    # unmittelbar. Ein ausgelassener oder nicht einsatzbereiter Agent darf
+    # nicht als erfolgreich abgeschlossener Prozess gemeldet werden.
+    return 0 if erg.get("status") == "OK" else 1
 
 
 if __name__ == "__main__":

@@ -1,0 +1,83 @@
+BASELINE=ce71d919d08fdc403ba003e2411cb2d3f043d586
+test_backup_reads_mission_and_blitz_from_one_locked_snapshot (tests.test_product_integration.ProductIntegration.test_backup_reads_mission_and_blitz_from_one_locked_snapshot) ... FAIL
+
+======================================================================
+FAIL: test_backup_reads_mission_and_blitz_from_one_locked_snapshot (tests.test_product_integration.ProductIntegration.test_backup_reads_mission_and_blitz_from_one_locked_snapshot)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/tmp/schnapper-before-master7-fixes/tests/test_product_integration.py", line 241, in test_backup_reads_mission_and_blitz_from_one_locked_snapshot
+    self.assertFalse(interleaving["performed"], "Backup must not perform separately locked store reads.")
+    ~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+AssertionError: True is not false : Backup must not perform separately locked store reads.
+
+----------------------------------------------------------------------
+Ran 1 test in 0.543s
+
+FAILED (failures=1)
+✖ failed mission-ergebnisse persistence is never reported as saved (5.554306ms)
+✖ failed blitz persistence is never reported as saved (5.652367ms)
+✖ failed mission-laeufe persistence is never reported as saved (2.718943ms)
+✔ success is reported only after all three browser stores succeed (4.035555ms)
+ℹ tests 4
+ℹ suites 0
+ℹ pass 1
+ℹ fail 3
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 80.284725
+
+✖ failing tests:
+
+test at tests/test_storage_failure_ui.mjs:73:3
+✖ failed mission-ergebnisse persistence is never reported as saved (5.554306ms)
+  AssertionError [ERR_ASSERTION]: The input did not match the regular expression /Speicherung fehlgeschlagen/. Input:
+
+  'Lauf synthetic-job: 1 Treffer, 1 neue BLITZ-Einträge (lokal gespeichert).'
+
+      at TestContext.<anonymous> (file:///tmp/schnapper-before-master7-fixes/tests/test_storage_failure_ui.mjs:76:12)
+      at async Test.run (node:internal/test_runner/test:1409:7)
+      at async startSubtestAfterBootstrap (node:internal/test_runner/harness:387:3) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: 'Lauf synthetic-job: 1 Treffer, 1 neue BLITZ-Einträge (lokal gespeichert).',
+    expected: /Speicherung fehlgeschlagen/,
+    operator: 'match',
+    diff: 'simple'
+  }
+
+test at tests/test_storage_failure_ui.mjs:73:3
+✖ failed blitz persistence is never reported as saved (5.652367ms)
+  AssertionError [ERR_ASSERTION]: The input did not match the regular expression /Speicherung fehlgeschlagen/. Input:
+
+  'Lauf synthetic-job: 1 Treffer, 1 neue BLITZ-Einträge (lokal gespeichert).'
+
+      at TestContext.<anonymous> (file:///tmp/schnapper-before-master7-fixes/tests/test_storage_failure_ui.mjs:76:12)
+      at async Test.run (node:internal/test_runner/test:1409:7)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:974:7) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: 'Lauf synthetic-job: 1 Treffer, 1 neue BLITZ-Einträge (lokal gespeichert).',
+    expected: /Speicherung fehlgeschlagen/,
+    operator: 'match',
+    diff: 'simple'
+  }
+
+test at tests/test_storage_failure_ui.mjs:73:3
+✖ failed mission-laeufe persistence is never reported as saved (2.718943ms)
+  AssertionError [ERR_ASSERTION]: The input did not match the regular expression /Speicherung fehlgeschlagen/. Input:
+
+  'Lauf synthetic-job: 1 Treffer, 1 neue BLITZ-Einträge (lokal gespeichert).'
+
+      at TestContext.<anonymous> (file:///tmp/schnapper-before-master7-fixes/tests/test_storage_failure_ui.mjs:76:12)
+      at async Test.run (node:internal/test_runner/test:1409:7)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:974:7) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: 'Lauf synthetic-job: 1 Treffer, 1 neue BLITZ-Einträge (lokal gespeichert).',
+    expected: /Speicherung fehlgeschlagen/,
+    operator: 'match',
+    diff: 'simple'
+  }
+
+EXPECTED_PRE_FIX_NONZERO: python=1 node=1

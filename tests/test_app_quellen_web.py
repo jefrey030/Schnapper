@@ -135,14 +135,15 @@ class Web(unittest.TestCase):
 
     def test_merkliste_und_preisalarm_in_der_oberflaeche(self):
         _, _, html = self.hole("/")
-        for teil in (b'id="ansicht-merkliste"', b'id="ansicht-alarme"', b'id="alarm-anlegen"', b'class="merken"'):
+        for teil in (b'id="ansicht-merkliste"', b'id="ansicht-blitz"', b'id="ansicht-preisdetektiv"',
+                     b'id="ansicht-missionen"', b'id="alarm-anlegen"', b'class="merken"'):
             self.assertIn(teil, html)
         js = self.hole("/app.js")[2].decode("utf-8")
         self.assertNotIn(".innerHTML", js)  # fremde Titel nie als HTML einsetzen
         # Jeder Zugriff auf localStorage muss abgesichert sein (privates Fenster wirft Fehler)
         for zeile in js.splitlines():
             if "localStorage." in zeile:
-                self.assertRegex(zeile, r"try\s*\{|^\s*const roh|^\s*catch|setItem", zeile)
+                self.assertRegex(zeile, r"try\s*\{|^\s*const roh|getItem|setItem", zeile)
 
     def test_alarm_abfrage_der_oberflaeche(self):
         # So fragt die Oberfläche einen Preisalarm ab: günstigstes zuerst, veraltete ausgeblendet

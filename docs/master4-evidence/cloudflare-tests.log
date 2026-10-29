@@ -1,0 +1,30 @@
+✔ Fail-closed when Free tier unverified (1.571229ms)
+✔ Disabled switch prohibits inference (0.140447ms)
+✔ Wrong policy prohibits inference (0.117703ms)
+✔ Valid slot four real invocations (mocked), four hashes and audit (9.436501ms)
+{"slot":"2026102207","status":"BLOCKIERT","attempted_calls":2,"completed_roles":["LEAD"],"error":"Lauf blockiert: Free quota exhausted"}
+{"slot":"2026102210","status":"BLOCKIERT","attempted_calls":1,"completed_roles":[],"error":"Lauf blockiert: Empty/oversized model response"}
+{"slot":"2026102203","status":"BLOCKIERT","attempted_calls":1,"completed_roles":[],"error":"Lauf blockiert: D1 down"}
+✔ Capacity failure records interrupted role and refuses retry (1.342483ms)
+✔ Bad AI response blocks without fabricated report (0.586242ms)
+✔ No database or schema means zero calls (0.194957ms)
+✔ DB audit failure before inference prevents charges (0.269817ms)
+✔ Persistent emergency stop blocks all model calls (0.224871ms)
+✔ D1 emergency stop read error fails closed (0.262626ms)
+{"slot":"2026102215","status":"BLOCKIERT","attempted_calls":1,"completed_roles":["LEAD"],"error":"Lauf blockiert: Not-Aus aktiv oder nicht lesbar"}
+{"slot":"2026102216","status":"BLOCKIERT","attempted_calls":1,"completed_roles":[],"error":"Lauf blockiert: Geheimnisindikator in Modellantwort; Antwort verworfen"}
+✔ Emergency stop in the middle of a run blocks all next calls (2.241225ms)
+✔ Malformed timestamps not accepted (0.293982ms)
+✔ HTTP does not expose private reports (2.064394ms)
+✔ Model reply containing a synthetic credential is rejected before D1 report (0.587553ms)
+✔ Synthetic provider credential never leaks to returned reason, D1 or console (0.499224ms)
+{"slot":"2026102218","status":"BLOCKIERT","attempted_calls":2,"completed_roles":["LEAD"],"error":"Lauf blockiert: Geheimnisindikator in Modellantwort; Antwort verworfen"}
+✔ Second model reply with synthetic secret stops before persisting second answer (3.137902ms)
+ℹ tests 16
+ℹ suites 0
+ℹ pass 16
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 125.492603

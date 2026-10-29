@@ -72,6 +72,11 @@ main { max-width: 720px; margin: 0 auto; padding: 0 16px 48px; }
   background: var(--akzent); color: var(--akzent-text); font: inherit; font-weight: 700; cursor: pointer; }
 .barcode-zeile button:disabled { opacity: .6; cursor: wait; }
 .barcode-bereich .treffer { margin-top: 12px; }
+#kamera-knopf, #kamera-abbrechen { min-height: 44px; margin-top: 8px; padding: 10px 14px; border: 1px solid var(--linie);
+  border-radius: 10px; background: var(--grund); color: var(--text); font: inherit; cursor: pointer; max-width: 100%; }
+#kamera-knopf:disabled { opacity: .6; cursor: not-allowed; }
+#kamera-bereich { margin-top: 8px; }
+#kamera-bild { display: block; width: 100%; max-height: 40vh; object-fit: cover; border-radius: 10px; background: #000; }
 
 .ansichten { display: flex; gap: 6px; max-width: 720px; margin: 0 auto;
   padding: 8px 16px; background: var(--grund); overflow-x: auto; }
@@ -107,3 +112,56 @@ main { max-width: 720px; margin: 0 auto; padding: 0 16px 48px; }
 .verlauf { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 8px; margin: 6px 0 0; font-size: 13.5px;
   color: var(--leise); font-variant-numeric: tabular-nums; }
 .verlauf .tief { font-weight: 700; font-size: 12.5px; padding: 2px 8px; border-radius: 6px; background: var(--gut-grund); color: var(--gut); }
+
+main > section > h2 { margin: 22px 0 10px; font-size: 19px; }
+.ansichten { position: sticky; top: 57px; z-index: 1; }
+.ansichten button { min-height: 44px; }
+.aktionsreihe { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+.aktionsreihe > .knopf { padding: 8px 13px; }
+.knopf.sekundaer { background: var(--flaeche); color: var(--text); border: 1px solid var(--linie); }
+.knopf.sekundaer:hover { border-color: var(--akzent); }
+.filter .aktionsreihe { display: grid; grid-template-columns: 1fr 1fr; }
+.mission-form { display: grid; gap: 11px; margin: 14px 0 20px; padding: 16px; background: var(--flaeche);
+  border: 1px solid var(--linie); border-radius: 14px; }
+.mission-form h2 { margin: 0; font-size: 18px; }
+.mission-form label { display: grid; gap: 4px; color: var(--leise); font-size: 13px; }
+.mission-form input:not([type="checkbox"]), .mission-form select { width: 100%; min-height: 44px; padding: 9px 11px;
+  border: 1px solid var(--linie); border-radius: 9px; background: var(--grund); color: var(--text); font: inherit; }
+.mission-form .checkbox { display: flex; align-items: flex-start; gap: 9px; color: var(--text); font-size: 14px; }
+.mission-form .checkbox input { width: 20px; height: 20px; flex: 0 0 auto; accent-color: var(--akzent); }
+.mission-karte .aktionsreihe { justify-content: flex-end; }
+.mission-ergebnisse { margin-top: 8px; }
+.mission-ergebnisse a { color: var(--akzent); overflow-wrap: anywhere; }
+.vergleich-karte { margin: 0 0 12px; }
+.vergleich-karte .preis { margin: 8px 0 2px; }
+.vergleich-auswahl { display: flex; align-items: center; gap: 8px; margin-top: 9px; color: var(--leise); font-size: 14px; }
+.vergleich-auswahl input { width: 20px; height: 20px; accent-color: var(--akzent); }
+.warnungen-text { padding: 8px; border-radius: 8px; background: var(--warn-grund); color: var(--warn); font-size: 14px; }
+.blitz-karte .blitz-status { font-size: 14px; font-weight: 700; color: var(--akzent); }
+.blitz-karte .blitz-status:empty { display: none; }
+.rollen-status { margin: 8px 0; padding-left: 22px; color: var(--leise); }
+.datei-knopf { display: inline-flex; align-items: center; cursor: pointer; }
+.barcode-bereich, .mission-form, .karte { overflow-wrap: anywhere; }
+button, input, select { touch-action: manipulation; }
+@media (max-width: 520px) {
+  main { padding: 0 12px 36px; }
+  .kopf { padding: 10px 12px; }
+  .ansichten { top: 53px; padding: 7px 12px; }
+  .reihe { grid-template-columns: 1fr; }
+  .filter .aktionsreihe { grid-template-columns: 1fr; }
+  .oben { align-items: center; }
+  .mission-karte .oben { align-items: flex-start; flex-direction: column; }
+  .mission-karte .aktionsreihe { justify-content: flex-start; }
+  .mission-karte .aktionsreihe .knopf { min-height: 44px; }
+  .preis { font-size: 21px; }
+}
+/* S-009: Angebot selbst erfassen */
+.erfassen-bereich { margin: 18px 0; padding: 14px; background: var(--flaeche);
+  border: 1px solid var(--linie); border-radius: 14px; }
+.erfassen-bereich h2 { margin: 0; font-size: 18px; }
+.erfassen-bereich > p { margin: 8px 0; color: var(--leise); font-size: 14px; }
+#angebot-form { display: flex; flex-direction: column; gap: 8px; width: 100%; }
+#angebot-form label { display: flex; flex-direction: column; gap: 4px; font-size: 13px; color: var(--leise); min-width: 0; }
+#angebot-form input, #angebot-form select { width: 100%; min-width: 0; box-sizing: border-box; min-height: 44px;
+  padding: 10px 12px; border: 1px solid var(--linie); border-radius: 10px; font: inherit; background: var(--grund); color: var(--text); }
+#csv-download { display: inline-block; margin-top: 6px; color: var(--akzent); font-weight: 600; min-height: 32px; padding: 4px 0; }

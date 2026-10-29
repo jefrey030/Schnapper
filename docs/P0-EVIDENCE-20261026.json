@@ -1,0 +1,92 @@
+{
+  "python": {
+    "sha256": "022e728a687113c49317e8caeda124cf355bf1f15ba35a808d457d731a863352",
+    "summary": [
+      "Ran 482 tests in 18.718s",
+      "OK"
+    ]
+  },
+  "cloudflare": {
+    "sha256": "181fe9af6c68d2215e51ae4ae117fc00b901eeeb9ab08f0a6e632bfd6b543d58",
+    "summary": [
+      "ℹ tests 16",
+      "ℹ pass 16",
+      "ℹ fail 0",
+      "ℹ skipped 0"
+    ]
+  },
+  "security": {
+    "sha256": "9854766d539a1fa70737d100238717cff0e0a26c1e3f0cbe4422b875fc973e7b",
+    "summary": [
+      "Ran 5 tests in 8.013s",
+      "OK"
+    ]
+  },
+  "compatibility_python": {
+    "sha256": "ca9be2d1b5ada941c0f34816c918724f3b33d6d2d7b519467c67186f5509b04b",
+    "summary": [
+      "Ran 491 tests in 18.116s",
+      "OK"
+    ]
+  },
+  "compatibility_node": {
+    "sha256": "d66a5a4b20d76dbc7636195e64ccd335a8bc580d208e1749fa92a74e1137b853",
+    "summary": [
+      "# tests 16",
+      "# pass 16",
+      "# fail 0",
+      "# skipped 0"
+    ]
+  },
+  "readiness": {
+    "projekt": "SCHNAPPER",
+    "phase": "VORABDIAGNOSE",
+    "modell_angerufen": false,
+    "bezahl_api_genutzt": false,
+    "startbereit": false,
+    "checks": [
+      {
+        "check": "Python 3.11+",
+        "ok": true,
+        "detail": "3.12.14"
+      },
+      {
+        "check": "Git",
+        "ok": true,
+        "detail": "/usr/local/bin/git"
+      },
+      {
+        "check": "Betriebssystem",
+        "ok": true,
+        "detail": "Linux 6.18.55"
+      },
+      {
+        "check": "Ollama-Programm",
+        "ok": false,
+        "detail": "Fehlt: ollama.com/download (nur kompatible Betriebssysteme)"
+      },
+      {
+        "check": "Nur lokales Modell",
+        "ok": true,
+        "detail": "qwen2.5:1.5b"
+      },
+      {
+        "check": "Ollama-Dienst erreichbar",
+        "ok": false,
+        "detail": "Ohne passende lokale Installation."
+      },
+      {
+        "check": "Modell bereits lokal installiert",
+        "ok": false,
+        "detail": "Nicht prüfbar."
+      }
+    ],
+    "operator_approval_valid": false,
+    "alternative_llama_server_installed": false,
+    "android_adb_available": false,
+    "real_inference_executed": false,
+    "security_release_approved": false,
+    "e2e_ready": false
+  },
+  "release_approved": false
+}

@@ -1,0 +1,31 @@
+COMMAND: cd cloudflare && node --test test/*.test.mjs
+✔ Fail-closed when Free tier unverified (1.122968ms)
+✔ Disabled switch prohibits inference (0.128834ms)
+✔ Wrong policy prohibits inference (1.147805ms)
+✔ Valid slot four real invocations (mocked), four hashes and audit (32.202709ms)
+{"slot":"2026102207","status":"BLOCKIERT","attempted_calls":2,"completed_roles":["LEAD"],"error":"Lauf blockiert: Free quota exhausted"}
+{"slot":"2026102210","status":"BLOCKIERT","attempted_calls":1,"completed_roles":[],"error":"Lauf blockiert: Empty/oversized model response"}
+{"slot":"2026102203","status":"BLOCKIERT","attempted_calls":1,"completed_roles":[],"error":"Lauf blockiert: D1 down"}
+✔ Capacity failure records interrupted role and refuses retry (2.931992ms)
+✔ Bad AI response blocks without fabricated report (1.293862ms)
+✔ No database or schema means zero calls (0.173468ms)
+✔ DB audit failure before inference prevents charges (0.325321ms)
+✔ Persistent emergency stop blocks all model calls (1.072679ms)
+✔ D1 emergency stop read error fails closed (0.497413ms)
+{"slot":"2026102215","status":"BLOCKIERT","attempted_calls":1,"completed_roles":["LEAD"],"error":"Lauf blockiert: Not-Aus aktiv oder nicht lesbar"}
+{"slot":"2026102216","status":"BLOCKIERT","attempted_calls":1,"completed_roles":[],"error":"Lauf blockiert: Geheimnisindikator in Modellantwort; Antwort verworfen"}
+✔ Emergency stop in the middle of a run blocks all next calls (4.708605ms)
+✔ Malformed timestamps not accepted (0.304876ms)
+✔ HTTP does not expose private reports (29.818576ms)
+✔ Model reply containing a synthetic credential is rejected before D1 report (1.934708ms)
+✔ Synthetic provider credential never leaks to returned reason, D1 or console (0.359557ms)
+✔ Second model reply with synthetic secret stops before persisting second answer (5.264491ms)
+{"slot":"2026102218","status":"BLOCKIERT","attempted_calls":2,"completed_roles":["LEAD"],"error":"Lauf blockiert: Geheimnisindikator in Modellantwort; Antwort verworfen"}
+ℹ tests 16
+ℹ suites 0
+ℹ pass 16
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 160.773443

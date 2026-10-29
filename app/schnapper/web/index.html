@@ -20,10 +20,13 @@
   </label>
 </header>
 
-<nav class="ansichten" aria-label="Ansicht">
-  <button type="button" data-ansicht="suche" aria-pressed="true">Suche</button>
-  <button type="button" data-ansicht="merkliste" aria-pressed="false">Merkliste <span id="anzahl-merk" class="zahl" hidden></span></button>
-  <button type="button" data-ansicht="alarme" aria-pressed="false">Preisalarme <span id="anzahl-alarm" class="zahl" hidden></span></button>
+<nav class="ansichten" aria-label="Hauptnavigation">
+  <button type="button" data-ansicht="suche" aria-pressed="true">LUPE</button>
+  <button type="button" data-ansicht="merkliste" aria-pressed="false">WARENKORB <span id="anzahl-merk" class="zahl" hidden></span></button>
+  <button type="button" data-ansicht="preisdetektiv" aria-pressed="false">PREISDETEKTIV</button>
+  <button type="button" data-ansicht="missionen" aria-pressed="false">MISSION</button>
+  <button type="button" data-ansicht="blitz" aria-pressed="false">BLITZ <span id="anzahl-alarm" class="zahl" hidden></span></button>
+  <button type="button" data-ansicht="einstellungen" aria-pressed="false">Einstellungen</button>
 </nav>
 
 <main>
@@ -51,12 +54,20 @@
         </select>
       </label>
     </div>
+    <div class="reihe">
+      <label>Region (nur wenn in Angebotsdaten vorhanden)<input name="region" maxlength="100" placeholder="z. B. Berlin"></label>
+      <label>Umkreis in km<input name="entfernung_km" inputmode="decimal" placeholder="z. B. 25"></label>
+    </div>
     <div class="schalter">
       <label><input type="checkbox" name="ohne_veraltet" value="1"> Veraltete Preise ausblenden</label>
       <label><input type="checkbox" name="mit_verdacht" value="1"> Verdächtige Angebote zeigen</label>
     </div>
-    <button id="alarm-anlegen" type="button" class="knopf" disabled>⚡ Preisalarm für diese Suche</button>
-    <p id="alarm-tipp" class="tipp">Für einen Preisalarm: Suchbegriff und „Bis €“ oder „Ab % billiger“ ausfüllen.</p>
+    <div class="aktionsreihe">
+      <button id="alarm-anlegen" type="button" class="knopf" disabled>⚡ Preisalarm für diese Suche</button>
+      <button id="mission-aus-suche" type="button" class="knopf sekundaer" disabled>＋ Als Mission speichern</button>
+    </div>
+    <p id="alarm-tipp" class="tipp">Preisalarme brauchen Suchbegriff und Höchstpreis oder Mindestrabatt.</p>
+    <p id="standort-hinweis" class="tipp">Region und Umkreis filtern nur Angebote mit echten Standortfeldern. Es wird kein Standort geraten.</p>
   </form>
 
   <section class="barcode-bereich" aria-label="Gemeldete Ladenpreise">
@@ -70,10 +81,43 @@
                placeholder="z. B. 4008400402222" aria-label="Produkt-Barcode" required>
         <button id="barcode-knopf" type="submit">Ladenpreise suchen</button>
       </div>
+      <button id="kamera-knopf" type="button" disabled>Mit Kamera scannen</button>
+      <div id="kamera-bereich" hidden>
+        <video id="kamera-bild" muted playsinline></video>
+      </div>
+      <button id="kamera-abbrechen" type="button" hidden>Abbrechen</button>
+      <p id="kamera-status" class="status" aria-live="polite"></p>
     </form>
     <p id="barcode-status" class="status" aria-live="polite">Noch keine Preisabfrage.</p>
     <ol id="barcode-treffer" class="treffer"></ol>
     <p id="barcode-lizenz" class="status"></p>
+  </section>
+
+  <section id="erfassen" class="erfassen-bereich" aria-label="Angebot erfassen">
+    <h2>Angebot selbst erfassen</h2>
+    <p>Quelle: eigene</p>
+    <form id="angebot-form" class="angebot-form" autocomplete="off">
+      <label>Titel<input name="titel" required maxlength="300" placeholder="z. B. Fahrrad 28 Zoll"></label>
+      <div class="reihe">
+        <label>Preis €<input name="preis" inputmode="decimal" required placeholder="12,50"></label>
+        <label>Versand €<input name="versand" inputmode="decimal" placeholder="0"></label>
+      </div>
+      <div class="reihe">
+        <label>Referenzpreis €<input name="referenzpreis" inputmode="decimal" placeholder="optional"></label>
+        <label>Zustand
+          <select name="zustand">
+            <option value="neu">neu</option><option value="wie_neu">wie neu</option>
+            <option value="gebraucht">gebraucht</option><option value="defekt">defekt</option>
+            <option value="unbekannt" selected>unbekannt</option>
+          </select>
+        </label>
+      </div>
+      <label>Link<input name="url" type="url" required placeholder="https://"></label>
+      <label>Kategorie<input name="kategorie" maxlength="100" placeholder="optional"></label>
+      <button id="angebot-knopf" type="submit" class="knopf">Angebot hinzufügen</button>
+    </form>
+    <p id="angebot-status" class="status" aria-live="polite"></p>
+    <a id="csv-download" href="/api/angebote.csv" download>Liste als CSV herunterladen</a>
   </section>
 
   <p id="status" class="status" aria-live="polite">Lade …</p>
@@ -87,15 +131,85 @@
   </section>
 
   <section id="ansicht-merkliste" hidden>
-    <p class="status">Gemerkte Angebote bleiben auf diesem Gerät gespeichert. Ändert sich der Preis in der geladenen Liste, siehst du es hier.</p>
+    <p class="status">Lokal auf diesem Gerät gespeicherte Angebote. Markiere mehrere Angebote, um sie im Preisdetektiv zu vergleichen.</p>
+    <button id="vergleich-starten" type="button" class="knopf">Ausgewählte Angebote vergleichen</button>
+    <p id="korb-status" class="status" aria-live="polite"></p>
     <ol id="merk-liste" class="treffer"></ol>
     <p id="merk-leer" class="leer" hidden>Noch nichts gemerkt. Tippe in der Suche bei einem Angebot auf ☆.</p>
   </section>
 
-  <section id="ansicht-alarme" hidden>
-    <p class="status">Preisalarme prüfen bei jedem Öffnen die geladene Liste. Verdächtige und veraltete Angebote lösen keinen Alarm aus.</p>
+  <section id="ansicht-preisdetektiv" hidden>
+    <p class="status">Vergleich nur mit geladenen Angeboten und lokal gespeicherten Preisbeobachtungen. Ohne Referenzdaten gibt es kein erfundenes Urteil.</p>
+    <div id="preisvergleich" class="vergleich" aria-live="polite"></div>
+    <p id="vergleich-leer" class="leer">Wähle im Warenkorb mindestens ein Angebot und starte den Vergleich.</p>
+  </section>
+
+  <section id="ansicht-missionen" hidden>
+    <p class="status">Suchaufträge werden lokal gespeichert. Automatik läuft nur, solange die App geöffnet und sichtbar ist; kein Hintergrundlauf nach dem Schließen.</p>
+    <form id="mission-form" class="mission-form">
+      <h2 id="mission-form-titel">Suchauftrag erstellen</h2>
+      <input name="id" type="hidden">
+      <label>Name<input name="name" maxlength="100" required placeholder="z. B. Kopfhörer bis 60 €"></label>
+      <label>Suchbegriffe<input name="suche" maxlength="200" required placeholder="Kopfhörer kabellos"></label>
+      <div class="reihe">
+        <label>Höchstpreis inkl. Versand (€)<input name="max_preis" inputmode="decimal" placeholder="optional"></label>
+        <label>Mindestrabatt (%)<input name="min_rabatt" inputmode="decimal" placeholder="optional"></label>
+      </div>
+      <div class="reihe">
+        <label>Region<input name="region" maxlength="100" placeholder="optional"></label>
+        <label>Umkreis (km)<input name="entfernung_km" inputmode="decimal" placeholder="optional"></label>
+      </div>
+      <div class="reihe">
+        <label>Prüfintervall (Minuten)<input name="intervall_minuten" type="number" min="15" max="10080" step="1" value="60" required></label>
+        <label>Zustand<select name="zustand"><option value="">alle</option><option value="neu">neu</option><option value="wie_neu">wie neu</option><option value="gebraucht">gebraucht</option><option value="defekt">defekt</option></select></label>
+      </div>
+      <label class="checkbox"><input name="automatisch" type="checkbox"> Automatisch prüfen, solange diese App sichtbar geöffnet ist</label>
+      <div class="aktionsreihe"><button type="submit" class="knopf">Mission speichern</button><button id="mission-abbrechen" type="button" class="knopf sekundaer" hidden>Bearbeitung abbrechen</button></div>
+      <p id="mission-form-status" class="status" aria-live="polite"></p>
+    </form>
+    <h2>Deine Missionen</h2>
+    <ol id="mission-liste" class="treffer"></ol>
+    <p id="mission-leer" class="leer" hidden>Noch keine Suchaufträge gespeichert.</p>
+    <h2>Letzte Prüfläufe</h2>
+    <ol id="mission-laeufe" class="treffer"></ol>
+  </section>
+
+  <section id="ansicht-blitz" hidden>
+    <p class="status">BLITZ zeigt lokal gespeicherte, deduplizierte Treffer. Ein Eintrag in der Queue ist kein Nachweis für eine zugestellte Push-Nachricht.</p>
+    <h2>Neue Treffer</h2>
+    <ol id="blitz-liste" class="treffer"></ol>
+    <p id="blitz-leer" class="leer" hidden>Keine neuen Treffer. Starte eine Mission oder lege in LUPE einen Preisalarm an.</p>
+    <h2>Preisalarme</h2>
+    <p class="status">Preisalarme prüfen die aktuell geladene Liste, wenn du BLITZ öffnest. Es gibt keine Hintergrundüberwachung nach dem Schließen.</p>
     <ol id="alarm-liste" class="treffer"></ol>
-    <p id="alarm-leer" class="leer" hidden>Noch kein Preisalarm. Lege in der Suche einen an.</p>
+    <p id="alarm-leer" class="leer" hidden>Noch kein Preisalarm. Lege in LUPE einen an.</p>
+  </section>
+
+  <section id="ansicht-einstellungen" hidden>
+    <h2>Lokale Daten und Quellen</h2>
+    <p class="status">Missionen und BLITZ-Deduplizierung liegen lokal auf diesem Rechner. Merkliste, Queue und Laufprotokoll liegen im Browser dieses Geräts.</p>
+    <p id="quellen-status" class="status" aria-live="polite">Lade Quellenstatus …</p>
+    <h2>Sicherung und Wiederherstellung</h2>
+    <p class="status">Die Sicherung enthält lokale Missionen, BLITZ-Deduplizierung und Browserdaten (Merkliste, Preisalarme, Vergleichsauswahl und lokale Laufdaten). Die Datei bleibt auf deinem Gerät.</p>
+    <div class="aktionsreihe">
+      <button id="backup-erstellen" type="button" class="knopf sekundaer">Sicherung herunterladen</button>
+      <label class="knopf sekundaer datei-knopf" for="backup-datei">Sicherung wiederherstellen</label>
+      <input id="backup-datei" type="file" accept="application/json,.json" hidden>
+    </div>
+    <p id="backup-status" class="status" aria-live="polite"></p>
+    <h2>Benachrichtigungen</h2>
+    <p id="benachrichtigung-status" class="status">Browser-Benachrichtigungen sind optional und benötigen deine Freigabe.</p>
+    <button id="benachrichtigung-freigeben" type="button" class="knopf sekundaer">Browser-Benachrichtigungen freigeben</button>
+    <p class="tipp">Benachrichtigungen entstehen nur bei geöffnetem Vordergrundlauf. Kein Server-Push und kein stiller Hintergrunddienst.</p>
+    <h2>Android / Offline</h2>
+    <p class="status">Die Oberfläche passt sich kleinen Bildschirmen an und kann im unterstützten Browser als PWA installiert werden. API-Daten werden nicht offline zwischengespeichert. Für Android ist HTTPS erforderlich; der lokale HTTP-Server stellt keine APK bereit.</p>
+    <p id="pwa-status" class="status">Offline-Oberfläche wird geprüft …</p>
+    <h2>Vier-KI-Team</h2>
+    <p class="status">LEAD, BRAIN, CHECK und COMMAND bleiben durch die vorhandene Betreiberfreigabe und STOP-Sperre geschützt. Diese App startet keine Modellaufrufe; ohne bestätigtes lokales Modell und ausdrückliche Freigabe werden keine KI-Ergebnisse erzeugt.</p>
+    <ul class="rollen-status">
+      <li>LEAD — nicht aus der App gestartet</li><li>BRAIN — nicht aus der App gestartet</li>
+      <li>CHECK — nicht aus der App gestartet</li><li>COMMAND — nicht aus der App gestartet</li>
+    </ul>
   </section>
 </main>
 
@@ -109,6 +223,23 @@
     <p class="details"></p>
     <p class="verlauf" hidden></p>
     <ul class="warnungen"></ul>
+    <a class="link" target="_blank" rel="noopener noreferrer">Zum Angebot ↗</a>
+    <label class="vergleich-auswahl"><input type="checkbox" class="vergleich-check"> Für Vergleich auswählen</label>
+  </li>
+</template>
+<template id="karte-mission">
+  <li class="karte mission-karte">
+    <div class="oben"><span class="mission-status"></span><span class="aktionsreihe"></span></div>
+    <h3 class="titel"></h3>
+    <p class="details"></p>
+    <p class="mission-lauf status"></p>
+    <ol class="mission-ergebnisse treffer"></ol>
+  </li>
+</template>
+<template id="karte-blitz">
+  <li class="karte blitz-karte">
+    <div class="oben"><span class="blitz-status"></span><button type="button" class="loeschen blitz-gesehen">Als gesehen markieren</button></div>
+    <h3 class="titel"></h3><p class="details"></p>
     <a class="link" target="_blank" rel="noopener noreferrer">Zum Angebot ↗</a>
   </li>
 </template>

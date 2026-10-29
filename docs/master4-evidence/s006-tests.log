@@ -1,0 +1,9 @@
+test_ci_fehlende_kandidatenref_ist_fail_statt_teilpass (test_branches_s006.TestBranchesS006.test_ci_fehlende_kandidatenref_ist_fail_statt_teilpass) ... ok
+test_ci_fehlende_main_ref_ist_fail_statt_skip (test_branches_s006.TestBranchesS006.test_ci_fehlende_main_ref_ist_fail_statt_skip) ... ok
+test_kandidaten_sind_vollstaendig_in_main (test_branches_s006.TestBranchesS006.test_kandidaten_sind_vollstaendig_in_main) ... ok
+test_s006_bleibt_vorschlag_und_nennt_alle_kandidaten (test_branches_s006.TestBranchesS006.test_s006_bleibt_vorschlag_und_nennt_alle_kandidaten) ... ok
+
+----------------------------------------------------------------------
+Ran 4 tests in 0.033s
+
+OK

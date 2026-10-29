@@ -1,0 +1,69 @@
+.....................................................................................................................................................................................................................................[LEAD] status=NICHT EINSATZBEREIT ki_echt=False geheimnis_redigiert=False fehler=Kein GITHUB_TOKEN vorhanden – KI läuft nur in GitHub Actions mit 'models: read'.
+[BRAIN] status=ÜBERSPRUNGEN ki_echt=False geheimnis_redigiert=False fehler=Kein gültiger Auftrag von LEAD.
+[CHECK] status=ÜBERSPRUNGEN ki_echt=False geheimnis_redigiert=False fehler=Kein BRAIN-Vorschlag zum Prüfen (Tests wurden trotzdem ausgeführt).
+[COMMAND] status=ÜBERSPRUNGEN ki_echt=False geheimnis_redigiert=False fehler=LEAD/BRAIN/CHECK unvollständig oder fehlgeschlagen; kein COMMAND-KI-Aufruf.
+{"lauf": "20261021T190000Z", "team_einsatzbereit": false, "agenten_mit_echter_ki": [], "modelle": [], "aufgabe": null, "check_urteil": null, "tests_ok": true, "ki_aufrufe": 0, "blocker": [{"art": "KI-Anbindung fehlt", "detail": "Kein GITHUB_TOKEN vorhanden – KI läuft nur in GitHub Actions mit 'models: read'.", "rollen": ["LEAD"]}]}
+[LEAD] status=NICHT EINSATZBEREIT ki_echt=False geheimnis_redigiert=False fehler=Kein GITHUB_TOKEN vorhanden – KI läuft nur in GitHub Actions mit 'models: read'.
+[BRAIN] status=ÜBERSPRUNGEN ki_echt=False geheimnis_redigiert=False fehler=Kein gültiger Auftrag von LEAD.
+[CHECK] status=ÜBERSPRUNGEN ki_echt=False geheimnis_redigiert=False fehler=Kein BRAIN-Vorschlag zum Prüfen (Tests wurden trotzdem ausgeführt).
+[COMMAND] status=ÜBERSPRUNGEN ki_echt=False geheimnis_redigiert=False fehler=LEAD/BRAIN/CHECK unvollständig oder fehlgeschlagen; kein COMMAND-KI-Aufruf.
+{"lauf": "20261021T190000Z", "team_einsatzbereit": false, "agenten_mit_echter_ki": [], "modelle": [], "aufgabe": null, "check_urteil": null, "tests_ok": true, "ki_aufrufe": 0, "blocker": [{"art": "KI-Anbindung fehlt", "detail": "Kein GITHUB_TOKEN vorhanden – KI läuft nur in GitHub Actions mit 'models: read'.", "rollen": ["LEAD"]}]}
+[LEAD] status=OK ki_echt=True geheimnis_redigiert=False fehler=
+[LEAD] KI-Antwort verarbeitet; Rohtext und Metadaten im Konsolenlog unterdrückt.
+[BRAIN] status=OK ki_echt=True geheimnis_redigiert=False fehler=
+[BRAIN] KI-Antwort verarbeitet; Rohtext und Metadaten im Konsolenlog unterdrückt.
+[CHECK] status=OK ki_echt=True geheimnis_redigiert=False fehler=
+[CHECK] KI-Antwort verarbeitet; Rohtext und Metadaten im Konsolenlog unterdrückt.
+[COMMAND] status=OK ki_echt=True geheimnis_redigiert=False fehler=
+[COMMAND] KI-Antwort verarbeitet; Rohtext und Metadaten im Konsolenlog unterdrückt.
+{"lauf": "20261021T190000Z", "team_einsatzbereit": true, "agenten_mit_echter_ki": ["LEAD", "BRAIN", "CHECK", "COMMAND"], "modelle": ["meta/Llama-3.3-70B-Instruct"], "aufgabe": "S-000", "check_urteil": "bestanden", "tests_ok": true, "ki_aufrufe": 4, "blocker": []}
+{"lauf": "20261022T020000Z", "team_einsatzbereit": false, "agenten_mit_echter_ki": ["LEAD", "BRAIN", "CHECK", "COMMAND"], "modelle": [], "aufgabe": "S-000", "check_urteil": "bestanden", "tests_ok": true, "ki_aufrufe": 4, "blocker": []}
+{"lauf": "20261022T020000Z", "team_einsatzbereit": false, "agenten_mit_echter_ki": ["LEAD", "BRAIN", "CHECK", "COMMAND"], "modelle": [], "aufgabe": "S-000", "check_urteil": "bestanden", "tests_ok": true, "ki_aufrufe": 4, "blocker": []}
+{"lauf": "20261022T020000Z", "team_einsatzbereit": false, "agenten_mit_echter_ki": ["LEAD", "BRAIN", "CHECK", "COMMAND"], "modelle": ["dummy"], "aufgabe": "S-000", "check_urteil": "bestanden", "tests_ok": true, "ki_aufrufe": 0, "blocker": []}
+{"lauf": "20261022T020000Z", "team_einsatzbereit": true, "agenten_mit_echter_ki": ["LEAD", "BRAIN", "CHECK", "COMMAND"], "modelle": [], "aufgabe": "S-000", "check_urteil": "bestanden", "tests_ok": true, "ki_aufrufe": 4, "blocker": []}
+[LEAD] status=NICHT EINSATZBEREIT ki_echt=False geheimnis_redigiert=False fehler=Geheimnisindikator in KI-Antwort – Lauf gesperrt, Inhalt verworfen.
+[LEAD] status=NICHT EINSATZBEREIT ki_echt=False geheimnis_redigiert=False fehler=
+[LEAD] status=KEINE AUFGABE ki_echt=False geheimnis_redigiert=False fehler=
+[LEAD] status=FEHLER ki_echt=False geheimnis_redigiert=False fehler=
+[LEAD] status=ÜBERSPRUNGEN ki_echt=False geheimnis_redigiert=False fehler=
+{"lauf": "20261022T020000Z", "team_einsatzbereit": false, "agenten_mit_echter_ki": ["LEAD", "BRAIN", "CHECK", "COMMAND"], "modelle": [], "aufgabe": "S-000", "check_urteil": "bestanden", "tests_ok": true, "ki_aufrufe": 0, "blocker": []}
+{"lauf": "20261022T020000Z", "team_einsatzbereit": false, "agenten_mit_echter_ki": ["LEAD", "BRAIN", "CHECK", "COMMAND"], "modelle": [], "aufgabe": "S-000", "check_urteil": "bestanden", "tests_ok": true, "ki_aufrufe": 0, "blocker": []}
+{"lauf": "20261022T020000Z", "team_einsatzbereit": false, "agenten_mit_echter_ki": ["LEAD", "BRAIN", "CHECK", "COMMAND"], "modelle": [], "aufgabe": "S-000", "check_urteil": "bestanden", "tests_ok": true, "ki_aufrufe": 4, "blocker": []}
+{"lauf": "20261022T020000Z", "team_einsatzbereit": false, "agenten_mit_echter_ki": ["LEAD", "BRAIN", "CHECK", "COMMAND"], "modelle": [], "aufgabe": "S-000", "check_urteil": "bestanden", "tests_ok": true, "ki_aufrufe": 4, "blocker": []}
+{"lauf": "20261022T020000Z", "team_einsatzbereit": false, "agenten_mit_echter_ki": ["LEAD", "BRAIN", "CHECK", "COMMAND"], "modelle": [], "aufgabe": "S-000", "check_urteil": "abgelehnt", "tests_ok": true, "ki_aufrufe": 4, "blocker": []}
+{"lauf": "20261022T020000Z", "team_einsatzbereit": false, "agenten_mit_echter_ki": ["LEAD", "BRAIN", "CHECK", "COMMAND"], "modelle": [], "aufgabe": "S-000", "check_urteil": "nachbessern", "tests_ok": true, "ki_aufrufe": 4, "blocker": []}
+{"lauf": "20261022T020000Z", "team_einsatzbereit": false, "agenten_mit_echter_ki": ["LEAD", "BRAIN", "CHECK", "COMMAND"], "modelle": [], "aufgabe": "S-000", "check_urteil": "bestanden", "tests_ok": true, "ki_aufrufe": 4, "blocker": []}
+{"lauf": "20261022T020000Z", "team_einsatzbereit": false, "agenten_mit_echter_ki": ["LEAD", "BRAIN", "CHECK", "COMMAND"], "modelle": [], "aufgabe": "S-000", "check_urteil": "bestanden", "tests_ok": true, "ki_aufrufe": 4, "blocker": []}
+{"lauf": "20261022T020000Z", "team_einsatzbereit": false, "agenten_mit_echter_ki": ["LEAD", "BRAIN", "CHECK", "COMMAND"], "modelle": [], "aufgabe": "S-000", "check_urteil": "bestanden", "tests_ok": true, "ki_aufrufe": 4, "blocker": []}
+{"lauf": "20261022T020000Z", "team_einsatzbereit": false, "agenten_mit_echter_ki": ["LEAD", "BRAIN", "CHECK", "COMMAND"], "modelle": [], "aufgabe": "S-000", "check_urteil": "bestanden", "tests_ok": true, "ki_aufrufe": 0, "blocker": []}
+BLOCKIERT: Stundenbericht fehlt. Details: /tmp/tmp5jd6p0xz/team/work/20261026T174456Z-eb05db/prozesse.json
+BLOCKIERT: Stundenbericht fehlt. Details: /tmp/tmpkjtm38v9/team/work/20261026T174456Z-d56e4b/prozesse.json
+{"lauf": "20261026T174456Z-b98ab0", "vier_echte_ki_antworten": false, "tests_bestanden": true, "prozesse_ok": true, "status": "BLOCKIERT", "hinweis": "Technischer KI-Nachweis ist keine Freigabe für App-Änderungen.", "fehler": ["Agentenbericht muss ein JSON-Objekt sein.", "Pflichtnachweis fehlt, ist unsicher oder nicht lesbar."], "protokoll": "team/runs/20261026T174456Z-b98ab0.json"}
+BLOCKIERT: Betreiber-Not-Aus team/work/STOP ist aktiv.
+BLOCKIERT: Stundenbericht fehlt. Details: /tmp/tmp3f_wnwep/team/work/20261026T174456Z-9bd002/prozesse.json
+BLOCKIERT: Stundenbericht fehlt. Details: /tmp/tmp6ar84k_2/team/work/20261026T174456Z-801008/prozesse.json
+{"lauf": "20261026T174456Z-411098", "vier_echte_ki_antworten": false, "tests_bestanden": false, "prozesse_ok": true, "status": "BLOCKIERT", "hinweis": "Technischer KI-Nachweis ist keine Freigabe für App-Änderungen.", "fehler": ["Agentenbericht muss ein JSON-Objekt sein.", "Pflichtnachweis fehlt, ist unsicher oder nicht lesbar."], "protokoll": "team/runs/20261026T174456Z-411098.json"}
+{"lauf": "20261026T174456Z-941bf8", "vier_echte_ki_antworten": true, "tests_bestanden": true, "prozesse_ok": true, "status": "TECHNISCHER PILOT ERFOLGREICH", "hinweis": "Technischer KI-Nachweis ist keine Freigabe für App-Änderungen.", "fehler": [], "protokoll": "team/runs/20261026T174456Z-941bf8.json"}
+BLOCKIERT: Lokale Betreiberfreigabe oder passende offene Aufgabe fehlt.
+........................................................................................................................................................................................................................................................
+----------------------------------------------------------------------
+Ran 477 tests in 10.540s
+
+OK
+BLOCKIERT: Ein anderer lokaler SCHNAPPER-Dienst ist aktiv.
+BLOCKIERT: Sperrdatei kann nicht sicher geoeffnet werden.
+BLOCKIERT: Ein anderer lokaler SCHNAPPER-Dienst ist aktiv.
+BLOCKIERT: Sperrdatei kann nicht sicher geoeffnet werden.
+BLOCKIERT: Sperrdatei kann nicht sicher geoeffnet werden.
+BLOCKIERT: Sperrdatei kann nicht sicher geoeffnet werden.
+BLOCKIERT: Sperrdatei kann nicht sicher geoeffnet werden.
+BLOCKIERT: Ein anderer lokaler SCHNAPPER-Dienst ist aktiv.
+BLOCKIERT: Runner-Sperre ist keine eigene regulaere Datei.
+BLOCKIERT: Sperrdatei kann nicht sicher geoeffnet werden.
+BLOCKIERT: Runner-PID-Protokoll konnte nicht sicher geschrieben werden.
+BLOCKIERT: Runner-PID-Protokoll konnte nicht sicher geschrieben werden.
+BLOCKIERT: Runner-PID-Protokoll konnte nicht sicher geschrieben werden.
+BLOCKIERT: Sperrdatei kann nicht sicher geoeffnet werden.
+BLOCKIERT: Stundenbericht fehlt. Details: /tmp/tmpjdu0k2qx/team/work/20261026T174457Z-ee4079/prozesse.json
+BLOCKIERT: Stundenbericht fehlt. Details: /tmp/tmp7jhqew0v/team/work/20261026T174457Z-ee4165/prozesse.json
+BLOCKIERT: Stundenbericht fehlt. Details: /tmp/tmpkgc89s6h/team/work/20261026T174457Z-2eb881/prozesse.json

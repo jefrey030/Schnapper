@@ -1,0 +1,1 @@
+PASS node --check app.js, regression test and browser e2e; Python compileall; git diff --check

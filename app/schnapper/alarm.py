@@ -41,6 +41,8 @@ class Wunsch:
     max_preis: Decimal | None = None
     min_rabatt: Decimal | None = None
     zustaende: frozenset[str] = field(default_factory=frozenset)
+    region: str = ""
+    entfernung_km: Decimal | None = None
 
     @classmethod
     def aus_dict(cls, daten: dict) -> "Wunsch":
@@ -76,11 +78,27 @@ class Wunsch:
             raise WunschFehler(f"Unbekannter Zustand: {', '.join(sorted(unbekannt))}")
         if max_preis is None and min_rabatt is None:
             raise WunschFehler("Mindestens Höchstpreis oder Mindestrabatt angeben, sonst ist es kein Alarm")
-        return cls(name=name, suche=suche, max_preis=max_preis, min_rabatt=min_rabatt, zustaende=zustaende)
+        region = daten.get("region", "")
+        if not isinstance(region, str) or len(region.strip()) > 100:
+            raise WunschFehler("Region darf höchstens 100 Zeichen enthalten")
+        entfernung = daten.get("entfernung_km")
+        if entfernung in (None, ""):
+            entfernung = None
+        else:
+            try:
+                entfernung = Decimal(str(entfernung).replace(",", "."))
+            except (InvalidOperation, AttributeError) as exc:
+                raise WunschFehler("Entfernung ist ungültig") from exc
+            if not entfernung.is_finite() or not 0 <= entfernung <= 500:
+                raise WunschFehler("Entfernung muss zwischen 0 und 500 km liegen")
+        return cls(name=name, suche=suche, max_preis=max_preis, min_rabatt=min_rabatt,
+                   zustaende=zustaende, region=region.strip(), entfernung_km=entfernung)
 
     def als_filter(self, mit_veraltet: bool = False) -> Filter:
         return Filter(text=self.suche, max_preis=self.max_preis, min_rabatt=self.min_rabatt,
-                      zustaende=set(self.zustaende), ohne_verdacht=True, ohne_veraltet=not mit_veraltet)
+                      zustaende=set(self.zustaende), region=self.region,
+                      entfernung_km=self.entfernung_km,
+                      ohne_verdacht=True, ohne_veraltet=not mit_veraltet)
 
 
 @dataclass

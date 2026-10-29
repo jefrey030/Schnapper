@@ -17,44 +17,67 @@ Anfrage an ein echtes Sprachmodell** und eigener Ergebnisdatei:
 Bekommt ein Agent keine echte KI-Antwort, wird er als **NICHT EINSATZBEREIT**
 protokolliert. Es gibt **keinen Regelmodus**, der sich als KI ausgibt.
 
-## KI-Laufzeit: 0 € – GitHub Models
-- Anbieter: **GitHub Models** (`models.github.ai`), aufgerufen mit dem automatischen
-  `GITHUB_TOKEN` des Actions-Laufs (`permissions: models: read`). Kein API-Schlüssel nötig.
-- Bevorzugt **Open-Weight-Modelle** (Llama, Mistral, Phi). Fest wählbar über die
-  Repo-Variable `SCHNAPPER_MODELL`.
-- Für persönliche Konten ratenbegrenzt kostenlos. Ohne ausdrücklich eingeschaltete
-  bezahlte Nutzung wird nach Erreichen des Kontingents **blockiert, nicht abgerechnet**.
-- Kostenbremsen im Code: nur Host `models.github.ai` erlaubt, max. 6 KI-Aufrufe pro Lauf
-  (normal: 4), kurze Antworten. Anthropic/OpenAI-Bezahl-APIs sind ausgeschlossen (Test prüft das).
+## KI-Laufzeit: Legacy-Dienst stillgelegt, lokale Option vorbereiten
 
-## Stundenbetrieb
-`.github/workflows/schnapper-hourly.yml` läuft stündlich um :17 (UTC) auf GitHubs Servern –
-ohne Tablet und ohne offene Claude-Sitzung. Ein Lauf = ein Job (~1–2 Minuten), Zeitlimit 10 Min.
-**Not-Aus:** Repo-Variable `SCHNAPPER_PAUSE` = `true`.
+**GitHub Models wurde am 30.07.2026 vollständig eingestellt.** Der frühere
+Katalog und die Inferenz-API unter `models.github.ai` funktionieren nicht mehr.
+Die alten Aussagen über kostenlose GitHub-Models-Kontingente und vier
+automatisch arbeitende KI-Agenten gelten **nicht** mehr. Der Adapter in
+`team/ki.py` verweigert Aufrufe ausdrücklich (Fail-Closed).
 
-## Kostenschutz im Code
-Beide Workflows laufen **nur, wenn das Repository öffentlich ist** (dort sind GitHub-Standard-Runner
-kostenlos). Solange es privat ist, werden die Jobs übersprungen und verbrauchen **keine Minuten** –
-auch dann nicht, wenn im Konto ein Budget freigeschaltet wird. Für den Stundenplan zusätzlich die
-Variable `SCHNAPPER_OEFFENTLICH` = `true` setzen, erst **nachdem** das Repo öffentlich ist.
+Die bereits vorhandene, freiwillige Alternative ist `team/local_ollama.py`:
+Nur auf einem **eigenen kompatiblen Rechner** mit einem **bereits lokal installierten
+Ollama-Modell** kann `SCHNAPPER_KI_BACKEND=ollama` gesetzt werden.
+Sie greift fest auf `127.0.0.1:11434` zu, lehnt Weiterleitungen und
+Cloud-Modellnamen ab und aktiviert weder einen fremden Anbieter noch einen
+automatischen Download. Die Existenz dieses Adapters **beweist keinen laufenden
+Modellhost** und keine vier echten KI-Antworten.
 
-## Kosten – was du in den GitHub-Einstellungen sicherstellen musst
-1. **Actions:** Bei privaten Repos zählen die Minuten gegen die 2.000 Freiminuten/Monat des
-   Kontos (alle Repos zusammen). Öffentliche Repos sind für Standard-Runner kostenlos.
-   Budget für Actions auf **0 €** lassen bzw. „Nutzung bei Budgetgrenze stoppen“.
-2. **GitHub Models:** bezahlte Nutzung **nicht** einschalten.
+Eine unverbindliche, read-only Vorabdiagnose ist:
+```
+python3 team/diagnose_local.py
+```
+Der Diagnoseaufruf prüft vorhandene lokale Voraussetzungen. Er startet
+keinen KI-Dienst, lädt keine Modelle herunter und aktiviert keinen Dauerbetrieb.
 
-## Aktueller Stand (21.10.2026)
-**NICHT EINSATZBEREIT.** Alle bisherigen Actions-Läufe wurden von GitHub **gar nicht gestartet**:
-> The job was not started because recent account payments have failed or your spending limit needs to be increased.
+## Stundenbetrieb: vorerst aus Sicherheitsgründen aus
 
-Das ist eine Sperre auf Kontoebene (Freiminuten für private Repos aufgebraucht und/oder
-Zahlungsproblem), kein Code-Fehler. Kostenfreie Auswege: Repository **öffentlich** machen
-oder auf das neue Monatskontingent warten. Details: `team/STATUS.md`.
+Der frühere GitHub-Actions-Stundenplan ist in
+`.github/workflows/schnapper-hourly.yml` in diesem Entwurf entfernt.
+Auch der manuelle Workflow-Aufruf wird am Job-Gate verweigert; die
+Berechtigung ist auf `contents: read` reduziert. GitHub-hosted Runner
+erreichen kein beliebiges lokales `127.0.0.1`-Ollama des Nutzers.
+
+Die Rollen LEAD, BRAIN, CHECK und COMMAND bleiben als getrennte
+Codeprozesse und Aufgaben definiert. **Es wird dadurch keine externe KI
+automatisch gestartet.** Ein grüner Unit-Test oder Workflow ohne echte
+Modellantworten ist kein Nachweis für funktionierenden Vier-KI-Betrieb.
+
+## Kosten, Datenschutz und Freigabe
+
+- **Budgetgrenze: 0 € zusätzliche Kosten.** Keine Bezahl-API,
+  Budgeterhöhung, automatische Modellinstallation oder Cloud-Fallback.
+- Keine Änderung der Repository-Sichtbarkeit und keine automatische
+  Aktivierung von Tests, KI, eBay oder neuen Datenquellen.
+- Kein Merge, Deployment oder Produktionsbetrieb ohne unabhängige
+  Abnahme und ausdrückliche Freigabe.
+- Für alle vier KI-Rollen sind echte separate Modellantworten, Testbefunde
+  und Sicherheitsprüfung zu belegen. Simulierte Antworten heißen
+  ausdrücklich Test oder Mock.
+
+## Status der Stilllegung
+
+Dieser Text dokumentiert den **geplanten Stand im Draft-PR #53**. Vor einem
+geprüften Merge kann `main` weiterhin den alten Stundenworkflow enthalten.
+Der zuletzt geprüfte Stundenlauf [40143662656](https://github.com/jefrey030/Schnapper/actions/runs/40143662656)
+hatte **0 echte KI-Aufrufe**. Der sichere Offline-Weg und die nachweisbare
+Stilllegung haben Priorität vor einer neuen autonomen KI-Konfiguration.
 
 ## Dateien
 - `team/agent.py` – die vier Agenten + Stundenbericht
-- `team/ki.py` – Zugang zu GitHub Models mit Kostenbremsen
+- `team/ki.py` – gesperrter Legacy-GitHub-Models-Adapter; kein produktiver Netzaufruf
+- `team/local_ollama.py` – ausschließlich optionales Modell auf eigenem Rechner
+- `team/diagnose_local.py` – read-only Systemprüfung ohne KI-Aufruf
 - `team/runner.py` – Aufgaben laden und rotieren
 - `team/tasks.json` – Aufgabenbestand
 - `team/runs/` – Stundenberichte (`.md` + Rohdaten `.json`), `team/proposals/` – BRAIN-Vorschläge
@@ -81,6 +104,7 @@ PYTHONPATH=app python -m schnapper app/beispiele/angebote.csv --suche kopfhoerer
 ```
 PYTHONPATH=app python -m schnapper.web app/beispiele/angebote.csv
 ```
+Am Handy (Termux) geht es mit einem Befehl: `bash start-schnapper.sh` (siehe `docs/HANDY-START.md`).
 Dann im Browser `http://127.0.0.1:8765` öffnen. Suche, Filter, Sortierung und „Eigene Liste“ (CSV/JSON hochladen) funktionieren am Handy wie am PC. Hochgeladene Listen bleiben nur im Arbeitsspeicher (Ausnahme: Preisverlauf mit `--verlauf`, siehe unten).
 Mit `--host 0.0.0.0` ist die Seite im eigenen WLAN erreichbar (ohne Passwort, daher nur im Heimnetz).
 

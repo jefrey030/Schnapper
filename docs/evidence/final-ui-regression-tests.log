@@ -1,0 +1,14 @@
+✔ failed mission-ergebnisse persistence is never reported as saved (6.805381ms)
+✔ failed blitz persistence is never reported as saved (2.72528ms)
+✔ failed mission-laeufe persistence is never reported as saved (2.684229ms)
+✔ success is reported only after all three browser stores succeed (3.15719ms)
+✔ failed alarm persistence is never reported as created (2.000672ms)
+✔ 409 refreshes mission list, preserves form data, and never retries mutation (1.544091ms)
+ℹ tests 6
+ℹ suites 0
+ℹ pass 6
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 85.617181
