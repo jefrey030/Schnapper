@@ -58,10 +58,10 @@ class TestBranchesS006(unittest.TestCase):
         if geprueft == 0:
             self.skipTest("keine Kandidaten-Branches lokal vorhanden")
 
-    def test_s006_bleibt_vorschlag_und_nennt_alle_kandidaten(self):
+    def test_s006_erledigt_und_nennt_alle_kandidaten(self):
         tasks = json.loads((ROOT / "team" / "tasks.json").read_text(encoding="utf-8"))["tasks"]
         s006 = next(t for t in tasks if t["id"] == "S-006")
-        self.assertEqual(s006["status"], "proposed")
+        self.assertEqual(s006["status"], "done")
         for branch in KANDIDATEN:
             self.assertIn(branch, s006["hinweis"])
         self.assertIn("Agenten löschen keine Branches", s006["hinweis"])
