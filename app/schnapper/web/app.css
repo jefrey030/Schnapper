@@ -72,6 +72,11 @@ main { max-width: 720px; margin: 0 auto; padding: 0 16px 48px; }
   background: var(--akzent); color: var(--akzent-text); font: inherit; font-weight: 700; cursor: pointer; }
 .barcode-zeile button:disabled { opacity: .6; cursor: wait; }
 .barcode-bereich .treffer { margin-top: 12px; }
+#kamera-knopf, #kamera-abbrechen { min-height: 44px; margin-top: 8px; padding: 10px 14px; border: 1px solid var(--linie);
+  border-radius: 10px; background: var(--grund); color: var(--text); font: inherit; cursor: pointer; max-width: 100%; }
+#kamera-knopf:disabled { opacity: .6; cursor: not-allowed; }
+#kamera-bereich { margin-top: 8px; }
+#kamera-bild { display: block; width: 100%; max-height: 40vh; object-fit: cover; border-radius: 10px; background: #000; }
 
 .ansichten { display: flex; gap: 6px; max-width: 720px; margin: 0 auto;
   padding: 8px 16px; background: var(--grund); overflow-x: auto; }
