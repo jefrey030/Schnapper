@@ -18,6 +18,7 @@ import base64
 import datetime as dt
 import json
 import os
+import re
 import time
 import urllib.error
 import urllib.parse
@@ -269,6 +270,8 @@ def _anfrage(methode: str, url: str, kopfzeilen: dict, daten: bytes | None = Non
         if exc.code in (401, 403) and teile.path == TOKEN_PFAD:
             meldung += " – Zugangsdaten ungültig oder falscher Modus (Sandbox/Produktion)?"
         raise EbayFehler(meldung) from None
+    except ValueError:  # z. B. ungültiger Kopfzeilenwert – Text enthielte den Wert
+        raise EbayFehler("Anfrage an eBay ungültig (Kopfzeile)") from None
     except OSError as exc:  # URLError, Timeout, Verbindungsfehler
         grund = getattr(exc, "reason", None) or exc.__class__.__name__
         raise EbayFehler(f"eBay nicht erreichbar: {str(grund)[:200]}") from None
@@ -347,7 +350,7 @@ class EbayAdapter:
         antwort = self._transport("POST", f"https://{self.host()}{TOKEN_PFAD}", kopf, koerper)
         token = antwort.get("access_token") if isinstance(antwort, dict) else None
         dauer = antwort.get("expires_in") if isinstance(antwort, dict) else None
-        if (not isinstance(token, str) or not token.strip()
+        if (not isinstance(token, str) or not re.fullmatch(r"[\x21-\x7e]+", token)
                 or isinstance(dauer, bool) or not isinstance(dauer, int) or dauer <= 0):
             raise EbayFehler("Token-Antwort unbrauchbar")
         self._token_wert = token

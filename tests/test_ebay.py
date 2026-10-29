@@ -252,14 +252,30 @@ class OAuthTests(OhneNetz):
     def test_token_antwort_unbrauchbar(self):  # AK 15
         for token in ({}, {"access_token": "", "expires_in": 7200}, {"access_token": TOKEN},
                       {"access_token": TOKEN, "expires_in": 0}, {"access_token": TOKEN, "expires_in": True},
-                      {"access_token": 5, "expires_in": 7200}, []):
+                      {"access_token": 5, "expires_in": 7200}, [],
+                      # S-013 #45: Steuerzeichen, Leerraum, Nicht-ASCII – nie in eine Kopfzeile
+                      {"access_token": TOKEN + "\nX-Evil: 1", "expires_in": 7200},
+                      {"access_token": TOKEN + "\r\n", "expires_in": 7200},
+                      {"access_token": "TEST TOKEN", "expires_in": 7200},
+                      {"access_token": "TÖKEN", "expires_in": 7200},
+                      {"access_token": "\t", "expires_in": 7200}):
             with self.subTest(token=token):
                 t = Transport(token=token)
+                a = ebay.EbayAdapter("x", umgebung=env(), transport=t)
                 with self.assertRaises(ebay.EbayFehler) as cm:
-                    ebay.EbayAdapter("x", umgebung=env(), transport=t).lade()
+                    a.lade()
                 self.assertIn("Token-Antwort unbrauchbar", str(cm.exception))
                 self.ohne_geheimnis(cm.exception)
                 self.assertEqual(len(t.aufrufe), 1)
+                self.assertFalse(a._token_wert)
+
+    def test_token_ebay_zeichen_angenommen(self):  # S-013 #45: eBay-typische Tokens bleiben gültig
+        for wert in (TOKEN, "v^1.1#i^1#r^0#p^1#I^3#f^0#t^H4sIAAAAAAAAAOVYa2wUVRT+=="):
+            with self.subTest(token=wert):
+                t = Transport(token={"access_token": wert, "expires_in": 7200})
+                ebay.EbayAdapter("x", umgebung=env(), transport=t, jetzt=JETZT).lade()
+                self.assertEqual([m for m, *_ in t.aufrufe], ["POST", "GET"])
+                self.assertEqual(t.aufrufe[1][2]["Authorization"], "Bearer " + wert)
 
 
 class AbbildungTests(OhneNetz):
@@ -498,6 +514,19 @@ class AnfrageTests(OhneNetz):
                 ebay.EbayAdapter("x", umgebung=env(), transport=t, jetzt=JETZT).lade()
             self.ohne_geheimnis(cm.exception)
             self.assertEqual(out.getvalue() + err.getvalue(), "")
+
+    def test_ungueltige_kopfzeile_wird_ebayfehler(self):  # S-013 #45: ValueError aus http.client
+        kopf = dict(self.KOPF, Authorization="Bearer " + TOKEN + "\nX: 1")
+        out, err = io.StringIO(), io.StringIO()
+        with redirect_stdout(out), redirect_stderr(err), self.assertRaises(ebay.EbayFehler) as cm:
+            ebay._anfrage("GET", self.GUT, kopf, None)  # echter Opener, Socket bleibt gesperrt
+        self.assertNotIsInstance(cm.exception, (AssertionError, ValueError))
+        self.assertEqual(str(cm.exception), "Anfrage an eBay ungültig (Kopfzeile)")
+        self.assertIsNone(cm.exception.__cause__)
+        self.assertTrue(cm.exception.__suppress_context__)
+        self.ohne_geheimnis(cm.exception)
+        self.assertNotIn(TOKEN, str(cm.exception))
+        self.assertEqual(out.getvalue() + err.getvalue(), "")
 
     def test_ende_zu_ende_mit_simuliertem_opener(self):  # AK 12/15 über den echten _anfrage-Pfad
         antworten = [Antwort(json.dumps({"access_token": TOKEN, "expires_in": 7200}).encode()),

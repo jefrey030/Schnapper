@@ -136,6 +136,23 @@ class EbayKommandozeileTests(unittest.TestCase):
         self.assertNotIn("Traceback", err)
         self.assertOhneGeheimnisse(out, err)
 
+    # S-013 #45: Token mit Steuerzeichen darf nicht über die Fehlermeldung nach außen gelangen
+    def test_token_mit_zeilenumbruch(self):
+        class TokenMitUmbruch(Attrappe):
+            def __call__(self, methode, url, kopfzeilen, daten=None, timeout=None):
+                if methode == "POST":
+                    self.aufrufe.append((methode, urllib.parse.urlsplit(url).hostname, ebay.TOKEN_PFAD))
+                    return {"access_token": TOKEN + "\nX-Evil: 1", "expires_in": 7200}
+                return super().__call__(methode, url, kopfzeilen, daten, timeout)
+        attrappe = TokenMitUmbruch()
+        code, out, err = self.lauf(["--ebay", "fahrrad"], VOLL, attrappe)
+        self.assertEqual(code, 3)
+        self.assertTrue(err.startswith("eBay: "))
+        self.assertIn("Token-Antwort unbrauchbar", err)
+        self.assertNotIn("Traceback", err)
+        self.assertOhneGeheimnisse(out, err)
+        self.assertEqual([m for m, *_ in attrappe.aufrufe], ["POST"])
+
     # AK 7
     def test_erfolg_sandbox_text(self):
         attrappe = Attrappe()
