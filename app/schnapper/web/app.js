@@ -291,6 +291,11 @@ async function kameraScannen() {
   }
   if (lauf !== kamera.lauf) { stream.getTracks().forEach((t) => t.stop()); return; }  // abgebrochen oder neu gestartet
   kamera.stream = stream;
+  for (const t of stream.getVideoTracks()) {  // Kamera fällt von außen weg (Berechtigung entzogen, Gerät getrennt)
+    t.addEventListener("ended", () => {
+      if (kamera.stream === stream) kameraStoppen("Kamera wurde getrennt – Barcode bitte eintippen.");  // veraltetes ended stört neueren Lauf nicht
+    }, { once: true });
+  }
   const video = $("kamera-bild");
   try {
     const formate = await kameraFormate();

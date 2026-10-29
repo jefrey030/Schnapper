@@ -681,6 +681,44 @@ class Browser(unittest.TestCase):
         self.wert("window.dispatchEvent(new Event('pagehide'))")
         self.alles_gestoppt()
 
+    # ---------- Kamera fällt von außen weg ----------
+    def test_track_ended_von_aussen(self):
+        self.oeffne("leer")
+        self.starte()
+        self.warte("!document.getElementById('kamera-bereich').hidden && window.__detect > 0")
+        self.assertEqual(self.fokus(), "kamera-abbrechen")
+        self.wert("window.__tracks[0].dispatchEvent(new Event('ended'))")
+        self.warte("document.getElementById('kamera-bereich').hidden", sekunden=1)
+        self.alles_gestoppt()
+        self.assertEqual(self.status(), "Kamera wurde getrennt – Barcode bitte eintippen.")
+        self.assertEqual(self.fokus(), "kamera-knopf")
+        runden = self.wert("window.__detect")
+        self.wert("new Promise((r) => setTimeout(r, 500))")
+        self.assertEqual(self.wert("window.__detect"), runden)  # keine weiteren detect-Runden
+        self.assertEqual(self.abfragen, [])
+        self.assertEqual(self.seite.input_value("#barcode"), "")
+        # Neustart nach dem Wegfall funktioniert und stoppt wieder sauber.
+        self.seite.click("#kamera-knopf")
+        self.warte("!document.getElementById('kamera-bereich').hidden")
+        self.assertEqual(self.wert("window.__gum"), 2)
+        self.seite.click("#kamera-abbrechen")
+        self.alles_gestoppt()
+
+    def test_veraltetes_track_ended_stoert_nicht(self):
+        self.oeffne("leer")
+        self.starte()
+        self.warte("!document.getElementById('kamera-bereich').hidden && window.__detect > 0")
+        self.seite.click("#kamera-abbrechen")
+        self.seite.click("#kamera-knopf")
+        self.warte("!document.getElementById('kamera-bereich').hidden && window.__tracks.length === 2")
+        self.wert("window.__tracks[0].dispatchEvent(new Event('ended'))")
+        self.kurz_warten()
+        self.assertFalse(self.wert("document.getElementById('kamera-bereich').hidden"))
+        self.assertNotEqual(self.status(), "Kamera wurde getrennt – Barcode bitte eintippen.")
+        self.assertEqual(self.wert("window.__tracks[1].readyState"), "live")
+        self.seite.click("#kamera-abbrechen")
+        self.alles_gestoppt()
+
 
 if __name__ == "__main__":
     unittest.main()
