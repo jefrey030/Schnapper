@@ -51,7 +51,10 @@ class ServerTest(unittest.TestCase):
     """Jeder Test bekommt einen frischen Server mit der Beispielliste (nur 127.0.0.1)."""
 
     def setUp(self):
-        self.server = erstelle_server(BEISPIEL, port=0)
+        # Wie die CLI: eigenes Datenverzeichnis, damit Missionen/BLITZ nicht 503 melden.
+        self._daten = tempfile.TemporaryDirectory()
+        os.chmod(self._daten.name, 0o700)
+        self.server = erstelle_server(BEISPIEL, port=0, datenverzeichnis=self._daten.name)
         self.basis = f"http://127.0.0.1:{self.server.server_address[1]}"
         self.thread = threading.Thread(target=self.server.serve_forever, daemon=True)
         self.thread.start()
@@ -60,6 +63,8 @@ class ServerTest(unittest.TestCase):
     def tearDown(self):
         self.server.shutdown()
         self.server.server_close()
+        if hasattr(self, "_daten"):
+            self._daten.cleanup()
 
     def hole(self, pfad, daten=None, kopf=None):
         req = urllib.request.Request(self.basis + pfad, data=daten, headers=kopf or {},
