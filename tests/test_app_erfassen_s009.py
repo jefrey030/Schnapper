@@ -168,6 +168,85 @@ class CsvExport(ServerTest):
         self.assertEqual(sofa.erfasst_am.isoformat(), treffer[a["id"]]["erfasst_am"])
 
 
+class CsvFormelSchutz(ServerTest):
+    """CSV-Export gegen Formel-Injektion (CWE-1236); Rückübernahme bleibt verlustfrei."""
+
+    FORMEL_START = ("=", "+", "-", "@", "\t", "\r")
+    BOESE_TITEL = '=HYPERLINK("https://boese.example";"Klick")'
+    BOESE_KATEGORIE = "@SUMME(1+1)"
+
+    def _zeilen(self):
+        import csv
+        import io
+        text = self.hole("/api/angebote.csv")[2].decode("utf-8")
+        return text, list(csv.reader(io.StringIO(text), delimiter=";"))
+
+    def _pruefe_geschuetzt(self, zeilen):
+        for zeile in zeilen[1:]:
+            for zelle in zeile:
+                self.assertFalse(zelle.startswith(self.FORMEL_START), f"ungeschützte Zelle: {zelle!r}")
+
+    def test_formel_zellen_geschuetzt_und_roundtrip(self):
+        status, a = self.erfasse({**GUELTIG, "titel": self.BOESE_TITEL, "kategorie": self.BOESE_KATEGORIE})
+        self.assertEqual(status, 201)
+        text, zeilen = self._zeilen()
+        self.assertEqual(len(zeilen), 2)
+        self._pruefe_geschuetzt(zeilen)
+        self.assertEqual(zeilen[1][1], "'" + self.BOESE_TITEL)
+        self.assertEqual(zeilen[1][7], "'" + self.BOESE_KATEGORIE)
+        zurueck = lies_text(text, "csv")
+        self.assertEqual(zurueck.fehler, [])
+        self.assertEqual([x.id for x in zurueck.angebote], [a["id"]])
+        self.assertEqual(zurueck.angebote[0].titel, self.BOESE_TITEL)
+        self.assertEqual(zurueck.angebote[0].kategorie, self.BOESE_KATEGORIE)
+
+    def test_plus_minus_titel(self):
+        _, a = self.erfasse({**GUELTIG, "titel": "-50 % Rabatt Sofa"})
+        _, b = self.erfasse({**GUELTIG, "titel": "+1 Lampe", "url": "https://kleinanzeigen.example/lampe/3"})
+        text, zeilen = self._zeilen()
+        self._pruefe_geschuetzt(zeilen)
+        self.assertEqual([z[1] for z in zeilen[1:]], ["'-50 % Rabatt Sofa", "'+1 Lampe"])
+        zurueck = lies_text(text, "csv")
+        self.assertEqual(zurueck.fehler, [])
+        self.assertEqual([x.id for x in zurueck.angebote], [a["id"], b["id"]])
+        self.assertEqual([x.titel for x in zurueck.angebote], ["-50 % Rabatt Sofa", "+1 Lampe"])
+
+    def test_normaler_titel_ohne_praefix(self):
+        self.erfasse({**GUELTIG, "titel": "Lastenrad 'Classic'"})
+        _, zeilen = self._zeilen()
+        self.assertEqual(zeilen[1][1], "Lastenrad 'Classic'")
+        self.assertEqual(zeilen[1][7], "Fahrrad")
+
+
+class CsvImportApostroph(unittest.TestCase):
+    KOPF = VORLAGE.read_text(encoding="utf-8-sig").splitlines()[0] if VORLAGE.is_file() else ""
+
+    def _lies(self, titel):
+        felder = self.KOPF.split(";")
+        werte = {"id": "t-1", "titel": titel, "preis": "5.00", "versand": "0.00", "referenzpreis": "",
+                 "zustand": "unbekannt", "quelle": "eigene", "kategorie": "",
+                 "url": "https://x.example/a", "erfasst_am": "2026-10-01T10:00:00+00:00"}
+        zeile = ";".join(werte.get(f, "") for f in felder)
+        ergebnis = lies_text(self.KOPF + "\n" + zeile + "\n", "csv")
+        self.assertEqual(ergebnis.fehler, [])
+        return ergebnis.angebote[0].titel
+
+    def test_apostroph_ohne_formelzeichen_bleibt(self):
+        self.assertEqual(self._lies("'Normal"), "'Normal")
+
+    def test_apostroph_vor_formelzeichen_entfernt(self):
+        self.assertEqual(self._lies("'=1+1"), "=1+1")
+        self.assertEqual(self._lies("'@A1"), "@A1")
+
+    def test_json_import_unveraendert(self):
+        daten = json.dumps([{"id": "j-1", "titel": "'=1+1", "preis": "5", "versand": "0", "zustand": "unbekannt",
+                             "quelle": "eigene", "url": "https://x.example/j",
+                             "erfasst_am": "2026-10-01T10:00:00+00:00"}])
+        ergebnis = lies_text(daten, "json")
+        self.assertEqual(ergebnis.fehler, [])
+        self.assertEqual(ergebnis.angebote[0].titel, "'=1+1")
+
+
 class Oberflaeche(ServerTest):
     def test_ak7_formular_und_js(self):
         html = self.hole("/")[2].decode("utf-8")

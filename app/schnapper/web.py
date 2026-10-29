@@ -28,7 +28,7 @@ from urllib.parse import parse_qs, urlsplit
 
 from .adapter import finde_in
 from .angebot import ZUSTAENDE, Angebot, AngebotFehler, geld
-from .einlesen import Importergebnis, lies_datei, lies_text
+from .einlesen import CSV_FORMEL_START, Importergebnis, lies_datei, lies_text
 from .quellen import QuellenFehler, Register
 from .suche import SORTIERUNGEN, Filter
 from .verlauf import Verlauf, VerlaufFehler, warnung
@@ -133,15 +133,25 @@ def filter_aus_query(q: dict) -> tuple[Filter, str]:
     return f, sortierung
 
 
+def _csv_zelle(text: str) -> str:
+    """Schutz vor Formel-Injektion (CWE-1236): führendes "'" vor = + - @ Tab CR."""
+    return "'" + text if text.startswith(CSV_FORMEL_START) else text
+
+
 def als_csv(angebote) -> str:
-    """Angebote im Format der Vorlage app/vorlagen/meine-angebote.csv (Semikolon, UTF-8)."""
+    """Angebote im Format der Vorlage app/vorlagen/meine-angebote.csv (Semikolon, UTF-8).
+
+    Textzellen, die mit = + - @ Tab oder CR beginnen, bekommen ein führendes "'" (Formelschutz);
+    lies_text(..., "csv") entfernt es beim Wiedereinlesen.
+    """
+    z = _csv_zelle
     puffer = io.StringIO()
     w = csv.writer(puffer, delimiter=";", lineterminator="\n")
     w.writerow(CSV_SPALTEN)
     for a in angebote:
-        w.writerow([a.id, a.titel, str(a.preis), str(a.versand),
+        w.writerow([z(a.id), z(a.titel), str(a.preis), str(a.versand),
                     "" if a.referenzpreis is None else str(a.referenzpreis),
-                    a.zustand, a.quelle, a.kategorie, a.url, a.erfasst_am.isoformat()])
+                    z(a.zustand), z(a.quelle), z(a.kategorie), z(a.url), a.erfasst_am.isoformat()])
     return puffer.getvalue()
 
 
