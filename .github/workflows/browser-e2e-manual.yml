@@ -1,0 +1,44 @@
+name: SCHNAPPER Browser E2E (manual, review only)
+on:
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  browser-e2e:
+    if: github.event.repository.private == false
+    runs-on: ubuntu-24.04
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Install isolated free Chromium test runtime
+        run: npx --yes playwright@1.56.1 install --with-deps chromium
+      - name: Run browser E2E with synthetic data
+        shell: bash
+        run: |
+          set -euo pipefail
+          export SCHNAPPER_TEST_URL=http://127.0.0.1:8791
+          export SCHNAPPER_CDP_URL=http://127.0.0.1:9222
+          WORK="$(mktemp -d)"
+          trap 'kill "${SERVER_PID:-}" "${CHROME_PID:-}" 2>/dev/null || true; rm -rf "$WORK"' EXIT
+          printf '[{"id":"fixture-1","titel":"Synthetisches Angebot","preis":"80","versand":"0","url":"https://offers.example/fixture-1","quelle":"eigene","erfasst_am":"2026-10-30T00:00:00Z"}]' > "$WORK/offers.json"
+          PYTHONPATH=. python -m app.schnapper.web "$WORK/offers.json" --host 127.0.0.1 --port 8791 --datenverzeichnis "$WORK/data" > "$WORK/server.log" 2>&1 &
+          SERVER_PID=$!
+          CHROME="$(find "$HOME/.cache/ms-playwright" -type f \( -name chrome -o -name headless_shell \) | head -n 1)"
+          test -n "$CHROME"
+          "$CHROME" --headless --no-sandbox --disable-gpu --remote-debugging-port=9222 --user-data-dir="$WORK/chrome" about:blank > "$WORK/chrome.log" 2>&1 &
+          CHROME_PID=$!
+          for i in $(seq 1 40); do
+            if curl -fsS "$SCHNAPPER_TEST_URL/" >/dev/null && curl -fsS "$SCHNAPPER_CDP_URL/json/version" >/dev/null; then break; fi
+            sleep 1
+          done
+          curl -fsS "$SCHNAPPER_TEST_URL/" >/dev/null
+          curl -fsS "$SCHNAPPER_CDP_URL/json/version" >/dev/null
+          node tests/browser_ui_e2e.mjs
