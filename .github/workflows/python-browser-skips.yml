@@ -1,0 +1,38 @@
+name: SCHNAPPER Python Browser 32 SKIPs (review only)
+on:
+  pull_request:
+    branches:
+      - test/browser-e2e-gate-20261030
+permissions:
+  contents: read
+concurrency:
+  group: schnapper-python-browser-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  python-browser:
+    if: github.event.repository.private == false
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    env:
+      PLAYWRIGHT_BROWSERS_PATH: /tmp/schnapper-pw-browsers
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Install free pinned Playwright and headless Chromium
+        run: |
+          python -m pip install --disable-pip-version-check playwright==1.56.0
+          python -m playwright install --with-deps chromium
+      - name: Execute exactly the previously skipped browser tests with synthetic localhost fixtures
+        shell: bash
+        run: |
+          set -euo pipefail
+          python -m unittest -v \
+            tests.test_app_erfassen_s009.Browser \
+            tests.test_app_erfassen_s009.DoppeltAbsenden \
+            tests.test_app_kamera_s011.Browser 2>&1 | tee /tmp/schnapper-python-browser.log
+          grep -E '^Ran 32 tests in ' /tmp/schnapper-python-browser.log
+          grep -Eq '^OK$' /tmp/schnapper-python-browser.log
