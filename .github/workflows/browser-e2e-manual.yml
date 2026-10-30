@@ -1,5 +1,8 @@
 name: SCHNAPPER Browser E2E (manual, review only)
 on:
+  pull_request:
+    branches:
+      - konsolidierung/schnapper-20261029
   workflow_dispatch:
 permissions:
   contents: read
