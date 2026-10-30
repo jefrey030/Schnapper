@@ -23,6 +23,12 @@ jobs:
           python-version: '3.11'
       - name: Install isolated free Chromium test runtime
         run: npx --yes playwright@1.56.1 install --with-deps chromium
+      - name: Install Python Playwright for previously skipped browser cases
+        run: python -m pip install playwright==1.56.0
+      - name: Run S-009 and S-011 Python browser cases
+        run: |
+          export PLAYWRIGHT_BROWSERS_PATH="$HOME/.cache/ms-playwright"
+          python -m unittest discover -s tests -p 'test_app_*_s0*.py' -v
       - name: Run browser E2E with synthetic data
         shell: bash
         run: |
