@@ -31,9 +31,9 @@ jobs:
           printf '[{"id":"fixture-1","titel":"Synthetisches Angebot","preis":"80","versand":"0","url":"https://offers.example/fixture-1","quelle":"eigene","erfasst_am":"2026-10-30T00:00:00Z"}]' > "$WORK/offers.json"
           PYTHONPATH=. python -m app.schnapper.web "$WORK/offers.json" --host 127.0.0.1 --port 8791 --datenverzeichnis "$WORK/data" > "$WORK/server.log" 2>&1 &
           SERVER_PID=$!
-          CHROME="$(find "$HOME/.cache/ms-playwright" -type f \( -name chrome -o -name headless_shell \) | head -n 1)"
+          CHROME="$(find "$HOME/.cache/ms-playwright" -type f \( -name chrome -o -name headless_shell \) -print -quit)"
           test -n "$CHROME"
-          "$CHROME" --headless --no-sandbox --disable-gpu --remote-debugging-port=9222 --user-data-dir="$WORK/chrome" about:blank > "$WORK/chrome.log" 2>&1 &
+          "$CHROME" --headless --no-sandbox --disable-gpu --remote-debugging-port=9222 --remote-allow-origins=* --user-data-dir="$WORK/chrome" about:blank > "$WORK/chrome.log" 2>&1 &
           CHROME_PID=$!
           for i in $(seq 1 40); do
             if curl -fsS "$SCHNAPPER_TEST_URL/" >/dev/null && curl -fsS "$SCHNAPPER_CDP_URL/json/version" >/dev/null; then break; fi
