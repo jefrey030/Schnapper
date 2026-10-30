@@ -33,7 +33,7 @@ jobs:
           SERVER_PID=$!
           CHROME="$(find "$HOME/.cache/ms-playwright" -type f \( -name chrome -o -name headless_shell \) -print -quit)"
           test -n "$CHROME"
-          "$CHROME" --headless --no-sandbox --disable-gpu --remote-debugging-port=9222 --remote-allow-origins=* --user-data-dir="$WORK/chrome" about:blank > "$WORK/chrome.log" 2>&1 &
+          "$CHROME" --headless --no-sandbox --disable-gpu --remote-debugging-address=127.0.0.1 --remote-debugging-port=9222 --remote-allow-origins=* --user-data-dir="$WORK/chrome" about:blank > "$WORK/chrome.log" 2>&1 &
           CHROME_PID=$!
           for i in $(seq 1 40); do
             if curl -fsS "$SCHNAPPER_TEST_URL/" >/dev/null && curl -fsS "$SCHNAPPER_CDP_URL/json/version" >/dev/null; then break; fi
