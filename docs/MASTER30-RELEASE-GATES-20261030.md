@@ -47,3 +47,10 @@ Prüfung am 30.10.2026 auf diesem Branch:
 - `scripts/p0_readiness.py` und `team/diagnose_local.py` können Voraussetzungen auf dem Betreibergerät read-only prüfen. Diese Diagnose wurde **nicht auf dem Betreibergerät ausgeführt**.
 - **Status:** Code-/Sicherheitsvoraussetzungen vorhanden; Echtabnahme 0/4 nachgewiesen; Gate **BLOCKED**, nicht PASS. Kein Modell gestartet, keine Freigabe erzeugt, keine Cloud-/Bezahl-API aktiviert.
 - Für die endgültige Abnahme sind nötig: eine bewusst freigegebene offene Aufgabe, lokale Installation und Verfügbarkeit eines geeigneten Ollama-Modells, explizite kurzlebige Betreiberfreigabe, vier getrennte erfolgreiche Rollenläufe mit zuordenbaren Nachweisen und unabhängige Prüfung der Resultate. Erst danach Status PASS.
+
+## CI-Nachprüfung – GitHub Actions #354 (30.10.2026)
+- Commit `7ba9c70e76bf1d02afbd3f887d4a399da0942f73`: https://github.com/jefrey030/Schnapper/actions/runs/40996096229 — Workflow `SCHNAPPER Tests` **success**.
+- `python-tests` Job `123869456505`: **success**, einschließlich Schritt `Python Unit-Tests`.
+- `cloudflare-tests` Job `123869456877`: **success**, einschließlich Cloudflare-Worker-Offline-Tests und UI-Speicher-Regressionen.
+- Der vorherige Workflow #353 scheiterte an zwei Tests wegen vorübergehend hinzugefügter offener Aufgabe `S-014`. Die Aufgabe wurde mit obigem Commit zurückgenommen; die CI ist wieder grün. Die aktuelle Aufgabenliste enthält keine offene Aufgabe; dies ist weiterhin ein Blocker für echte KI-Läufe, kein Freigabefehler.
+- **CI-Gate: PASS für diese Offline-Testjobs auf diesem Commit.** Browser-/Android-/eBay-Echtbetrieb, vier echte KI-Antworten und unabhängige Sicherheitsabnahme bleiben **BLOCKED/SKIP**. Release weiterhin **NO-GO**. Kein Merge oder Deployment.
