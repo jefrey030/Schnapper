@@ -36,3 +36,14 @@ Keine Secrets, keine Kosten, keine Rechte-/Sichtbarkeitsänderung, kein Merge, k
 - **Wichtige Unterscheidung:** Der Stundenworkflow auf `main` enthält noch Cron, `contents:write` und Push; die Datei `.github/workflows/schnapper-hourly.yml` auf dem Prüfbranch ist dagegen bereits als deaktivierter Legacy-Workflow ohne Cron und mit `contents:read` vorhanden. Erst ein später genehmigter Merge würde `main` ändern. Kein Workflow wurde jetzt gestartet.
 - Code und Tests des eBay-Antwortformats auf Prüfbranch gelesen: explizit leere Trefferliste wird nur bei strengem Integer-`total=0` als Nulltreffer akzeptiert; Regressionen prüfen positive, fehlende und falsch typisierte Werte. Dies ist eine Codeprüfung, **kein neuer Testlauf**.
 - **Master-Fortschritt:** Integrationsinventar und Workflow-Differenz geprüft; unabhängiges Review der 124 Änderungen, echte Browser-/Android-/KI-/eBay-Läufe weiterhin ausstehend. Release bleibt NO-GO.
+
+## Master-Aufgabe 3: KI-Viererteam – technischer Abschluss / Echtbetrieb gesperrt
+Prüfung am 30.10.2026 auf diesem Branch:
+- Vier Rollen `LEAD`, `BRAIN`, `CHECK`, `COMMAND` sind in `team/agent.py` implementiert und werden mit getrennten Ausgaben verarbeitet.
+- `team/local_ollama.py` nutzt nur `http://127.0.0.1:11434`, blockiert Cloud-Modelle, erzwingt Zustimmung vor Modellaufrufen, validiert Modellantwort-Metadaten und begrenzt Aufrufe.
+- `team/operator_approval.py` verlangt eine kurzlebige private lokale Freigabedatei, eine einzige passende offene Aufgabe und keinen aktiven STOP.
+- `team/tasks.json` enthält bei dieser Prüfung **keine Aufgabe mit Status `open`**; vorhandene Einträge stehen auf `review` bzw. `done`. Deshalb darf der aktuelle Stand keinen Echtlauf starten.
+- `tests/test_local_ollama.py` enthält synthetische Offline-Tests. Diese sind **kein Nachweis** für vier echte Inferenzantworten.
+- `scripts/p0_readiness.py` und `team/diagnose_local.py` können Voraussetzungen auf dem Betreibergerät read-only prüfen. Diese Diagnose wurde **nicht auf dem Betreibergerät ausgeführt**.
+- **Status:** Code-/Sicherheitsvoraussetzungen vorhanden; Echtabnahme 0/4 nachgewiesen; Gate **BLOCKED**, nicht PASS. Kein Modell gestartet, keine Freigabe erzeugt, keine Cloud-/Bezahl-API aktiviert.
+- Für die endgültige Abnahme sind nötig: eine bewusst freigegebene offene Aufgabe, lokale Installation und Verfügbarkeit eines geeigneten Ollama-Modells, explizite kurzlebige Betreiberfreigabe, vier getrennte erfolgreiche Rollenläufe mit zuordenbaren Nachweisen und unabhängige Prüfung der Resultate. Erst danach Status PASS.
