@@ -6,7 +6,7 @@ on:
 permissions:
   contents: read
 concurrency:
-  group: schnapper-python-browser-${{ github.event.pull_request.number }}
+  group: schnapper-python-browser-${{ github.ref }}
   cancel-in-progress: true
 jobs:
   python-browser:
@@ -14,7 +14,7 @@ jobs:
     runs-on: ubuntu-24.04
     timeout-minutes: 20
     env:
-      PLAYWRIGHT_BROWSERS_PATH: ${{ runner.temp }}/pw-browsers
+      PLAYWRIGHT_BROWSERS_PATH: /tmp/schnapper-pw-browsers
     steps:
       - uses: actions/checkout@v4
         with:
