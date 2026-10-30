@@ -3,6 +3,7 @@ from __future__ import annotations
 
 import contextlib
 import base64
+import binascii
 import fcntl
 import hashlib
 import json
@@ -188,7 +189,7 @@ def _parse_journal(raw: bytes) -> tuple[dict[str, bytes | None], dict[str, bytes
                 result[name] = data
             decoded.append(result)
         return decoded[0], decoded[1]
-    except (ValueError, TypeError, UnicodeDecodeError, json.JSONDecodeError) as exc:
+    except (ValueError, TypeError, UnicodeDecodeError, json.JSONDecodeError, binascii.Error) as exc:
         raise OSError("Wiederherstellungsjournal ist beschädigt; Zugriff gesperrt") from exc
 
 
