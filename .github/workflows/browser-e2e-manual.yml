@@ -30,7 +30,7 @@ jobs:
           export SCHNAPPER_TEST_URL=http://127.0.0.1:8791
           export SCHNAPPER_CDP_URL=http://127.0.0.1:9222
           WORK="$(mktemp -d)"
-          trap 'kill "${SERVER_PID:-}" "${CHROME_PID:-}" 2>/dev/null || true; rm -rf "$WORK"' EXIT
+          trap 'kill "${SERVER_PID:-}" "${CHROME_PID:-}" 2>/dev/null || true; wait "${SERVER_PID:-}" "${CHROME_PID:-}" 2>/dev/null || true; rm -rf "$WORK" || true' EXIT
           printf '[{"id":"fixture-1","titel":"Synthetisches Angebot","preis":"80","versand":"0","url":"https://offers.example/fixture-1","quelle":"eigene","erfasst_am":"2026-10-30T00:00:00Z"}]' > "$WORK/offers.json"
           PYTHONPATH=. python -m app.schnapper.web "$WORK/offers.json" --host 127.0.0.1 --port 8791 --datenverzeichnis "$WORK/data" > "$WORK/server.log" 2>&1 &
           SERVER_PID=$!
