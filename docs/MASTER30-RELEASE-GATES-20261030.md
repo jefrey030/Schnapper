@@ -28,3 +28,11 @@ Basis: PR #143, SHA `2be8e73e2d5e8d75c995780b4373609e8e298e39`, gestapelt auf #1
 4. Unabhängige Sicherheits- und Plattformabnahme; erst danach Betreiberentscheidung.
 
 Keine Secrets, keine Kosten, keine Rechte-/Sichtbarkeitsänderung, kein Merge, kein Deployment, keine produktiven Daten.
+
+## Ergänzende unabhängige Prüfung – 30.10.2026
+- PR #139: **open/draft**, 124 geänderte Dateien, Basis `main`, `mergeable=true` laut GitHub; das bedeutet nur konfliktfrei zusammenführbar, nicht sicherheitsfreigegeben.
+- PR #142: **open/draft**, auf #139 gestapelt. PR #143: **open/draft**, auf #142 gestapelt. PR #144: **open/draft**, auf #143 gestapelt. Keine dieser Änderungen wurde nach `main` gemergt.
+- Auf dem Prüfbranch sind `app/schnapper/mission.py`, `blitz.py`, `suche.py`, `ebay.py` und `team/agent.py` vorhanden. `tests/test_master5_modules.py` enthält MISSION-/BLITZ- und Integrationsprüfungen; `docs/MASTER6-PRODUKTINTEGRATION-20261026.md` beschreibt die fünf Module, allerdings historische Ergebnisse, nicht erneute aktuelle Ausführung.
+- **Wichtige Unterscheidung:** Der Stundenworkflow auf `main` enthält noch Cron, `contents:write` und Push; die Datei `.github/workflows/schnapper-hourly.yml` auf dem Prüfbranch ist dagegen bereits als deaktivierter Legacy-Workflow ohne Cron und mit `contents:read` vorhanden. Erst ein später genehmigter Merge würde `main` ändern. Kein Workflow wurde jetzt gestartet.
+- Code und Tests des eBay-Antwortformats auf Prüfbranch gelesen: explizit leere Trefferliste wird nur bei strengem Integer-`total=0` als Nulltreffer akzeptiert; Regressionen prüfen positive, fehlende und falsch typisierte Werte. Dies ist eine Codeprüfung, **kein neuer Testlauf**.
+- **Master-Fortschritt:** Integrationsinventar und Workflow-Differenz geprüft; unabhängiges Review der 124 Änderungen, echte Browser-/Android-/KI-/eBay-Läufe weiterhin ausstehend. Release bleibt NO-GO.
