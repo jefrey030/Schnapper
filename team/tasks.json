@@ -155,6 +155,22 @@
         "Alle Tests grün"
       ],
       "hinweis": "Freigegeben von Jefrey am 22.10.2026 als F6 (Lauf 20261022-2029 eingetragen). | Lauf 20261023-0529: Umsetzung in Draft-PR #45 (Branch agent/master/20261023-01), wartet auf Jefrey."
+    },
+    {
+      "id": "S-014",
+      "priority": 0,
+      "status": "open",
+      "title": "MASTER30 KI-Viererteam: einmaliger lokaler Ollama-Echtlauf mit prüfbaren Rollenbelegen",
+      "acceptance": [
+        "LEAD: genau eine freigegebene Aufgabe auswählen und ein strukturiertes JSON mit Akzeptanzkriterien liefern",
+        "BRAIN: auf LEAD aufbauende technische Analyse ohne erfundene Repository-Arbeit liefern",
+        "CHECK: BRAIN und vorhandene tatsächliche Testbelege kritisch prüfen, fehlende Tests ausdrücklich benennen",
+        "COMMAND: Ergebnisse aller Vorgänger zusammenführen und ohne eigenmächtige Freigabe einen Abschlussstatus ausgeben",
+        "Vier getrennte echte lokale Ollama-Inferenzantworten mit zuordenbaren Lauf- und Antwortmetadaten; Mock-Antworten zählen nicht",
+        "Nur localhost, keine Cloud- oder Bezahl-API, kein Modell-Download, keine Geheimnisse, keine Veröffentlichung, kein Merge oder Deployment",
+        "Vor jedem Modellaufruf separate kurzlebige private Betreiberfreigabe und STOP-Kontrolle; ohne Freigabe bleibt der Lauf BLOCKED"
+      ],
+      "hinweis": "Der offene Testauftrag ist keine Betreiberfreigabe. Echte Modellaufrufe erst nach separat bereitgestellter gültiger operator_approval.json auf dem Betreibergerät."
     }
   ]
 }
